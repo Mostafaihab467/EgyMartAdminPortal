@@ -19,7 +19,12 @@ namespace EgyMartAdminPortal.Services
             if (response?.Data == null)
                 return new Dictionary<int, string>();
 
-            return response.Data.ToDictionary(lang => lang.LangID, lang => lang.LangTitle);
+            var allowedLanguageIds = new HashSet<int> { 2, 3 }; // Arabic and French IDs
+
+            return response.Data
+                .Where(lang => allowedLanguageIds.Contains(lang.LangID))
+                .ToDictionary(lang => lang.LangID, lang => lang.LangTitle);
         }
+
     }
 }

@@ -3,7 +3,7 @@
 @inject ToastrService ToastService
 
 <div class="d-inline-block">
-    <Button class="btn btn-primary" TooltipTitle="Translate" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Translate" @onclick="() => IsPopupVisible = true">
+    <Button class="btn btn-primary" TooltipTitle="Translate" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Translate" @onclick="ShowTranslationPopup">
         <i class="fas fa-language"></i>
     </Button>
 
@@ -50,7 +50,7 @@
 
     private bool IsPopupVisible = false;
     private bool IsTranslating = false;
-    private int _selectedLangID = 1;
+    private int _selectedLangID = 2;
     private Dictionary<int, string> Languages = new();
 
     private int SelectedLangID
@@ -71,13 +71,78 @@
         var allLanguages = await LanguageService.GetLanguagesAsync();
         Languages = allLanguages.ToDictionary(k => k.Key, v => v.Value);
 
-        if (Languages.ContainsKey(1))
+        if (Languages.ContainsKey(1)) { _selectedLangID = 1; }
+        StateHasChanged();
+    }
+
+    private async Task OnLanguageChange()
+    {
+        await GetExistTranslation(Service!);
+        StateHasChanged();
+    }
+
+    private async Task GetExistTranslation(object service)
+    {
+        if (service == null || Item == null)
         {
-            _selectedLangID = 1; // Default to English
+            return;
         }
 
+        try
+        {
+            var method = service.GetType().GetMethod("GetByLangAsync");
+            if (method == null)
+            {
+                return;
+            }
 
-        StateHasChanged(); // 🔹 Ensure UI updates
+            var task = method.Invoke(service, new object[] { SelectedLangID, BaseID });
+
+            if (task is Task genericTask)
+            {
+                await genericTask.ConfigureAwait(false);
+
+                var resultProperty = task.GetType().GetProperty("Result");
+                if (resultProperty != null)
+                {
+                    var result = resultProperty.GetValue(task);
+
+                    if (result is IEnumerable<object> translations && translations.Cast<object>().Any())
+                    {
+                        var firstTranslation = translations.Cast<object>().First();
+
+                        CopyProperties(firstTranslation, Item);
+                    }
+
+                    else
+                    {
+                        ClearItemAttributes(Item);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+        }
+        StateHasChanged();
+    }
+
+    private void CopyProperties(object source, object target)
+    {
+        if (source == null || target == null)
+            return;
+
+        var targetType = target.GetType();
+        foreach (var property in source.GetType().GetProperties())
+        {
+            var targetProperty = targetType.GetProperty(property.Name);
+            if (targetProperty != null && targetProperty.CanWrite)
+            {
+                var value = property.GetValue(source);
+                targetProperty.SetValue(target, value);
+            }
+        }
+        StateHasChanged(); // Force UI update
     }
 
     private async Task TranslatePage()
@@ -88,17 +153,14 @@
             return;
         }
 
-        // 🔹 Debugging: Log the values before making the API call
-        if (Item is Subscription subscription)
-        {
-            Console.WriteLine($"Before Translation API Call: PlanTitle='{subscription.PlanTitle}', PlanDescription='{subscription.PlanDescription}'");
-        }
+        // await GetExistTranslation(Service);
 
         if (ValidateRequiredFields(Item))
         {
             await ToastService.ShowErrorAsync("All required fields must be filled before translation.", "Validation Error");
             return;
         }
+
 
         SetPropertyIfExists(Item, "LangID", SelectedLangID);
         SetPropertyIfExists(Item, "BaseID", BaseID);
@@ -114,20 +176,9 @@
 
         try
         {
-            Console.WriteLine($"Translating {Item.GetType().GetProperty("PlanTitle")!.GetValue(Item)?.ToString() ?? "N/A"} to {SelectedLangID}...");
-
             var response = await TranslationService.TranslateAsync(Item, apiUrl);
 
-            if (response == null)
-            {
-                await ToastService.ShowErrorAsync("Translation service returned no response.", "Error");
-                return;
-            }
-
-            // 🔹 Log the raw response for debugging
-            Console.WriteLine($"Translation API Response: {System.Text.Json.JsonSerializer.Serialize(response)}");
-
-            if (response.Success == true)
+            if (response != null && response.Success == true)
             {
                 await OnTranslationSuccess.InvokeAsync();
                 IsPopupVisible = false;
@@ -135,13 +186,12 @@
             }
             else
             {
-                string errorMessage = response.ResponseEngMsg ?? "Translation failed. Please try again.";
+                string errorMessage = response!.ResponseEngMsg ?? "Translation failed. Please try again.";
                 await ToastService.ShowErrorAsync(errorMessage, "Error");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Translation Error: {ex.Message}");
             await ToastService.ShowErrorAsync("An unexpected error occurred.", "Error");
         }
         finally
@@ -160,39 +210,11 @@
                 var value = prop.GetValue(obj) as string;
                 if (string.IsNullOrWhiteSpace(value))
                 {
-                    return true; // Field is missing, return true (indicates validation failure)
+                    return false;
                 }
             }
         }
-        return false; // All fields are filled, return false (validation passed)
-    }
-
-    private async Task GetExistTranslation(object Service)
-    {
-        if (Service is SliderMenuService sliderMenuService && Item is SliderMenu menuItem)
-        {
-            await LoadTranslation(sliderMenuService.GetByLangAsync, menuItem);
-        }
-        else if (Service is HeaderMenuService headerMenuService && Item is HeaderMenu headerMenuItem)
-        {
-            await LoadTranslation(headerMenuService.GetByLangAsync, headerMenuItem);
-        }
-        else if (Service is FooterMenuService footerMenuService && Item is FooterMenu footerMenuItem)
-        {
-            await LoadTranslation(footerMenuService.GetByLangAsync, footerMenuItem);
-        }
-        else if (Service is FAQService fAQService && Item is FAQ faq)
-        {
-            await LoadTranslation(fAQService.GetByLangAsync, faq);
-        }
-        else if (Service is FixedPageService fixedPageService && Item is FixedPage fixedPage)
-        {
-            await LoadTranslation(fixedPageService.GetByLangAsync, fixedPage);
-        }
-        else if (Service is SubscriptionService subscriptionService && Item is Subscription subscription)
-        {
-            await LoadTranslation(subscriptionService.GetByLangAsync, subscription);
-        }
+        return true;
     }
 
     private async Task LoadTranslation<T>(Func<int, long, Task<List<T>>> getTranslationFunc, T item) where T : class
@@ -205,22 +227,15 @@
             foreach (var property in typeof(T).GetProperties())
             {
                 var translatedValue = property.GetValue(translation);
-                if (translatedValue != null && property.Name != null) { property.SetValue(item, translatedValue); }
+                if (translatedValue != null)
+                {
+                    property.SetValue(item, translatedValue);
+                }
             }
         }
         else
         {
-            Console.WriteLine($"No existing translation found for BaseID {BaseID}, LangID {SelectedLangID}. Keeping original values.");
         }
-    }
-
-    private async Task OnLanguageChange()
-    {
-        if (Service != null)
-        {
-            await GetExistTranslation(Service);
-        }
-        StateHasChanged();
     }
 
     private string? GetTranslateApiUrl()
@@ -244,28 +259,55 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to set property {propertyName}: {ex.Message}");
             }
         }
     }
 
-    // private void ResetItem()
-    // {
-    //     if (Item == null) return;
+    private async Task ShowTranslationPopup()
+    {
+        Console.WriteLine($"Item Type: {Item?.GetType().Name}");
+        if (Item != null)
+        {
+            foreach (var prop in Item.GetType().GetProperties())
+            {
+                Console.WriteLine($"{prop.Name} = {prop.GetValue(Item)}");
+            }
+        }
+        if (Service != null)
+        {
+            await GetExistTranslation(Service);
+        }
 
-    //     var itemType = Item.GetType();
-    //     var newInstance = Activator.CreateInstance(itemType);
+        IsPopupVisible = true;
+        StateHasChanged();
+    }
 
-    //     if (newInstance != null)
-    //     {
-    //         foreach (var property in itemType.GetProperties())
-    //         {
-    //             var defaultValue = property.GetValue(newInstance);
-    //             property.SetValue(Item, defaultValue);
-    //         }
-    //     }
+    private void ClearItemAttributes(object obj)
+    {
+        var itemType = obj.GetType();
+        foreach (var property in itemType.GetProperties())
+        {
+            if (!property.CanWrite) continue;
 
-    //     Console.WriteLine("Item reset to default values.");
-    // }
+            if (property.PropertyType == typeof(string))
+            {
+                property.SetValue(obj, string.Empty); // Set strings to empty
+            }
+            else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(long) ||
+                     property.PropertyType == typeof(decimal) || property.PropertyType == typeof(float) ||
+                     property.PropertyType == typeof(double))
+            {
+                property.SetValue(obj, 0); // Set numbers to 0
+            }
+            else if (property.PropertyType == typeof(bool))
+            {
+                property.SetValue(obj, false); // Set booleans to false
+            }
+            else if (property.PropertyType.IsClass)
+            {
+                property.SetValue(obj, null); // Set complex objects to null
+            }
+        }
+    }
 
 }
