@@ -1,0 +1,14 @@
+﻿@inherits LayoutComponentBase
+@inject AuthService AuthService
+
+<AuthGuard>
+    <div class="bb-page">
+        <NavMenu />
+        <main>
+            <HeaderNavMenu User="AuthService.User"></HeaderNavMenu>
+            <article class="content pt-5 px-4 ms-0">
+                @Body
+            </article>
+        </main>
+    </div>
+</AuthGuard>

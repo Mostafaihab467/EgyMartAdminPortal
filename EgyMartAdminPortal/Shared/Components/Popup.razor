@@ -1,0 +1,41 @@
+﻿@inject IJSRuntime JSRuntime
+
+@if (IsVisible)
+{
+    <div class="modal d-block" @onkeydown="HandleKeyPress" tabindex="0">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@Title</h5>
+                    <button type="button" class="btn-close" @onclick="() => IsVisible = false"></button>
+                </div>
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => IsVisible = false">Close</button>
+                    @if (OnSave.HasDelegate)
+                    {
+                        <button type="button" class="btn btn-primary" @onclick="OnSave">Save</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; } = false;
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await Save();
+        else if (e.Key == "Escape") IsVisible = false;
+    }
+
+    private async Task Save() => await OnSave.InvokeAsync();
+
+}

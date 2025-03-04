@@ -1,0 +1,52 @@
+﻿@inject IJSRuntime JS
+
+<div class="icon-picker">
+    <label for="iconSelect">Choose an Icon:</label>
+    <select id="iconSelect" class="form-select w-auto d-inline mx-2" @bind="SelectedIcon" @bind:event="onchange">
+        @foreach (var icon in Icons)
+        {
+            <option value="@icon">@icon</option>
+        }
+    </select>
+    <i class="fas fa-@SelectedIcon icon-preview"></i>
+</div>
+
+@code {
+    [Parameter] public List<string> Icons { get; set; } = new() { "sun", "moon", "star", "heart", "bell", "smile", "cog", "coffee" };
+    [Parameter] public string SelectedIcon { get; set; } = "star";
+    [Parameter] public EventCallback<string> OnIconChanged { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectedIcon = await GetSavedIcon();
+    }
+
+    private async Task OnIconChangedHandler(ChangeEventArgs e)
+    {
+        SelectedIcon = e.Value?.ToString() ?? "star";
+        await SaveIconPreference(SelectedIcon);
+        await OnIconChanged.InvokeAsync(SelectedIcon);
+    }
+
+    private async Task<string> GetSavedIcon()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<string>("localStorage.getItem", "selectedIcon");
+            return !string.IsNullOrEmpty(result) ? result : "star";
+        }
+        catch
+        {
+            return "star";
+        }
+    }
+
+    private async Task SaveIconPreference(string icon)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "selectedIcon", icon);
+        }
+        catch { }
+    }
+}

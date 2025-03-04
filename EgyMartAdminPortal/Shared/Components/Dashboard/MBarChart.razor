@@ -1,0 +1,59 @@
+﻿<div class="card shadow-sm p-4">
+    <div class="bg-white d-flex fs-6 fw-bold justify-content-between align-items-center mb-3 p-0 border-bottom-0">
+        <h6 class="fw-bold">@Title</h6>
+        <span class="text-muted mb-1 fs-15">Last Week</span>
+    </div>
+
+    <svg width="100%" height="150" viewBox="0 0 250 50">
+        @foreach (var data in SortedData)
+        {
+            <rect x="@GetXPosition(data.ViewDay!)" y="@GetYPosition(data.ViewsCount)"
+            width="25" height="@GetBarHeight(data.ViewsCount)"
+            fill="#990202" rx="4"></rect>
+
+            <g>
+                <text x="@(GetXPosition(data.ViewDay!) + 12.5)"
+                y="@(GetYPosition(data.ViewsCount) - 5)"
+                text-anchor="middle"
+                font-size="10"
+                fill="gray">
+                    @data.ViewsCount
+                </text>
+            </g>
+        }
+    </svg>
+
+    <div class="d-flex justify-content-between mt-1" style="margin-right: 0.6rem !important;
+  margin-left: 0.8rem !important;">
+        @foreach (var day in WeekDays)
+        {
+            <span class="text-muted small">@day</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Title";
+    [Parameter] public List<ViewDayData> ViewData { get; set; } = new();
+    private readonly string[] WeekDays = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" };
+
+    private IEnumerable<ViewDayData> SortedData => WeekDays.Select(d =>
+    (ViewData ?? new List<ViewDayData>())
+    .FirstOrDefault(v => GetShortDay(v.ViewDay!) == d) ?? new ViewDayData { ViewDay = d, ViewsCount = 0 });
+
+
+    private int GetXPosition(string day) => Array.IndexOf(WeekDays, GetShortDay(day)) * 35 + 10;
+    private int GetYPosition(int count) => 100 - (count * 90 / 100);
+    private int GetBarHeight(int count) => (count * 90 / 100);
+    private string GetShortDay(string fullDay) => fullDay[..2]; // Convert "Monday" to "Mo"
+}
+
+<style>
+    .card {
+        max-width: 250px;
+        border-radius: 10px;
+    }
+    .fs-15{
+        font-size:12px;
+    }
+</style>

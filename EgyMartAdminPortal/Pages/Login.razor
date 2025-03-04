@@ -1,0 +1,93 @@
+﻿@page "/login"
+@inject NavigationManager NavigationManager
+@inject AuthService AccountService
+@inject ToastrService ToastService
+
+<div class="app-content content p-0 m-0">
+    <div class="content-overlay"></div>
+    <div class="header-navbar-shadow"></div>
+    <div class="content-wrapper">
+        <div class="content-header row">
+        </div>
+        <div class="content-body">
+            <div class="auth-wrapper auth-basic">
+                <div class="auth-inner">
+                    <!-- Login basic -->
+                    <div class="card mb-0">
+                        <div class="card-body">
+                            <a href="index.html" class="brand-logo w-100 d-flex justify-content-center">
+                                <img src="@logo" style="width:50%" class="justify-content-center d-flex" alt="logo" />
+                            </a>
+
+                            <h4 class="card-title mb-1">Welcome to<br> Egypt Mart Admin Portal! 👋</h4>
+                            <p class="card-text mb-2">Please sign-in to your account and start the adventure</p>
+
+                            <EditForm Model="@loginModel" OnValidSubmit="@AdminLogin">
+                                <DataAnnotationsValidator />
+                                <div class="mb-1">
+                                    <label for="login-email" class="form-label">Email</label>
+                                    <TextInput id="login-email" class="form-control input" @bind-Value="@loginModel.Email" placeholder="Enter Your Email" />
+                                    <ValidationMessage For="@(() => loginModel.Email)" />
+                                </div>
+                                <div class="mb-1">
+                                    <div class="d-flex justify-content-between">
+                                        <label for="login-password" class="form-label">Password</label>
+                                        <a disabled>
+                                            <small>Forgot Password?</small>
+                                        </a>
+                                    </div>
+                                    <PasswordInput id="login-password" class="form-control input" @bind-Value="@loginModel.Password" placeholder="Enter Your Password" />
+                                    <ValidationMessage For="@(() => loginModel.Password)" />
+                                </div>
+                                <div class="mb-1">
+                                    <div class="form-check">
+                                        <InputCheckbox id="remember-me" @bind-Value="@loginModel.RememberMe" />
+                                        <label for="remember-me" class="form-check-label">Remember Me</label>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary w-100" type="submit">Login</button>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string logo = "images/logo/newlogo.png";
+    private LoginModel loginModel = new();
+    private EditContext? editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(loginModel);
+        base.OnInitializedAsync();
+    }
+
+    public void HandleOnValidSubmit()
+    {
+        // additional check
+        if (editContext!.Validate())
+        {
+            // do something
+            // submit the form
+            Console.WriteLine("Login successful");
+        }
+    }
+
+    private async Task AdminLogin()
+    {
+        var response = await AccountService.LoginAsync(loginModel.Email, loginModel.Password);
+        if (response.Success)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Invalid Email or Password", "Error");
+        }
+    }
+}

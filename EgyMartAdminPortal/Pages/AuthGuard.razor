@@ -1,0 +1,26 @@
+﻿@using System.Text.Json
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await AuthService.GetToken();
+
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            await AuthService.GetUser();
+        }
+    }
+}
+
+@ChildContent
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

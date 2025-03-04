@@ -1,0 +1,90 @@
+﻿@typeparam TItem
+@inject NavigationManager NavManager
+
+<PageSelect PageSize="PageSize" PageSizeChanged="OnPageSizeChanged" />
+
+<!-- Rows Per Page Selector -->
+
+<table class="table">
+    <thead>
+        <tr>
+            @foreach (var column in Columns)
+            {
+                <th>@column</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @if (PagedItems == null || PagedItems.Count == 0)
+        {
+            <tr>
+                <td colspan="@Columns.Count" class="text-center">No data available</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var item in PagedItems)
+            {
+                <tr>
+                    @foreach (var column in Columns)
+                    {
+                        <td>@GetPropertyValue(item, column)</td>
+                    }
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<!-- Pagination Controls -->
+<MPagination Items="Items" PageSize="PageSize" CurrentPage="_currentPage" OnPageChanged="OnPageChanged" />
+
+@code {
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    private int _currentPage = 1;
+    private List<string> Columns = new();
+    private List<TItem> PagedItems = new();
+    private int _pageSize = 25;
+    public int PageSize
+    {
+        get => _pageSize;
+        set
+        {
+            _pageSize = value;
+            _currentPage = 1; // Reset to page 1 when changing page size
+            UpdatePagedItems();
+        }
+    }
+
+    private void OnPageSizeChanged(int newSize)
+    {
+        PageSize = newSize;
+        UpdatePagedItems();
+    }
+
+    private void OnPageChanged(int page)
+    {
+        _currentPage = page;
+        UpdatePagedItems();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Items != null && Items.Any())
+        {
+            Columns = typeof(TItem).GetProperties().Select(p => p.Name).ToList();
+            UpdatePagedItems();
+        }
+    }
+
+    private void UpdatePagedItems()
+    {
+        PagedItems = Items.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private object GetPropertyValue(TItem item, string propertyName)
+    {
+        var prop = typeof(TItem).GetProperty(propertyName);
+        return prop?.GetValue(item) ?? "";
+    }
+}

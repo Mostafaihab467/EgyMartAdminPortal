@@ -1,0 +1,89 @@
+﻿@typeparam T
+
+@if (IsEditing)
+{
+    @if (InputType == "textarea")
+    {
+        <textarea class="form-control w-75"
+                  rows="4"
+                  @ref="InputElement"
+                  @oninput="HandleInputChange"
+                  @onkeyup="HandleKeyPress"
+                  @onblur="SaveEdit">@EditingValue</textarea>
+    }
+    else
+    {
+    <input type="@InputType"
+           class="form-control w-75"
+           value="@EditingValue"
+           @ref="InputElement"
+           @oninput="HandleInputChange"
+           @onkeyup="HandleKeyPress"
+           @onblur="SaveEdit" />
+    }
+}
+else
+{
+    <span class="cursor-pointer w-75" @onclick="StartEditing">@Value</span>
+}
+
+@code {
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+    [Parameter] public string InputType { get; set; } = "text";
+
+    private bool IsEditing { get; set; } = false;
+    private string EditingValue { get; set; } = "";
+    private ElementReference InputElement { get; set; }
+
+    private async void StartEditing()
+    {
+        IsEditing = true;
+        EditingValue = GetValueAsString();
+        await Task.Delay(50);
+        await InputElement.FocusAsync();
+    }
+
+    private string GetValueAsString()
+    {
+        return Value?.ToString() ?? "";
+    }
+
+    private void HandleInputChange(ChangeEventArgs e)
+    {
+        EditingValue = e.Value?.ToString() ?? "";
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            if (InputType == "textarea" && e.ShiftKey)
+            {
+                EditingValue += "\n";
+            }
+            else
+            {
+                await SaveEdit();
+            }
+        }
+        else if (e.Key == "Escape")
+        {
+            IsEditing = false;
+        }
+    }
+
+    private async Task SaveEdit()
+    {
+        IsEditing = false;
+
+        if (typeof(T) == typeof(int) && int.TryParse(EditingValue, out int intValue))
+        {
+            await ValueChanged.InvokeAsync((T)(object)intValue);
+        }
+        else if (typeof(T) == typeof(string))
+        {
+            await ValueChanged.InvokeAsync((T)(object)EditingValue);
+        }
+    }
+}

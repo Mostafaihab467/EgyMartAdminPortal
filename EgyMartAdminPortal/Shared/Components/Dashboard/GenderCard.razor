@@ -1,0 +1,63 @@
+﻿@inject DashboardService DashboardService;
+
+<div class="card shadow-sm p-4">
+    <div class="bg-white d-flex fs-6 fw-bold justify-content-between align-items-center mb-3 p-0 border-bottom-0">
+        <h6 class="fw-bold">View by Gender</h6>
+    </div>
+
+    <div class="position-relative mx-auto mb-3" style="width: 120px; height: 120px;">
+        <svg width="120" height="120" viewBox="0 0 36 36">
+            <!-- Female Stroke -->
+            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#990202" stroke-width="3">
+                <title>Female: @FemalePercentage.ToString("0.0")%</title>
+            </circle>
+
+            <!-- Male Stroke -->
+            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#FF9D23" stroke-width="3"
+                    stroke-dasharray="@MaleStrokeDash" stroke-dashoffset="0">
+                <title>Male: @MalePercentage.ToString("0.0")%</title>
+            </circle>
+
+            <!-- Circular Background for Text -->
+            <circle cx="18" cy="18" r="12" fill="white" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" filter="url(#shadow)" />
+
+            <!-- Center Icon -->
+            <text x="50%" y="53%" text-anchor="middle" alignment-baseline="middle" class="fw-bold" font-size="6" fill="#990202">⚥</text>
+
+            <!-- SVG Shadow Filter -->
+            <defs>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="rgba(0,0,0,0.2)" />
+                </filter>
+            </defs>
+        </svg>
+    </div>
+
+    <!-- Legend -->
+    <div class="d-flex justify-content-between small my-2">
+        <span class="text-warning">● Male</span>
+        <span class="text-danger">● Female</span>
+    </div>
+</div>
+
+@code {
+    public int MaleCount { get; set; }
+    public int FemaleCount { get; set; }
+
+    private double MalePercentage => TotalCount == 0 ? 0 : (double)MaleCount / TotalCount * 100;
+    private double FemalePercentage => TotalCount == 0 ? 0 : (double)FemaleCount / TotalCount * 100;
+    private int TotalCount => MaleCount + FemaleCount;
+
+    private string MaleStrokeDash => $"{MalePercentage}, 100";
+    private string FemaleStrokeDash => $"{FemalePercentage}, 100";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await DashboardService.TotalProductViewByGender();
+        if (result.Any())
+        {
+            MaleCount = result.FirstOrDefault(x => x.Title == "Male")?.ViewsCount ?? 0;
+            FemaleCount = result.FirstOrDefault(x => x.Title == "Female")?.ViewsCount ?? 0;
+        }
+    }
+}

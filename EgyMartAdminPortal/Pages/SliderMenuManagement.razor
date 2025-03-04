@@ -1,0 +1,254 @@
+﻿@page "/slider-menu"
+@inject SliderMenuService SliderMenuService
+@inject ToastrService ToastService
+
+<PageTitle>SliderMenu Management</PageTitle>
+<h3>SliderMenuManagement</h3>
+
+<div class="mt-2">
+    <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
+</div>
+
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync">
+    <div class="form-group">
+        <label for="mainTitle">Main Title</label>
+        <input type="text" class="form-control" id="mainTitle" @bind="newItem.MainTitle" @ref="itemRef" />
+    </div>
+    <div class="form-group">
+        <label for="shortTitle">Short Title</label>
+        <input type="text" class="form-control" id="shortTitle" @bind="newItem.ShortTitle" />
+    </div>
+    <div class="form-group">
+        <label for="call2ActionMsg">Action Msg</label>
+        <input type="text" class="form-control" id="call2ActionMsg" @bind="newItem.Call2ActionMsg" />
+    </div>
+    <div class="form-group">
+        <label for="imageURL">Image Url</label>
+        <input type="text" class="form-control" id="linkIcon" @bind="newItem.ImageURL" />
+    </div>
+    <div class="form-group">
+        <label for="call2ActionURL">Action Url</label>
+        <input type="text" class="form-control" id="call2ActionURL" @bind="newItem.Call2ActionURL" />
+    </div>
+    <div class="form-group">
+        <label for="displayOrder">Display Order</label>
+        <input type="number" class="form-control" id="displayOrder" @bind="newItem.DisplayOrder" />
+    </div>
+</Popup>
+
+<div class="mt-3 text-center">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+@if (!isLoading)
+{
+    @if (allItems.Count == 0)
+    {
+        <p class="text-center">@notFound</p>
+    }
+    else
+    {
+        <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Main Title</th>
+                    <th>Short Title</th>
+                    <th>Action Msg</th>
+                    <th>Image Url</th>
+                    <th>Action Url</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in pagedItems)
+                {
+                    <tr>
+                        <td class="cursor-pointer">
+                            <EditableField T="string" Value="@item.MainTitle" ValueChanged="value => SaveEdit(item, nameof(item.MainTitle), value)" />
+                        </td>
+                        <td class="cursor-pointer">
+                            <EditableField T="string" Value="@item.ShortTitle" ValueChanged="value => SaveEdit(item, nameof(item.ShortTitle), value)" />
+                        </td>
+                        <td class="cursor-pointer">
+                            <EditableField T="string" Value="@item.Call2ActionMsg" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
+                        </td>
+                        <td class="cursor-pointer">
+                            <EditableField T="string" Value="@item.ImageURL" ValueChanged="value => SaveEdit(item, nameof(item.ImageURL), value)" />
+                        </td>
+                        <td class="cursor-pointer">
+                            <EditableField T="string" Value="@item.Call2ActionURL" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
+                        </td>
+                        <td class="cursor-pointer">
+                            @if (item.IsActive)
+                            {
+                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">Active</Badge>
+                            }
+                            else
+                            {
+                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">Not Active</Badge>
+                            }
+                        </td>
+                        <td>
+                            <TranslatePopup Item="item" Service="SliderMenuService" BaseID="item.SliderID" OnTranslationSuccess="Refresh">
+                                <label for="mainTitle">Main Title</label>
+                                <input id="mainTitle" class="form-control" @bind="item.MainTitle" />
+                                <label for="shortTitle">Short Title</label>
+                                <input id="shortTitle" class="form-control" @bind="item.ShortTitle" />
+                                <label for="call2ActionMsg">Action Msg</label>
+                                <input id="call2ActionMsg" class="form-control" @bind="item.Call2ActionMsg" />
+                                <label for="imageURL">Image Url</label>
+                                <input id="imageURL" class="form-control" @bind="item.ImageURL" />
+                            </TranslatePopup>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+<!-- Pagination Component -->
+<MPagination TItem="SliderMenu"
+             Items="allItems"
+             CurrentPage="@CurrentPage"
+             PageSize="@PageSize"
+             OnPageChanged="HandlePageChanged" />
+
+@code {
+    private List<SliderMenu> allItems = new();
+    private List<SliderMenu> pagedItems = new();
+    private SliderMenu newItem = new();
+    public ElementReference itemRef;
+
+    private bool isLoading = true;
+    private string notFound = "No Pages Found";
+    private string popupTitle = "Add New Page";
+    private bool showPopup;
+    private int CurrentPage = 1;
+    private int PageSize = 25;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetAsync();
+    }
+
+    private void ShowPopup()
+    {
+        showPopup = true;
+        newItem = new SliderMenu();
+        StateHasChanged();
+        Task.Delay(100).ContinueWith(async _ => await itemRef.FocusAsync());
+    }
+
+    private async Task CreateAsync()
+    {
+        var response = await SliderMenuService.CreateAsync(newItem);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await ToastService.ShowSuccessAsync("Menu Created Successfully", "Success");
+            showPopup = false;
+            await GetAsync();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error While Creating New Menu", "Error");
+        }
+
+    }
+
+    private async Task SaveEdit(SliderMenu item, string fieldName, object newValue)
+    {
+        showPopup = false;
+        var property = typeof(SliderMenu).GetProperty(fieldName);
+        if (property == null) return;
+
+        var currentValue = property.GetValue(item);
+        if (currentValue?.ToString() == newValue?.ToString()) return;
+
+        if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
+        {
+            property.SetValue(item, intValue);
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            property.SetValue(item, newValue!.ToString());
+        }
+
+        var response = await SliderMenuService.EditAsync(item);
+        if (response.IsSuccessStatusCode)
+        {
+            await ToastService.ShowSuccessAsync("Update successful", "Success");
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error updating menu", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task GetAsync()
+    {
+        var response = await SliderMenuService.GetAsync();
+        if (response != null)
+        {
+            allItems = response;
+            isLoading = false;
+            UpdatePagedItems();
+        }
+        else
+        {
+            isLoading = false;
+            await ToastService.ShowErrorAsync("Error While Getting Items", "Error");
+        }
+    }
+
+    private async Task ToggleStatus(int ID, bool currentStatus)
+    {
+        showPopup = false;
+        var item = allItems.FirstOrDefault(i => i.SliderID == ID);
+
+        if (item == null)
+        {
+            await ToastService.ShowErrorAsync("Item not found", "Error");
+            return;
+        }
+
+        item.IsActive = !currentStatus;
+        var response = await SliderMenuService.ChangeStatusAsync(ID, item.IsActive);
+
+        if (response.Data == 0)
+        {
+            item.IsActive = currentStatus;
+            await ToastService.ShowErrorAsync("Error updating status", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private void UpdatePagedItems()
+    {
+        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task Refresh()
+    {
+        await ToastService.ShowSuccessAsync("Menu translation completed!", "Success");
+    }
+}

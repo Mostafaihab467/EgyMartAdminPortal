@@ -1,0 +1,153 @@
+﻿@page "/supplier-verification"
+@inject UserService UserService
+@inject ToastrService ToastService
+
+
+<PageTitle>Pending Supplier Verification</PageTitle>
+<h3>Pending Supplier Verification</h3>
+
+<div class="mt-3 text-center">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+@if (!isLoading)
+{
+    @if (allItems.Count == 0)
+    {
+        <p class="text-center">@notFound</p>
+    }
+    else
+    {
+        <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>UserID</th>
+                    <th>Display Name</th>
+                    <th>User Name</th>
+                    <th>Registered Since</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in pagedItems)
+                {
+                    <tr id="user-@user.SupplierID" class="@(user.IsDeleting ? "slide-out" : "")">
+                        <td>@user.SupplierID</td>
+                        <td>@user.DisplayName</td>
+                        <td>@user.UserName</td>
+                        <td>@user.RegisterdSince</td>
+                        <td>
+                            @if (!user.IsVerified)
+                            {
+                                <Button class="btn btn-primary" TooltipTitle="Verify" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Verify" @onclick="() => VerifyUser(user.SupplierID)">
+                                    <span><i class="fas fa-user-check"></i></span>
+                                </Button>
+                            }
+                            else
+                            {
+                                <span class="text-success">Verified</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Component -->
+        <MPagination TItem="Supplier"
+                     Items="allItems"
+                     CurrentPage="@CurrentPage"
+                     PageSize="@PageSize"
+                     OnPageChanged="HandlePageChanged" />
+    }
+}
+
+@code {
+    private List<Supplier> allItems = new();
+    private List<Supplier> pagedItems = new();
+    private string notFound = "No Pending Suppliers Found";
+    private bool isLoading = true;
+
+    private int CurrentPage = 1;
+    private int PageSize = 25;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetPendingVerifySuppliersAsync();
+    }
+
+    private async Task GetPendingVerifySuppliersAsync()
+    {
+        try
+        {
+            var response = await UserService.GetPendingVerifySuppliersAsync();
+            if (response.Success)
+            {
+                allItems = response.Data;
+                isLoading = false;
+                UpdatePagedItems();
+            }
+            else
+            {
+                isLoading = false;
+                await ToastService.ShowErrorAsync(response.ResponseEngMsg);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private async Task VerifyUser(long userId)
+    {
+        var response = await UserService.VerifySupplierAsync(userId);
+
+        if (response == true)
+        {
+            await ToastService.ShowSuccessAsync("User Verified Successfully", "Success");
+            var user = allItems.FirstOrDefault(u => u.SupplierID == userId);
+            if (user == null) return;
+
+            // 1️⃣ Change button to "Verified"
+            user.IsVerified = true;
+            StateHasChanged();
+
+            // 2️⃣ Wait for 3 seconds before starting the animation
+            await Task.Delay(3000);
+
+            // 3️⃣ Start slide-out animation
+            user.IsDeleting = true;
+            StateHasChanged();
+
+            // 4️⃣ Wait for the animation to complete (0.5s)
+            await Task.Delay(500);
+
+            // 5️⃣ Remove the user from the list
+            allItems.Remove(user);
+            UpdatePagedItems();
+            StateHasChanged();
+        }
+    }
+
+    private void UpdatePagedItems()
+    {
+        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedItems();
+
+    }
+}

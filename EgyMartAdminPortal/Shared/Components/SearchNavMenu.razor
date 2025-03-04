@@ -1,0 +1,29 @@
+﻿@inject NavigationManager Navigation
+
+<li class="nav-item nav-search">
+    <a class="nav-link nav-link-search" href="" @onclick="ToggleSearch">
+        <i class="fas fa-search"></i>
+    </a>
+
+    @if (IsSearchOpen)
+    {
+        <div class="search-menu">
+            <div class="search-header">
+                <input type="text" class="form-control" placeholder="Search..." @bind="SearchQuery" />
+                <div class="btn-close" @onclick="ToggleSearch">
+                    <i class="fas fa-times"></i>
+                    </div>
+            </div>
+        </div>
+    }
+</li>
+
+@code {
+    private bool IsSearchOpen = false;
+    private string SearchQuery = "";
+
+    private void ToggleSearch()
+    {
+        IsSearchOpen = !IsSearchOpen;
+    }
+}

@@ -1,0 +1,47 @@
+﻿<div class="card d-flex flex-row align-items-center p-3 shadow-sm position-relative">
+    <!-- Icon with Background -->
+    <div class="rounded-circle d-flex justify-content-center align-items-center me-3"
+    style="width: 50px; height: 50px; background-color: @IconColorWithOpacity">
+        <i class="fa-solid fa-@Icon fs-5" style="color: @IconColor;"></i>
+    </div>
+
+    <!-- Value and Label -->
+    <div class="flex-grow-1">
+        <span class="fs-4 fw-bold d-block">@Value</span>
+        <span class="text-muted">@Label</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string IconColor { get; set; } = "#f8d7da";
+    [Parameter] public string Value { get; set; } = "0";
+    [Parameter] public string Label { get; set; } = "Label";
+
+    private string IconColorWithOpacity => ConvertHexToRgba(IconColor, 0.1);
+
+    private string ConvertHexToRgba(string hex, double opacity)
+    {
+        if (hex.StartsWith("#"))
+        {
+            hex = hex[1..]; // Remove '#'
+        }
+
+        if (hex.Length == 3) // Convert short hex to full
+        {
+            hex = string.Concat(hex.Select(c => $"{c}{c}"));
+        }
+
+        if (hex.Length == 6)
+        {
+            int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+            int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+            int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+            return $"rgba({r}, {g}, {b}, {opacity})";
+        }
+
+        return "rgba(248, 215, 218, 0.2)"; // Default fallback
+    }
+}
+
+

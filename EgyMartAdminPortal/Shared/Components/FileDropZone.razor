@@ -1,0 +1,48 @@
+﻿@page "/images"
+@inject IJSRuntime JS
+
+<div class="upload-container"
+     @ondragover="HandleDragOver"
+     @ondragleave="HandleDragLeave"
+     @ondrop="HandleDrop">
+
+    <label class="upload-box">
+        <InputFile OnChange="HandleFileSelection" multiple />
+        <p>Drop files here or click to upload</p>
+    </label>
+
+    <ul class="file-list">
+        @foreach (var file in UploadedFiles)
+        {
+            <li>@file.Name (@file.Size / 1024) KB</li>
+        }
+    </ul>
+</div>
+
+@code {
+    private List<IBrowserFile> UploadedFiles = new();
+
+    private void HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        UploadedFiles = e.GetMultipleFiles().ToList();
+        StateHasChanged();
+    }
+
+    private async Task HandleDragOver(DragEventArgs e)
+    {
+        // Prevent default to allow drop
+        await JS.InvokeVoidAsync("preventDefaultDrop", e);
+    }
+
+    private void HandleDragLeave(DragEventArgs e)
+    {
+        // Optional: Handle UI feedback when dragging out
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        // Prevent default behavior
+        await JS.InvokeVoidAsync("preventDefaultDrop", e);
+        // No direct access to files on drop (Blazor limitation)
+    }
+}
