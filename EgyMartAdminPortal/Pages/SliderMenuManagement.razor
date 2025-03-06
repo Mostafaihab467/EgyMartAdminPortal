@@ -95,7 +95,11 @@
                             }
                         </td>
                         <td>
-                            <TranslatePopup Item="@newItem" Service="SliderMenuService" BaseID="@item.SliderID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="SliderMenuService" BaseID="@item.SliderID"
+                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                {
+                    { "Call2ActionURL", item.Call2ActionURL }
+                })">
                                 <label for="mainTitle">Main Title</label>
                                 <input id="mainTitle" class="form-control" @bind="@newItem.MainTitle" />
                                 <label for="shortTitle">Short Title</label>

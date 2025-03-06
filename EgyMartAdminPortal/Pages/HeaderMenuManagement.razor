@@ -78,7 +78,11 @@
                                 <i class="fas fa-id-badge"></i>
                             </Button>
 
-                            <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID"
+                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                {
+                    { "TargetUrl", item.TargetUrl }
+                })">
                                 <label for="pageTitle">Page Title</label>
                                 <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
                             </TranslatePopup>
@@ -123,9 +127,13 @@
                                                     }
                                                 </td>
                                                 <td>
-                                                    <TranslatePopup Item="item" Service="HeaderMenuService" BaseID="child.MenuItemID" OnTranslationSuccess="Refresh">
+                                                    <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="child.MenuItemID"
+                                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                {
+                    { "TargetUrl", child.TargetUrl }
+                })">
                                                         <label for="mainItemTitle">Main Title</label>
-                                                        <input id="mainItemTitle" class="form-control" bind="@item.MenuItemTitle" />
+                                                        <input id="mainItemTitle" class="form-control" bind="@child.MenuItemTitle" />
                                                     </TranslatePopup>
                                                 </td>
                                             </tr>

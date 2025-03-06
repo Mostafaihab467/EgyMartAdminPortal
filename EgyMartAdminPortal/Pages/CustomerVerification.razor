@@ -49,6 +49,16 @@
                             {
                                 <span class="text-success">Verified</span>
                             }
+                            @if (!user.IsVerified)
+                            {
+                                <Button class="btn btn-primary" TooltipTitle="Deny" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Deny" @onclick="() => VerifyUser(user.CustomerID)">
+                                    <i class="fa-solid fa-ban"></i>
+                                </Button>
+                            }
+                            else
+                            {
+                                <span class="text-denger">Denied</span>
+                            }
                         </td>
                     </tr>
                 }
