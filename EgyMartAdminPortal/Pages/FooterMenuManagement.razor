@@ -15,8 +15,8 @@
         <input type="text" class="form-control" id="pageTitle" @bind="newItem.FooterItemTitle" @ref="itemRef" />
     </div>
     <div class="form-group">
-        <label for="pageBody">Page Body</label>
-        <textarea class="form-control" id="pageBody" @bind="@newItem.TargetUrl" rows="4" />
+        <label for="targetUrl">Target Url</label>
+        <input class="form-control" id="targetUrl" @bind="@newItem.TargetUrl" />
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
@@ -57,7 +57,6 @@
                 {
                     <tr>
                         <th data-bs-toggle="collapse" data-bs-target="#@item.FooterItemID" class="cursor-pointer" scope="row">
-                            <i class="fas fa-caret-right colored p-2 fs-6 @(expandedItems.Contains(item.FooterItemID) ? "rotate-45" : "")" @onclick="() => ToggleChildItems(item.FooterItemID)"></i>
                             <EditableField T="string" Value="@item.FooterItemTitle" ValueChanged="value => SaveEdit(item, nameof(item.FooterItemTitle), value)" />
                         </th>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.FooterItemID" class="cursor-pointer">
@@ -80,70 +79,10 @@
                             }
                         </td>
                         <td>
-                            <Button class="btn btn-primary d-inline-block" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => ShowPopup(item.FooterItemID)">
-                                <i class="fas fa-id-badge"></i>
-                            </Button>
-
-                            <TranslatePopup Item="item" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh">
                                 <label for="pageTitle">Page Title</label>
-                                <input id="pageTitle" class="form-control" @bind="item.FooterItemTitle" />
+                                <input id="pageTitle" class="form-control" @bind="@newItem.FooterItemTitle" />
                             </TranslatePopup>
-                        </td>
-                    </tr>
-                    <tr class="collapse @(expandedItems.Contains(item.FooterItemID) ? "show" : "")" id="@($"child-{item.FooterItemID}")" data-bs-parent=".table">
-                        <td colspan="5">
-                            @if (childItems.ContainsKey(item.FooterItemID) && childItems[item.FooterItemID].Any())
-                            {
-                                <p>Child Header Menu: @childItems[item.FooterItemID].Count</p>
-                                <table class="table childTable">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">MenuItem Title</th>
-                                            <th scope="col">Target Url</th>
-                                            <th scope="col">Display Order</th>
-                                            <th scope="col">Column Index</th>
-                                            <th scope="col">Status</th>
-                                            <th scope="col">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var child in childItems[item.FooterItemID])
-                                        {
-                                            <tr class="child">
-                                                <td class="cursor-pointer">
-                                                    <EditableField T="string" Value="@child.FooterItemTitle" ValueChanged="value => SaveEdit(child, nameof(child.FooterItemTitle), value)" />
-                                                </td>
-                                                <td class="cursor-pointer">
-                                                    <EditableField T="string" Value="@child.TargetUrl" ValueChanged="value => SaveEdit(child, nameof(child.TargetUrl), value)" />
-                                                </td>
-                                                <td class="cursor-pointer">
-                                                    <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(child, nameof(child.DisplayOrder), value)" />
-                                                </td>
-                                                <td class="cursor-pointer">
-                                                    @if (child.IsActive)
-                                                    {
-                                                        <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.FooterItemID, child.IsActive, false)">Active</Badge>
-                                                    }
-                                                    else
-                                                    {
-                                                        <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.FooterItemID, child.IsActive, false)">Not Active</Badge>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    <TranslatePopup Item="item" Service="FooterMenuService" BaseID="child.FooterItemID" OnTranslationSuccess="Refresh">
-                                                        <label for="mainItemTitle">Main Title</label>
-                                                        <input id="mainItemTitle" class="form-control" bind="@item.FooterItemTitle" />
-                                                    </TranslatePopup>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            }
-                            else
-                            {
-                                <p class="text-center">@notFound</p>
-                            }
                         </td>
                     </tr>
                 }
@@ -203,54 +142,12 @@
         {
             await ToastService.ShowSuccessAsync("Page Created Successfully", "Success");
             showPopup = false;
-            if (newItem.ParentID == 0)
-            {
                 await GetItemsAsync();
-            }
-            else
-            {
-                await GetChild(newItem.ParentID);
-            }
         }
         else
         {
             await ToastService.ShowErrorAsync("Error While Creating New Icon", "Error");
         }
-    }
-
-    private async Task GetChild(int ItemID)
-    {
-        // var response = await FooterMenuService.GetChildAsync(ItemID);
-        // if (response.Count > 0)
-        // {
-
-        //     childItems[ItemID] = response.Any() ? response : new List<FooterMenu>(); ✅ Ensure key exists
-        // }
-        // else
-        // {
-        //     notFound = "No Child Item Found";
-        //     childItems[ItemID] = new List<FooterMenu>();
-        // }
-        // ✅ Ensure UI updates
-        // StateHasChanged();
-    }
-
-    private async Task ToggleChildItems(int itemID)
-    {
-        showPopup = false;
-        if (expandedItems.Contains(itemID))
-        {
-            expandedItems.Remove(itemID);
-            childItems.Remove(itemID); // ✅ Collapse: Remove child data
-        }
-        else
-        {
-            expandedItems.Add(itemID);
-            await GetChild(itemID);
-        }
-
-        // Trigger UI refresh
-        StateHasChanged();
     }
 
     private void ShowPopup(int parentID)
@@ -310,7 +207,15 @@
         var response = await FooterMenuService.EditAsync(item);
         if (response.IsSuccessStatusCode)
         {
+            // Ensure the updated value is assigned to the list
+            var updatedItem = allItems.FirstOrDefault(i => i.FooterItemID == item.FooterItemID);
+            if (updatedItem != null)
+            {
+                property.SetValue(updatedItem, property.GetValue(item));
+            }
+
             await ToastService.ShowSuccessAsync("Update successful", "Success");
+            await GetItemsAsync();
         }
         else
         {
@@ -319,6 +224,7 @@
 
         StateHasChanged();
     }
+ 
 
     private void UpdatePagedItems()
     {

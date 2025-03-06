@@ -293,6 +293,7 @@
 
     private async Task Refresh()
     {
+        showPopup = false;
         await ToastService.ShowSuccessAsync("Page translation completed!", "Success");
     }
 }

@@ -63,12 +63,12 @@
                             }
                         </td>
                         <td>
-                            <TranslatePopup Item="item" Service="FixedPageService" BaseID="item.PageID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="FixedPageService" BaseID="@item.PageID" OnTranslationSuccess="Refresh">
                                 <label for="pageTitle">Page Title</label>
-                                <input id="pageTitle" class="form-control" @bind="newItem.PageTitle" />
+                                <input id="pageTitle" class="form-control" @bind="@newItem.PageTitle" />
 
                                 <label for="pageBody" class="mt-2">Answer</label>
-                                <textarea id="pageBody" class="form-control" @bind="newItem.PageBody"></textarea>
+                                <textarea id="pageBody" class="form-control" @bind="@newItem.PageBody"></textarea>
                             </TranslatePopup>
 
                         </td>

@@ -2,35 +2,37 @@
 
 @if (IsEditing)
 {
-    @if (InputType == "textarea")
-    {
-        <textarea class="form-control w-75"
-                  rows="4"
-                  @ref="InputElement"
-                  @oninput="HandleInputChange"
-                  @onkeyup="HandleKeyPress"
-                  @onblur="SaveEdit">@EditingValue</textarea>
-    }
-    else
-    {
-    <input type="@InputType"
+    <input type="text"
            class="form-control w-75"
            value="@EditingValue"
            @ref="InputElement"
            @oninput="HandleInputChange"
            @onkeyup="HandleKeyPress"
            @onblur="SaveEdit" />
-    }
 }
 else
 {
-    <span class="cursor-pointer w-75" @onclick="StartEditing">@Value</span>
+    @if (InputType == "ionIcon")
+    {
+        <ion-icon name="@Value"
+                  class="cursor-pointer w-75 fs-4"
+                  @onclick="StartEditing"></ion-icon>
+    }
+    else if (InputType == "faIcon")
+    {
+        <i class="@Value cursor-pointer w-75 fs-4"
+           @onclick="StartEditing"></i>
+    }
+    else
+    {
+        <span class="cursor-pointer w-75" @onclick="StartEditing">@Value</span>
+    }
 }
 
 @code {
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
-    [Parameter] public string InputType { get; set; } = "text";
+    [Parameter] public string InputType { get; set; } = "text"; // Supports "text", "ionIcon", "faIcon"
 
     private bool IsEditing { get; set; } = false;
     private string EditingValue { get; set; } = "";
@@ -58,14 +60,7 @@ else
     {
         if (e.Key == "Enter")
         {
-            if (InputType == "textarea" && e.ShiftKey)
-            {
-                EditingValue += "\n";
-            }
-            else
-            {
-                await SaveEdit();
-            }
+            await SaveEdit();
         }
         else if (e.Key == "Escape")
         {

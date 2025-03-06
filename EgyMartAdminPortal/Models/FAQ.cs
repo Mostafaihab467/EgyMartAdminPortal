@@ -14,7 +14,7 @@ namespace EgyMartAdminPortal.Models
         [Required(ErrorMessage = "Answer is required.")]
         public string QAnswer { get; set; }
         public int DisplayOrder { get; set; }
-        public int BaseID { get; set; }
+        public long BaseID { get; set; }
         public int LangID { get; set; }
         public bool IsActive { get; set; }
     }

@@ -64,7 +64,8 @@ namespace EgyMartAdminPortal.Services
                 FooterItemID = item.FooterItemID,
                 FooterItemTitle = item.FooterItemTitle,
                 TargetUrl = item.TargetUrl,
-                DisplayOrder = item.DisplayOrder
+                DisplayOrder = item.DisplayOrder,
+                ColumnIndex = item.ColumnIndex
             };
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/Edit", request);
             return response;

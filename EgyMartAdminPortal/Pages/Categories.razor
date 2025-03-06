@@ -55,7 +55,7 @@
                     <tr>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer" scope="row">
                             <i class="fas fa-caret-right colored p-2 fs-6 @(expandedItems.Contains(item.CategoryID) ? "rotate-45" : "")" @onclick="() => ToggleChildItems(item.CategoryID)"></i>
-                            <i class="@item.CategoryImageURL" style="font-size: 24px;"></i>
+                            <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(item.CategoryImageURL), value)" InputType="faIcon" />
                         </td>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer">
                             <EditableField T="string" Value="@item.CategoryTitle" ValueChanged="value => SaveEdit(item, nameof(item.CategoryTitle), value)" />
@@ -63,14 +63,14 @@
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="ps-5 cursor-pointer">
                             <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
                         </td>
-                        <td class="">
-                            @if (!item.IsActive)
+                        <td class="cursor-pointer">
+                            @if (item.IsActive)
                             {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, false)">Active</Badge>
+                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">Active</Badge>
                             }
                             else
                             {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, false)">Not Active</Badge>
+                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">Not Active</Badge>
                             }
                         </td>
                         <td>
@@ -97,14 +97,14 @@
                                         @foreach (var child in childItems[item.CategoryID])
                                         {
                                             <tr class="child">
-                                                <td><i class="@child.CategoryImageURL" style="font-size: 24px;"></i></td>
+                                                <td><EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(child.CategoryImageURL), value)" InputType="faIcon" /></td>
                                                 <td>
                                                     <EditableField T="string" Value="@child.CategoryTitle" ValueChanged="value => SaveEdit(child, nameof(child.CategoryTitle), value)" />
                                                 </td>
                                                 <td>
                                                     <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(child.DisplayOrder), value)" />
                                                 </td>
-                                                <td class="">
+                                                <td class="cursor-pointer">
                                                     @if (child.IsActive)
                                                     {
                                                         <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">Active</Badge>
@@ -162,11 +162,6 @@
         await GetCategoriesAsync();
     }
 
-    private void ChangeStatus()
-    {
-        Console.WriteLine("ChangeStatus clicked!");
-    }
-
     private void ShowPopup(long ParentID)
     {
         showPopup = true;
@@ -180,6 +175,7 @@
     {
         if (e.Key == "Enter")
         {
+            showPopup = false;
             await CreateCategory();
         }
         else if (e.Key == "Escape")
@@ -275,11 +271,11 @@
         showPopup = false;
         var item = isParent
             ? allItems.FirstOrDefault(i => i.CategoryID == itemID)
-            : childItems.Values.SelectMany(list => list).FirstOrDefault(i => i.ParentID == itemID);
+            : childItems.Values.SelectMany(list => list).FirstOrDefault(i => i.CategoryID == itemID);
 
         if (item == null)
         {
-            //await ToastService.ShowErrorAsync("Item not found", "Error");
+            await ToastService.ShowErrorAsync("Item not found", "Error");
             return;
         }
 
@@ -290,7 +286,7 @@
         if (!response.IsSuccessStatusCode)
         {
             item.IsActive = currentStatus;
-            //await ToastService.ShowErrorAsync("Error updating status", "Error");
+            await ToastService.ShowErrorAsync("Error updating status", "Error");
         }
 
         StateHasChanged();

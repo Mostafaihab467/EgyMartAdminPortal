@@ -78,9 +78,9 @@
                                 <i class="fas fa-id-badge"></i>
                             </Button>
 
-                            <TranslatePopup Item="item" Service="HeaderMenuService" BaseID="item.MenuItemID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID" OnTranslationSuccess="Refresh">
                                 <label for="pageTitle">Page Title</label>
-                                <input id="pageTitle" class="form-control" @bind="item.MenuItemTitle" />
+                                <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
                             </TranslatePopup>
                         </td>
                     </tr>
@@ -344,6 +344,7 @@
 
     private async Task Refresh()
     {
+        showPopup = false;
         await ToastService.ShowSuccessAsync("Menu translation completed!", "Success");
     }
 }

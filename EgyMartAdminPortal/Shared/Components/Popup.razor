@@ -2,7 +2,7 @@
 
 @if (IsVisible)
 {
-    <div class="modal d-block" @onkeydown="HandleKeyPress" tabindex="0">
+    <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1" role="dialog">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -22,6 +22,7 @@
             </div>
         </div>
     </div>
+    <div class="modal-backdrop fade show"></div>
 }
 
 @code {

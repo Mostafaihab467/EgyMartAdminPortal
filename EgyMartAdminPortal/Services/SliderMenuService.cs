@@ -16,7 +16,7 @@ namespace EgyMartAdminPortal.Services
         public async Task<List<SliderMenu>> GetAsync()
         {
             var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<SliderMenu>>>($"{ApiUrl}/GetList"))!;
-            return response.Data;
+            return response.Data ?? [];
         }
         
         public async Task<List<SliderMenu>> GetByLangAsync(int langID,long baseID)
@@ -47,7 +47,8 @@ namespace EgyMartAdminPortal.Services
                 ShortTitle = item.ShortTitle,
                 MainTitle = item.MainTitle,
                 Call2ActionMsg = item.Call2ActionMsg,
-                Call2ActionURL = item.Call2ActionURL
+                Call2ActionURL = item.Call2ActionURL,
+                DisplayOrder = item.DisplayOrder
             };
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/Edit/{item.SliderID}", request);
             return response;

@@ -71,11 +71,11 @@
                             }
                         </td>
                         <td>
-                            <TranslatePopup Item="item" Service="FAQService" BaseID="item.Qid" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="FAQService" BaseID="item.Qid" OnTranslationSuccess="Refresh">
                                 <label for="qTitle">Question Title</label>
-                                <input id="qTitle" class="form-control" @bind="item.QTitle" />
+                                <input id="qTitle" class="form-control" @bind="@newItem.QTitle" />
                                 <label for="qAnswer" class="mt-2">Answer</label>
-                                <textarea id="qAnswer" class="form-control" @bind="item.QAnswer" rows="3"></textarea>
+                                <textarea id="qAnswer" class="form-control" @bind="@newItem.QAnswer" rows="3"></textarea>
                             </TranslatePopup>
                         </td>
                     </tr>

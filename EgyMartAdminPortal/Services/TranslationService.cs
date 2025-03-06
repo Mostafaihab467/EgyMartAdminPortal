@@ -20,12 +20,8 @@ namespace EgyMartAdminPortal.Services
                 var response = await _httpClient.PostAsJsonAsync($"{apiUrl}/Translate", item);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
-                Console.WriteLine($"Response Status: {response.StatusCode}");
-                Console.WriteLine($"Raw API Response: {responseContent}");
-
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("API request failed!");
                     return new ApiResponse<object> { Success = false, ResponseEngMsg = "Translation API request failed." };
                 }
 
@@ -33,12 +29,10 @@ namespace EgyMartAdminPortal.Services
                 {
                     PropertyNameCaseInsensitive = true
                 });
-
                 return result;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Translation Error: {ex.Message}");
                 return new ApiResponse<object> { Success = false, ResponseEngMsg = "An error occurred during translation." };
             }
         }

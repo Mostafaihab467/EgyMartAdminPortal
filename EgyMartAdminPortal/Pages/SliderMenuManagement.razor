@@ -57,6 +57,7 @@
                     <th>Action Msg</th>
                     <th>Image Url</th>
                     <th>Action Url</th>
+                    <th>Display Order</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -81,6 +82,9 @@
                             <EditableField T="string" Value="@item.Call2ActionURL" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
                         </td>
                         <td class="cursor-pointer">
+                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
+                        </td>
+                        <td class="cursor-pointer">
                             @if (item.IsActive)
                             {
                                 <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">Active</Badge>
@@ -91,15 +95,15 @@
                             }
                         </td>
                         <td>
-                            <TranslatePopup Item="item" Service="SliderMenuService" BaseID="item.SliderID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Service="SliderMenuService" BaseID="@item.SliderID" OnTranslationSuccess="Refresh">
                                 <label for="mainTitle">Main Title</label>
-                                <input id="mainTitle" class="form-control" @bind="item.MainTitle" />
+                                <input id="mainTitle" class="form-control" @bind="@newItem.MainTitle" />
                                 <label for="shortTitle">Short Title</label>
-                                <input id="shortTitle" class="form-control" @bind="item.ShortTitle" />
+                                <input id="shortTitle" class="form-control" @bind="@newItem.ShortTitle" />
                                 <label for="call2ActionMsg">Action Msg</label>
-                                <input id="call2ActionMsg" class="form-control" @bind="item.Call2ActionMsg" />
+                                <input id="call2ActionMsg" class="form-control" @bind="@newItem.Call2ActionMsg" />
                                 <label for="imageURL">Image Url</label>
-                                <input id="imageURL" class="form-control" @bind="item.ImageURL" />
+                                <input id="imageURL" class="form-control" @bind="@newItem.ImageURL" />
                             </TranslatePopup>
                         </td>
                     </tr>

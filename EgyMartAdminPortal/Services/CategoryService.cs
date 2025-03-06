@@ -9,7 +9,7 @@ namespace EgyMartAdminPortal.Services
         protected string ApiUrl = "products/api/v1/CategoryList";
         public async Task<ApiResponse<List<Category>>> GetAsync()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=1"))!;
+            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=0"))!;
             return response;
         }
 
@@ -24,14 +24,8 @@ namespace EgyMartAdminPortal.Services
 
             var data = await response.Content.ReadFromJsonAsync<ApiResponse<List<Category>>>();
 
-            if (data == null)
-            {
-                return new();
-            }
-
-            return data!;
+            return data ?? new();
         }
-
 
         public async Task<HttpResponseMessage> CreateAsync(Category category)
         {
@@ -53,21 +47,23 @@ namespace EgyMartAdminPortal.Services
             {
                 CategoryID = category.CategoryID,
                 CategoryTitle = category.CategoryTitle,
+                CategoryImageURL = category.CategoryImageURL,
                 DisplayOrder = category.DisplayOrder,
             };
+
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/Edit", Cattquest);
             return response;
         }
 
-        public async Task<HttpResponseMessage> ChangeStatusAsync(long menuItemID, bool isActive)
+        public async Task<HttpResponseMessage> ChangeStatusAsync(long rID, bool isActive)
         {
             var requestPayload = new
             {
-                MenuItemID = menuItemID,
+                Rid = rID,
                 NewStatus = isActive
             };
 
-            var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/ChangeStatus", requestPayload);
+            var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/ChangeStatus", requestPayload);
             return response;
         }
     }
