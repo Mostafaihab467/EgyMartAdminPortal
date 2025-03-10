@@ -1,0 +1,59 @@
+﻿@inject ToastrService ToastService
+
+<div>
+    @if (!IsVerified && !IsRefused)
+    {
+        <Button class="btn btn-primary me-2" TooltipTitle="Verify" TooltipPlacement="TooltipPlacement.Top"
+                data-bs-original-title="Verify" @onclick="() => VerificationUser(true)">
+            <i class="fas fa-user-check"></i>
+        </Button>
+
+        <Button class="btn btn-primary" TooltipTitle="Deny" TooltipPlacement="TooltipPlacement.Top"
+                data-bs-original-title="Deny" @onclick="() => VerificationUser(false)">
+            <i class="fa-solid fa-ban"></i>
+        </Button>
+    }
+    else
+    {
+        <span class="@StatusClass">@StatusText</span>
+    }
+</div>
+
+@code {
+    [Parameter] public long CustomerID { get; set; }
+    [Parameter] public bool IsVerified { get; set; }
+    [Parameter] public bool IsRefused { get; set; }
+    [Parameter] public EventCallback OnUserUpdated { get; set; }
+    [Parameter] public Func<bool, Task<bool>>? VerifyUser { get; set; }
+
+    private string StatusText => IsVerified ? "Verified" : IsRefused ? "Denied" : "";
+    private string StatusClass => IsVerified ? "text-success" : "text-danger";
+
+    private async Task VerificationUser(bool isVerify)
+    {
+        if (VerifyUser != null)
+        {
+            var response = await VerifyUser.Invoke(isVerify);
+
+            if (response)
+            {
+                if (isVerify)
+                {
+                    IsVerified = true;
+                    StateHasChanged();
+                    await Task.Delay(3000);
+                    await ToastService.ShowSuccessAsync("User Verified Successfully", "Success");
+                }
+                else
+                {
+                    IsRefused = true;
+                    StateHasChanged();
+                    await Task.Delay(3000);
+                    await ToastService.ShowSuccessAsync("User Denied Successfully", "Success");
+                }
+
+                await OnUserUpdated.InvokeAsync();
+            }
+        }
+    }
+}

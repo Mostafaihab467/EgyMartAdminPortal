@@ -7,6 +7,7 @@
         public string UserName { get; set; } = string.Empty;
         public DateTime RegisterdSince { get; set; }
         public bool IsVerified { get; set; }
+        public bool IsRefused { get; set; }
         public bool IsDeleting { get; set; }
     }
 

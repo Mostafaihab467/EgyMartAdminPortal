@@ -78,14 +78,14 @@
                                 <i class="fas fa-id-badge"></i>
                             </Button>
 
-                            <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID"
-                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
-                {
-                    { "TargetUrl", item.TargetUrl }
-                })">
-                                <label for="pageTitle">Page Title</label>
-                                <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
-                            </TranslatePopup>
+                @*             <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID" *@
+                @*             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
+                @* { *@
+                @*     { "TargetUrl", item.TargetUrl } *@
+                @* })"> *@
+                @*                 <label for="pageTitle">Page Title</label> *@
+                @*                 <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" /> *@
+                @*             </TranslatePopup> *@
                         </td>
                     </tr>
                     <tr class="collapse @(expandedItems.Contains(item.MenuItemID) ? "show" : "")" id="@($"child-{item.MenuItemID}")" data-bs-parent=".table">
@@ -127,14 +127,14 @@
                                                     }
                                                 </td>
                                                 <td>
-                                                    <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="child.MenuItemID"
-                                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
-                {
-                    { "TargetUrl", child.TargetUrl }
-                })">
-                                                        <label for="mainItemTitle">Main Title</label>
-                                                        <input id="mainItemTitle" class="form-control" bind="@child.MenuItemTitle" />
-                                                    </TranslatePopup>
+                @*                                     <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="child.MenuItemID" *@
+                @*                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
+                @* { *@
+                @*     { "TargetUrl", child.TargetUrl } *@
+                @* })"> *@
+                @*                                         <label for="mainItemTitle">Main Title</label> *@
+                @*                                         <input id="mainItemTitle" class="form-control" bind="@child.MenuItemTitle" /> *@
+                @*                                     </TranslatePopup> *@
                                                 </td>
                                             </tr>
                                         }

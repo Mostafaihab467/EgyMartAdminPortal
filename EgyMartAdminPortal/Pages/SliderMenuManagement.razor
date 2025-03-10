@@ -23,8 +23,8 @@
         <input type="text" class="form-control" id="call2ActionMsg" @bind="newItem.Call2ActionMsg" />
     </div>
     <div class="form-group">
-        <label for="imageURL">Image Url</label>
-        <input type="text" class="form-control" id="linkIcon" @bind="newItem.ImageURL" />
+        <label for="imageUpload">Upload Image</label>
+        <FileDropZone OnImageUploaded="HandleImageUploaded" />
     </div>
     <div class="form-group">
         <label for="call2ActionURL">Action Url</label>
@@ -76,8 +76,11 @@
                             <EditableField T="string" Value="@item.Call2ActionMsg" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.ImageURL" ValueChanged="value => SaveEdit(item, nameof(item.ImageURL), value)" />
+                            <FileDropZone ImageUrl="@item.ImageURL" InputFile="false"
+                                          OnImageUploaded="async (imageUrl) => await SaveEdit(item, nameof(item.ImageURL), imageUrl)" />
                         </td>
+
+
                         <td class="cursor-pointer">
                             <EditableField T="string" Value="@item.Call2ActionURL" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
                         </td>
@@ -258,5 +261,11 @@
     private async Task Refresh()
     {
         await ToastService.ShowSuccessAsync("Menu translation completed!", "Success");
+    }
+
+    private void HandleImageUploaded(string imageUrl)
+    {
+        newItem.ImageURL = imageUrl;
+        StateHasChanged();
     }
 }

@@ -55,7 +55,8 @@
                     <tr>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer" scope="row">
                             <i class="fas fa-caret-right colored p-2 fs-6 @(expandedItems.Contains(item.CategoryID) ? "rotate-45" : "")" @onclick="() => ToggleChildItems(item.CategoryID)"></i>
-                            <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(item.CategoryImageURL), value)" InputType="faIcon" />
+                            @* <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(item.CategoryImageURL), value)" InputType="faIcon" /> *@
+                            <i class="@item.CategoryImageURL cursor-pointer w-75 fs-4"></i>
                         </td>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer">
                             <EditableField T="string" Value="@item.CategoryTitle" ValueChanged="value => SaveEdit(item, nameof(item.CategoryTitle), value)" />
@@ -77,6 +78,15 @@
                             <Button class="btn btn-primary" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => ShowPopup(item.CategoryID)">
                                 <i class="fas fa-id-badge"></i>
                             </Button>
+
+                            @*             <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="item.CategoryID" *@
+                            @*                             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
+                            @* { *@
+                            @*     { "CategoryImageURL", item.CategoryImageURL } *@
+                            @* })"> *@
+                            @*                 <label for="pageTitle">Category Title</label> *@
+                            @*                 <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" /> *@
+                            @*             </TranslatePopup> *@
                         </td>
                     </tr>
                     <tr class="collapse @(expandedItems.Contains(item.CategoryID) ? "show" : "")" id="@($"child-{item.CategoryID}")" data-bs-parent=".table">
@@ -90,6 +100,7 @@
                                             <th scope="col">Category Icon</th>
                                             <th scope="col">CategoryTitle</th>
                                             <th scope="col">displayOrder</th>
+                                            <th scope="col">Status</th>
                                             <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
@@ -97,7 +108,10 @@
                                         @foreach (var child in childItems[item.CategoryID])
                                         {
                                             <tr class="child">
-                                                <td><EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(child.CategoryImageURL), value)" InputType="faIcon" /></td>
+                                                <td>
+                                                    <i class="@child.CategoryImageURL cursor-pointer w-75 fs-4"></i>
+                                                    @* <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(child.CategoryImageURL), value)" InputType="faIcon" /> *@
+                                                </td>
                                                 <td>
                                                     <EditableField T="string" Value="@child.CategoryTitle" ValueChanged="value => SaveEdit(child, nameof(child.CategoryTitle), value)" />
                                                 </td>
@@ -113,6 +127,16 @@
                                                     {
                                                         <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">Not Active</Badge>
                                                     }
+                                                </td>
+                                                <td>
+                                                    <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID"
+                                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                {
+                    { "CategoryImageURL", item.CategoryImageURL }
+                })">
+                                                        <label for="pageTitle">Category Title</label>
+                                                        <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
+                                                    </TranslatePopup>
                                                 </td>
                                             </tr>
                                         }
@@ -294,6 +318,7 @@
 
     private async Task SaveEdit(Category item, string fieldName, object newValue)
     {
+        showPopup = false;
         var property = typeof(Category).GetProperty(fieldName);
         if (property == null) return;
 
@@ -339,5 +364,11 @@
         PageSize = newSize;
         CurrentPage = 1;
         UpdatePagedItems();
+    }
+
+    private async Task Refresh()
+    {
+        showPopup = false;
+        await ToastService.ShowSuccessAsync("Category translation completed!", "Success");
     }
 }

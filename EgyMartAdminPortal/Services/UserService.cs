@@ -13,9 +13,10 @@ namespace EgyMartAdminPortal.Services
             //Console.WriteLine(response);
             return response!;
         }
-        private async Task<bool> VerifyUserAsync(string userType, long userId)
+        private async Task<bool> VerifyUserAsync(string userType, long userId, int status)
         {
-            var response = await _httpClient.PutAsync($"{ApiUrl}/{userType}/Verify?userID={userId}&verifiedID=2", null);
+            var userParam = (userType == "Supplier") ? "userID" : "customerID";
+            var response =await _httpClient.PutAsync($"{ApiUrl}/{userType}/Verify?{userParam}={userId}&verifiedID=2", null);
             //Console.WriteLine(response);
             return response.IsSuccessStatusCode;
         }
@@ -23,8 +24,8 @@ namespace EgyMartAdminPortal.Services
         public async Task<ApiResponse<List<Supplier>>> GetPendingVerifySuppliersAsync() => await FetchPendingUsersAsync<Supplier>("PendingVerifySuppliers/Get");
         public async Task<ApiResponse<List<Customer>>> GetPendingVerifyCustomersAsync() => await FetchPendingUsersAsync<Customer>("PendingVerifyCustomer/Get");
 
-        public async Task<bool> VerifySupplierAsync(long supplierId) => await VerifyUserAsync("Supplier", supplierId);
-        public async Task<bool> VerifyCustomerAsync(long customerId) => await VerifyUserAsync("Customer", customerId);
+        public async Task<bool> VerifySupplierAsync(long supplierId, int status) => await VerifyUserAsync("Supplier", supplierId, status);
+        public async Task<bool> VerifyCustomerAsync(long customerId, int status) => await VerifyUserAsync("Customer", customerId, status);
 
 
     }

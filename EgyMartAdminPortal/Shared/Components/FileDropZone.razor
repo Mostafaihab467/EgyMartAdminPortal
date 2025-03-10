@@ -1,48 +1,104 @@
-﻿@page "/images"
-@inject IJSRuntime JS
+﻿@if (!InputFile)
+{
+    <div class="mt-3" @onclick="ToggleInputFile">
+        <img src="@ImageUrl" alt="Uploaded Image" class="img-thumbnail" width="150" />
+    </div>
+}
+else
+{
+    <div class="container text-center mt-4">
+        <div class="border border-primary border-2 rounded-3 p-4 bg-light"
+             style="max-width: 400px; margin: auto; cursor: pointer;"
+             onclick="document.getElementById('fileUpload').click();">
+            <InputFile id="fileUpload" OnChange="OnInputFileChange" class="d-none" accept=".png, .jpg, .jpeg" />
+            <div class="d-flex flex-column align-items-center">
+                <i class="bi bi-cloud-upload display-4 text-primary"></i>
+                <p class="mb-1">Click to upload or drag and drop</p>
+                <span class="text-muted small">@fileName</span>
+            </div>
+        </div>
 
-<div class="upload-container"
-     @ondragover="HandleDragOver"
-     @ondragleave="HandleDragLeave"
-     @ondrop="HandleDrop">
-
-    <label class="upload-box">
-        <InputFile OnChange="HandleFileSelection" multiple />
-        <p>Drop files here or click to upload</p>
-    </label>
-
-    <ul class="file-list">
-        @foreach (var file in UploadedFiles)
+        @if (!string.IsNullOrEmpty(errorMessage))
         {
-            <li>@file.Name (@file.Size / 1024) KB</li>
+            <div class="text-danger mt-2">@errorMessage</div>
         }
-    </ul>
-</div>
+
+        @if (isUploading)
+        {
+            <div class="mt-3">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         role="progressbar"
+                         style="width: @uploadProgress%;">
+                        @uploadProgress%
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(ImageUrl))
+        {
+            <div class="mt-3">
+                <img src="@ImageUrl" alt="Uploaded Image" class="img-thumbnail" width="150" />
+            </div>
+        }
+    </div>
+}
 
 @code {
-    private List<IBrowserFile> UploadedFiles = new();
+    [Parameter] public EventCallback<string> OnImageUploaded { get; set; }
+    [Parameter] public bool InputFile { get; set; } = false;
+    [Parameter] public string? ImageUrl { get; set; } = string.Empty;
 
-    private void HandleFileSelection(InputFileChangeEventArgs e)
+    private string fileName = "No Files Selected";
+    private string errorMessage = string.Empty;
+    private bool isUploading = false;
+    private int uploadProgress = 0;
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
-        UploadedFiles = e.GetMultipleFiles().ToList();
+        var file = e.File;
+        fileName = file.Name;
+        errorMessage = string.Empty;
+
+        string[] allowedExtensions = { ".png", ".jpg", ".jpeg" };
+        string fileExtension = Path.GetExtension(file.Name).ToLower();
+
+        if (!allowedExtensions.Contains(fileExtension))
+        {
+            errorMessage = "Invalid file type. Please upload a .png, .jpg, or .jpeg file.";
+            StateHasChanged();
+            return;
+        }
+
+        isUploading = true;
+        uploadProgress = 0;
         StateHasChanged();
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 25 * 1024 * 1024);
+        var buffer = new byte[file.Size];
+        int totalBytes = (int)file.Size;
+        int bytesRead = 0;
+
+        while (bytesRead < totalBytes)
+        {
+            int read = await stream.ReadAsync(buffer, bytesRead, Math.Min(1024 * 100, totalBytes - bytesRead));
+            bytesRead += read;
+            uploadProgress = (int)((double)bytesRead / totalBytes * 100);
+            StateHasChanged();
+            await Task.Delay(50);
+        }
+
+        ImageUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        fileName = $"https://upload/{fileName}";
+        isUploading = false;
+
+        // Emit ImageUrl to parent
+        await OnImageUploaded.InvokeAsync(fileName);
     }
 
-    private async Task HandleDragOver(DragEventArgs e)
+    private void ToggleInputFile()
     {
-        // Prevent default to allow drop
-        await JS.InvokeVoidAsync("preventDefaultDrop", e);
-    }
-
-    private void HandleDragLeave(DragEventArgs e)
-    {
-        // Optional: Handle UI feedback when dragging out
-    }
-
-    private async Task HandleDrop(DragEventArgs e)
-    {
-        // Prevent default behavior
-        await JS.InvokeVoidAsync("preventDefaultDrop", e);
-        // No direct access to files on drop (Blazor limitation)
+        InputFile = true;
     }
 }

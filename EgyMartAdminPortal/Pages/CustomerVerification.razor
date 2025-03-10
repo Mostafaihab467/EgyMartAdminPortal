@@ -39,26 +39,9 @@
                         <td>@user.UserName</td>
                         <td>@user.RegisterdSince</td>
                         <td>
-                            @if (!user.IsVerified)
-                            {
-                                <Button class="btn btn-primary" TooltipTitle="Verify" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Verify" @onclick="() => VerifyUser(user.CustomerID)">
-                                    <i class="fas fa-user-check"></i>
-                                </Button>
-                            }
-                            else
-                            {
-                                <span class="text-success">Verified</span>
-                            }
-                            @if (!user.IsVerified)
-                            {
-                                <Button class="btn btn-primary" TooltipTitle="Deny" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Deny" @onclick="() => VerifyUser(user.CustomerID)">
-                                    <i class="fa-solid fa-ban"></i>
-                                </Button>
-                            }
-                            else
-                            {
-                                <span class="text-denger">Denied</span>
-                            }
+                            <UserVerification CustomerID="@user.CustomerID" IsVerified="@user.IsVerified" IsRefused="@user.IsRefused"
+                                              VerifyUser="@((isVerify) => VerifyUserAsync(user.CustomerID, isVerify))"
+                                              OnUserUpdated="@(() => HandleUserUpdate(user))" />
                         </td>
                     </tr>
                 }
@@ -67,10 +50,10 @@
 
         <!-- Pagination Component -->
         <MPagination TItem="Customer"
-                     Items="allItems"
-                     CurrentPage="@CurrentPage"
-                     PageSize="@PageSize"
-                     OnPageChanged="HandlePageChanged" />
+        Items="allItems"
+        CurrentPage="@CurrentPage"
+        PageSize="@PageSize"
+        OnPageChanged="HandlePageChanged" />
     }
 }
 
@@ -112,35 +95,23 @@
         }
     }
 
-    private async Task VerifyUser(long userId)
+    private async Task<bool> VerifyUserAsync(long userId, bool isVerify)
     {
-        var response = await UserService.VerifySupplierAsync(userId);
+        return isVerify
+            ? await UserService.VerifyCustomerAsync(userId, 2)
+            : await UserService.VerifyCustomerAsync(userId, 2);
+    }
 
-        if (response == true)
+    private void HandleUserUpdate(Customer user)
+    {
+        user.IsDeleting = true;
+        StateHasChanged();
+        Task.Delay(500).ContinueWith(_ =>
         {
-            await ToastService.ShowSuccessAsync("User Verified Successfully", "Success");
-            var user = allItems.FirstOrDefault(u => u.CustomerID == userId);
-            if (user == null) return;
-
-            // 1️⃣ Change button to "Verified"
-            user.IsVerified = true;
-            StateHasChanged();
-
-            // 2️⃣ Wait for 3 seconds before starting the animation
-            await Task.Delay(3000);
-
-            // 3️⃣ Start slide-out animation
-            user.IsDeleting = true;
-            StateHasChanged();
-
-            // 4️⃣ Wait for the animation to complete (0.5s)
-            await Task.Delay(500);
-
-            // 5️⃣ Remove the user from the list
             allItems.Remove(user);
             UpdatePagedItems();
             StateHasChanged();
-        }
+        });
     }
 
     private void UpdatePagedItems()
