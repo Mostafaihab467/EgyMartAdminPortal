@@ -1,0 +1,357 @@
+﻿@inject TranslationService TranslationService
+@inject LanguageService LanguageService
+@inject ToastrService ToastService
+
+<div class="d-inline-block">
+    <Button class="btn btn-primary" TooltipTitle="Translate" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Translate" @onclick="ShowTranslationPopup">
+        <i class="fas fa-language"></i>
+    </Button>
+
+    @if (IsPopupVisible)
+    {
+        <div class="modal fade show d-block" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Translate</h5>
+                        <button type="button" class="btn-close" @onclick="() => IsPopupVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        @ChildContent
+                        <label for="language" class="mt-2">Select Language</label>
+                        <select id="language" class="form-control" @bind="LangID">
+                            @foreach (var lang in Languages)
+                            {
+                                <option value="@lang.Key">@lang.Value</option>
+                            }
+                        </select>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="() => IsPopupVisible = false">Close</button>
+                        <button class="btn btn-primary" @onclick="TranslatePage" disabled="@IsTranslating">
+                            @(IsTranslating ? "Translating..." : "Translate")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-backdrop fade show"></div>
+    }
+</div>
+
+@code {
+    [Parameter] public object Item { get; set; } = default!;
+    [Parameter] public object CurrentData { get; set; } = default!;
+    [Parameter] public long BaseID { get; set; }
+    [Parameter] public object? Service { get; set; }
+    [Parameter] public EventCallback OnTranslationSuccess { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool IsPopupVisible = false;
+    private bool IsTranslating = false;
+    private int _selectedLangID = 2;
+    private Dictionary<int, string> Languages = new();
+
+    private int LangID
+    {
+        get => _selectedLangID;
+        set
+        {
+            if (_selectedLangID != value)
+            {
+                _selectedLangID = value;
+                _ = OnLanguageChange();
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allLanguages = await LanguageService.GetLanguagesAsync();
+
+        if (allLanguages != null && allLanguages.Any())
+        {
+            Languages = allLanguages.ToDictionary(k => k.Key, v => v.Value);
+
+            _selectedLangID = Languages.ContainsKey(1) ? 1 : Languages.Keys.First();
+        }
+        else
+        {
+            _selectedLangID = 2;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnLanguageChange()
+    {
+        await GetExistTranslation(Service!);
+        StateHasChanged();
+    }
+
+    private async Task GetExistTranslation(object service)
+    {
+        if (service == null || Item == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var method = service.GetType().GetMethod("GetByLangAsync");
+            if (method == null)
+            {
+                return;
+            }
+
+            var task = method.Invoke(service, new object[] { LangID, BaseID });
+
+            if (task is Task genericTask)
+            {
+                await genericTask.ConfigureAwait(false);
+
+                var resultProperty = task.GetType().GetProperty("Result");
+                if (resultProperty != null)
+                {
+                    var result = resultProperty.GetValue(task);
+
+                    if (result is IEnumerable<object> translations && translations.Cast<object>().Any())
+                    {
+                        var firstTranslation = translations.Cast<object>().First();
+
+                        CopyProperties(firstTranslation, Item);
+                    }
+
+                    else
+                    {
+                        ClearItemAttributes(Item);
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+        StateHasChanged();
+    }
+
+    private void CopyProperties(object source, object target)
+    {
+        if (source == null || target == null)
+            return;
+
+        var targetType = target.GetType();
+        foreach (var property in source.GetType().GetProperties())
+        {
+            var targetProperty = targetType.GetProperty(property.Name);
+            if (targetProperty != null && targetProperty.CanWrite)
+            {
+                var value = property.GetValue(source);
+                targetProperty.SetValue(target, value);
+            }
+        }
+
+        StateHasChanged(); // Ensure UI refresh
+    }
+
+    private async Task TranslatePage()
+    {
+        if (Item is null || Service is null)
+        {
+            await ToastService.ShowErrorAsync("Invalid translation request. Missing data.", "Error");
+            return;
+        }
+
+        if (Item is FixedPage fixedPage)
+        {
+            fixedPage.LangID = LangID;
+        }
+
+        if (LangID == 0)
+        {
+            LangID = Languages.Keys.FirstOrDefault(k => k > 0) > 0 ? Languages.Keys.First(k => k > 0) : 2;
+        }
+
+        SetPropertyIfExists(Item, "LangID", LangID);
+        SetPropertyIfExists(Item, "BaseID", (int)(BaseID > int.MaxValue ? 0 : BaseID));
+
+        if (!ValidateRequiredFields(Item))
+        {
+            await ToastService.ShowErrorAsync("All required fields must be filled before translation.", "Validation Error");
+            return;
+        }
+
+        string? apiUrl = GetTranslateApiUrl();
+        if (string.IsNullOrEmpty(apiUrl))
+        {
+            await ToastService.ShowErrorAsync("Translation API URL is missing.", "Error");
+            return;
+        }
+
+        IsTranslating = true;
+
+        //To Show the properties of the object
+        foreach (var prop in Item.GetType().GetProperties())
+        {
+            Console.WriteLine($"{prop.Name}: {prop.GetValue(Item)}");
+        }
+
+        try
+        {
+            var response = await TranslationService.TranslateAsync(Item, apiUrl);
+
+            if (response != null && response.Success == true)
+            {
+                await OnTranslationSuccess.InvokeAsync();
+                IsPopupVisible = false;
+                StateHasChanged();
+            }
+            else
+            {
+                string errorMessage = response!.ResponseEngMsg ?? "Translation failed. Please try again.";
+                await ToastService.ShowErrorAsync(errorMessage, "Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+            await ToastService.ShowErrorAsync("An unexpected error occurred.", "Error");
+        }
+        finally
+        {
+            IsTranslating = false;
+        }
+    }
+
+    private object? GetPropertyIfExists(object obj, string propertyName)
+    {
+        var property = obj.GetType().GetProperty(propertyName);
+        return property?.GetValue(obj);
+    }
+
+
+    private bool ValidateRequiredFields(object obj)
+    {
+        var missingFields = new List<string>();
+
+        foreach (var property in obj.GetType().GetProperties())
+        {
+            var value = property.GetValue(obj);
+
+            // Assuming empty strings and nulls are invalid values
+            if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
+            {
+                missingFields.Add(property.Name);
+            }
+        }
+
+        if (missingFields.Any())
+        {
+            Console.WriteLine($"Missing required fields: {string.Join(", ", missingFields)}");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task LoadTranslation<T>(Func<int, long, Task<List<T>>> getTranslationFunc, T item) where T : class
+    {
+        var translations = await getTranslationFunc(LangID, BaseID);
+
+        if (translations != null && translations.Count > 0)
+        {
+            var translation = translations.First();
+            foreach (var property in typeof(T).GetProperties())
+            {
+                var translatedValue = property.GetValue(translation);
+                if (translatedValue != null)
+                {
+                    property.SetValue(item, translatedValue);
+                }
+            }
+        }
+    }
+
+    private string? GetTranslateApiUrl()
+    {
+        var method = Service?.GetType().GetMethod("GetTranslateApiUrl");
+        return method?.Invoke(Service, null) as string;
+    }
+
+    private void SetPropertyIfExists(object obj, string propertyName, object? value)
+    {
+        var property = obj.GetType().GetProperty(propertyName);
+        if (property != null && property.CanWrite)
+        {
+            try
+            {
+                // Convert value to match property type
+                var convertedValue = Convert.ChangeType(value, property.PropertyType);
+                property.SetValue(obj, convertedValue);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting {propertyName}: {ex.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Property {propertyName} not found or not writable on {obj.GetType().Name}");
+        }
+    }
+
+
+    private async Task ShowTranslationPopup()
+    {
+        if (Service != null)
+        {
+            await GetExistTranslation(Service);
+        }
+
+        if (CurrentData is Dictionary<string, object> dataDict)
+        {
+            foreach (var (key, value) in dataDict)
+            {
+                SetPropertyIfExists(Item, key, value);
+            }
+        }
+        else if (CurrentData is not null)
+        {
+            SetPropertyIfExists(Item, CurrentData.ToString()!, CurrentData);
+        }
+
+        IsPopupVisible = true;
+        StateHasChanged();
+    }
+
+    private void ClearItemAttributes(object obj)
+    {
+        var itemType = obj.GetType();
+        foreach (var property in itemType.GetProperties())
+        {
+            if (!property.CanWrite) continue;
+
+            if (property.PropertyType == typeof(string))
+            {
+                property.SetValue(obj, string.Empty); // Set strings to empty
+            }
+            else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(long) ||
+                     property.PropertyType == typeof(decimal) || property.PropertyType == typeof(float) ||
+                     property.PropertyType == typeof(double))
+            {
+                property.SetValue(obj, 0); // Set numbers to 0
+            }
+            else if (property.PropertyType == typeof(bool))
+            {
+                property.SetValue(obj, false); // Set booleans to false
+            }
+            else if (property.PropertyType.IsClass)
+            {
+                property.SetValue(obj, null); // Set complex objects to null
+            }
+        }
+    }
+
+}
