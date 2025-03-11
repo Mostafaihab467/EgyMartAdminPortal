@@ -87,7 +87,7 @@
         }
         else
         {
-            await ToastService.ShowErrorAsync("Invalid Email or Password", "Error");
+            await ToastService.ShowErrorAsync($"{response.ResponseEngMsg}", "Error");
         }
     }
 }

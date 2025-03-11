@@ -1,14 +1,28 @@
 ﻿@typeparam T
+@inject IJSRuntime JSRuntime
 
 @if (IsEditing)
 {
-    <input type="text"
-           class="form-control w-75"
-           value="@EditingValue"
-           @ref="InputElement"
-           @oninput="HandleInputChange"
-           @onkeyup="HandleKeyPress"
-           @onblur="SaveEdit" />
+    @if (InputType == "textarea")
+    {
+        <div>
+            <textarea id="@Id" style="width: 100%; display: block;" @bind="EditingValue"></textarea>
+            <div class="mt-2">
+                <button class="btn btn-primary me-2" @onclick="SaveEdit">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <input type="text"
+               class="form-control w-75"
+               value="@EditingValue"
+               @ref="InputElement"
+               @oninput="HandleInputChange"
+               @onkeyup="HandleKeyPress"
+               @onblur="SaveEdit" />
+    }
 }
 else
 {
@@ -30,25 +44,36 @@ else
 }
 
 @code {
+    private string? _id;
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+
+    [Parameter] public string Id { get => _id ?? $"CKEditor_{_uid}"; set => _id = value; }
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
-    [Parameter] public string InputType { get; set; } = "text"; // Supports "text", "ionIcon", "faIcon"
+    [Parameter] public string InputType { get; set; } = "text"; // Supports "text", "textarea", "ionIcon", "faIcon"
 
     private bool IsEditing { get; set; } = false;
     private string EditingValue { get; set; } = "";
     private ElementReference InputElement { get; set; }
+    private DotNetObjectReference<EditableField<T>>? _dotNetRef;
 
     private async void StartEditing()
     {
+        EditingValue = Value?.ToString() ?? "";
         IsEditing = true;
-        EditingValue = GetValueAsString();
-        await Task.Delay(50);
-        await InputElement.FocusAsync();
-    }
+        StateHasChanged();
 
-    private string GetValueAsString()
-    {
-        return Value?.ToString() ?? "";
+        await Task.Delay(50);
+
+        if (InputType == "textarea")
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("CKEditorInterop.init", Id, _dotNetRef);
+        }
+        else
+        {
+            await InputElement.FocusAsync();
+        }
     }
 
     private void HandleInputChange(ChangeEventArgs e)
@@ -58,13 +83,17 @@ else
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (InputType == "textarea") return; // Ignore keypress handling for textarea
+
+        var isCKEditor = InputType == "textarea" || await JSRuntime.InvokeAsync<bool>("isInsideCKEditor");
+
+        if (e.Key == "Enter" && !isCKEditor)
         {
             await SaveEdit();
         }
         else if (e.Key == "Escape")
         {
-            IsEditing = false;
+            await CancelEdit();
         }
     }
 
@@ -79,6 +108,63 @@ else
         else if (typeof(T) == typeof(string))
         {
             await ValueChanged.InvokeAsync((T)(object)EditingValue);
+        }
+        else
+        {
+            try
+            {
+                T? convertedValue = (T)Convert.ChangeType(EditingValue, typeof(T));
+                await ValueChanged.InvokeAsync(convertedValue);
+            }
+            catch
+            {
+                Console.WriteLine($"Failed to convert {EditingValue} to {typeof(T)}");
+            }
+        }
+
+        await CleanupEditor();
+    }
+
+
+    private async Task CancelEdit()
+    {
+        IsEditing = false;
+        EditingValue = Value?.ToString() ?? "";
+        StateHasChanged();
+        await CleanupEditor();
+    }
+
+    private async Task CleanupEditor()
+    {
+        if (InputType == "textarea")
+        {
+            await JSRuntime.InvokeVoidAsync("CKEditorInterop.destroy", Id);
+        }
+    }
+
+    [JSInvokable]
+    public Task EditorDataChanged(string data)
+    {
+        try
+        {
+            EditingValue = data;
+        }
+        catch
+        {
+            Console.WriteLine($"Failed to convert {data} to {typeof(T)}");
+        }
+        return Task.CompletedTask;
+    }
+
+
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef != null)
+        {
+            await CleanupEditor();
+            _dotNetRef.Dispose();
+            _dotNetRef = null;
         }
     }
 }

@@ -1,0 +1,52 @@
+﻿@inject IJSRuntime JSRuntime
+
+<textarea id="@Id" rows="5" style="width: 100%; display: block;"></textarea>
+
+@code {
+    private string? _id;
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+
+    [Parameter]
+    public string Id
+    {
+        get => _id ?? $"CKEditor_{_uid}";
+        set => _id = value;
+    }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    private DotNetObjectReference<CKEditor>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("CKEditorInterop.init", Id, _dotNetRef);
+        }
+    }
+
+    [JSInvokable]
+    public async Task EditorDataChanged(string data)
+    {
+        if (Value != data) // Prevent unnecessary updates
+        {
+            Value = data;
+            await ValueChanged.InvokeAsync(data);
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef != null)
+        {
+            await JSRuntime.InvokeVoidAsync("CKEditorInterop.destroy", Id);
+            _dotNetRef.Dispose();
+        }
+    }
+}

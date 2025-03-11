@@ -33,7 +33,10 @@
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter") await Save();
+        var focusedElement = await JSRuntime.InvokeAsync<string>("getActiveElementTag");
+        var isCKEditor = await JSRuntime.InvokeAsync<bool>("isInsideCKEditor");
+
+        if (e.Key == "Enter" && focusedElement != "textarea" && !isCKEditor) await Save();
         else if (e.Key == "Escape") IsVisible = false;
     }
 

@@ -128,16 +128,16 @@
                                                         <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">Not Active</Badge>
                                                     }
                                                 </td>
-                                                <td>
-                                                    <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID"
-                                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
-                {
-                    { "CategoryImageURL", item.CategoryImageURL }
-                })">
-                                                        <label for="pageTitle">Category Title</label>
-                                                        <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
-                                                    </TranslatePopup>
-                                                </td>
+                @*                                 <td> *@
+                @*                                     <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID" *@
+                @*                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
+                @* { *@
+                @*     { "CategoryImageURL", item.CategoryImageURL } *@
+                @* })"> *@
+                @*                                         <label for="pageTitle">Category Title</label> *@
+                @*                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" /> *@
+                @*                                     </TranslatePopup> *@
+                @*                                 </td> *@
                                             </tr>
                                         }
                                     </tbody>
@@ -211,6 +211,11 @@
 
     private async Task CreateCategory()
     {
+        if (string.IsNullOrWhiteSpace(newCategory.CategoryTitle) || string.IsNullOrWhiteSpace(newCategory.CategoryImageURL))
+        {
+            await ToastService.ShowErrorAsync("Category Title or Category Icon is required", "Validation Error");
+            return;
+        }
         newCategory.LangID = 1;
         var response = await CategoryService.CreateAsync(newCategory);
         if (response.IsSuccessStatusCode)
@@ -324,6 +329,12 @@
 
         var currentValue = property.GetValue(item);
         if (currentValue?.ToString() == newValue?.ToString()) return;
+
+        if ((fieldName == nameof(Category.CategoryTitle) && string.IsNullOrWhiteSpace(newValue?.ToString())) || (fieldName == nameof(Category.CategoryImageURL) && string.IsNullOrWhiteSpace(newValue?.ToString())))
+        {
+            await ToastService.ShowErrorAsync("Category Title or Category Icon is required", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

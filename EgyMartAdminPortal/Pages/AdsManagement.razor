@@ -93,7 +93,7 @@
                         <td>
                             <Button class="btn btn-primary" TooltipTitle="Edit" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Edit" @onclick="() => ShowPopup(true, item.AdsPlanID)"><i class="far fa-edit"></i></Button>
                             <TranslatePopup Item="@newItem" Service="SubscriptionService" BaseID="item.AdsPlanID"
-                                            OnTranslationSuccess="Refresh" CurrentData="@item.AdsLocationTitle">
+                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>{{ "AdsLocationTitle", item.AdsLocationTitle }})">
                                 <label for="planTitle">Plan Title</label>
                                 <input id="planTitle" class="form-control" @bind="@newItem.PlanTitle" />
 
@@ -109,10 +109,10 @@
 
     <!-- Pagination Component -->
     <MPagination TItem="Subscription"
-    Items="allItems"
-    CurrentPage="@CurrentPage"
-    PageSize="@PageSize"
-    OnPageChanged="HandlePageChanged" />
+                 Items="allItems"
+                 CurrentPage="@CurrentPage"
+                 PageSize="@PageSize"
+                 OnPageChanged="HandlePageChanged" />
 }
 
 @code {
@@ -243,6 +243,8 @@
 
     private async Task ToggleStatus(long itemID, bool currentStatus, bool isParent)
     {
+
+        showPopup = false;
         var item = allItems.FirstOrDefault(i => i.AdsPlanID == itemID);
         if (item == null)
         {

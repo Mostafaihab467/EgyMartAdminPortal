@@ -47,9 +47,14 @@
                 <div class="row">
                     <div class="col-12 col-sm-6 col-md-4 col-lg-6">
                         <!-- Product View Card -->
-                        <VerifiedCard Title="Views of Products" Items="productViewsList"
+                        <VerifiedCard Title="Products Views" Items="productViewsList"
                                       GetLabel="p => ((ProductViewData)p).ProductTitle"
                                       GetCount="p => ((ProductViewData)p).TotalViews" />
+                        
+                        <!-- OS View Card -->
+                        <VerifiedCard Title="OS Views" Items="osViewsList"
+                                      GetLabel="o => ((OSData)o).OS"
+                                      GetCount="o => ((OSData)o).ViewsCount" />
                     </div>
 
                     <div class="col-12 col-sm-6 col-md-4 col-lg-6">
@@ -83,6 +88,7 @@
     private List<UserTypeData>? userTypesList;
     private List<ViewDayData>? viewsCountList;
     private List<ProductViewData>? productViewsList;
+    private List<OSData>? osViewsList;
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,6 +127,7 @@
         await LoadJoinedData();
         await LoadCategoriesData();
         await LoadProductViewsData();
+        await LoadOSViewsData();
 
     }
 
@@ -139,6 +146,12 @@
     private async Task LoadProductViewsData()
     {
         productViewsList = await DashboardService.AllProductsViewCount(dayRange);
+        StateHasChanged();
+    }
+    
+    private async Task LoadOSViewsData()
+    {
+        osViewsList = await DashboardService.OSViewsCount(dayRange);
         StateHasChanged();
     }
     // Console.WriteLine($"ViewCountByAge - {await DashboardService.ViewCountByAge()}");

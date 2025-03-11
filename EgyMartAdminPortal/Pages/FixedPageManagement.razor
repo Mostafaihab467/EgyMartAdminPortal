@@ -14,9 +14,9 @@
         <label for="pageTitle">Page Title</label>
         <input type="text" class="form-control" id="pageTitle" @bind="newItem.PageTitle" @ref="itemRef" />
     </div>
-    <div class="form-group">
+    <div class="form-group h-25">
         <label for="pageBody">Page Body</label>
-        <textarea class="form-control" id="pageBody" @bind="@newItem.PageBody" rows="4" />
+        <CKEditor @bind-Value="@newItem.PageBody" />
     </div>
 </Popup>
 
@@ -50,7 +50,7 @@
                             <EditableField T="string" Value="@item.PageTitle" ValueChanged="value => SaveEdit(item, nameof(item.PageTitle), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <EditableField T="string" InputType="textarea" Value="@item.PageBody" ValueChanged="value => SaveEdit(item, nameof(item.PageBody), value)" />
+                            <EditableField T="string" InputType="textarea" Value="@item.PageBody" ValueChanged="@((value) => SaveEdit(item, nameof(item.PageBody), value))" />
                         </td>
                         <td class="cursor-pointer">
                             @if (item.IsActive)
@@ -81,10 +81,10 @@
 
 <!-- Pagination Component -->
 <MPagination TItem="FixedPage"
-Items="allItems"
-CurrentPage="@CurrentPage"
-PageSize="@PageSize"
-OnPageChanged="HandlePageChanged" />
+             Items="allItems"
+             CurrentPage="@CurrentPage"
+             PageSize="@PageSize"
+             OnPageChanged="HandlePageChanged" />
 
 @code {
     private List<FixedPage> allItems = new();
