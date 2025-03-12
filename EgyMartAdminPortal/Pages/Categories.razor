@@ -116,7 +116,7 @@
                                                     <EditableField T="string" Value="@child.CategoryTitle" ValueChanged="value => SaveEdit(child, nameof(child.CategoryTitle), value)" />
                                                 </td>
                                                 <td>
-                                                    <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(child.DisplayOrder), value)" />
+                                                    <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(child, nameof(child.DisplayOrder), value)" />
                                                 </td>
                                                 <td class="cursor-pointer">
                                                     @if (child.IsActive)

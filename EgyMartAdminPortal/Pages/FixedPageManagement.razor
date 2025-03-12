@@ -50,7 +50,12 @@
                             <EditableField T="string" Value="@item.PageTitle" ValueChanged="value => SaveEdit(item, nameof(item.PageTitle), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <EditableField T="string" InputType="textarea" Value="@item.PageBody" ValueChanged="@((value) => SaveEdit(item, nameof(item.PageBody), value))" />
+                            <EditableField T="string"
+                                           InputType="textarea"
+                                           Value="@item.PageBody"
+                                           ValueChanged="@((value) => SaveEdit(item, nameof(item.PageBody), value))"
+                                           Title="@item.PageBody" />
+
                         </td>
                         <td class="cursor-pointer">
                             @if (item.IsActive)

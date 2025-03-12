@@ -1,4 +1,5 @@
 ﻿@page "/subscribtions"
+@using System.ComponentModel.DataAnnotations
 @inject SubscribtionService SubscribtionService
 @inject IJSRuntime JSRuntime
 
@@ -6,16 +7,24 @@
 <h3>Subscribtions</h3>
 
 <EditForm Model="@this" OnValidSubmit="FetchSubscriptions">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
     <div class="d-flex align-items-end gap-2 mb-3">
         <div>
             <label for="startDate" class="form-label">Start Date:</label>
-            <InputDate @bind-Value="startDate" class="form-control" />
+            <input @bind="startDate" class="form-control" @ref="endDateInput" type="date"
+                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
         </div>
         <div>
             <label for="endDate" class="form-label">End Date:</label>
-            <InputDate @bind-Value="endDate" class="form-control" />
+            <input @bind="endDate" class="form-control" @ref="endDateInput" type="date"
+                   min="@startDate.ToString("yyyy-MM-dd")"
+                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+
+            <ValidationMessage For="@(() => endDate)" class="text-danger" />
         </div>
-        <Button class="btn btn-primary" Type="ButtonType.Submit" TooltipTitle="Fetch Subscriptions" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Fetch Subscriptions">
+        <Button class="btn btn-primary" Type="ButtonType.Submit" TooltipTitle="Fetch Subscriptions" TooltipPlacement="TooltipPlacement.Top">
             <i class="fas fa-filter"></i>
         </Button>
     </div>
@@ -67,6 +76,23 @@
              PageSize="@PageSize"
              OnPageChanged="HandlePageChanged" />
 
+<style>
+    /* Remove clear (✖) button in Chrome, Edge, and Safari */
+    input[type="date"]::-webkit-clear-button,
+    input[type="date"]::-webkit-inner-spin-button {
+        display: none;
+    }
+
+    /* Remove clear button in Firefox */
+    input[type="date"]::-moz-clear {
+        display: none;
+    }
+
+    /* Remove clear button in IE/Edge (Old versions) */
+    input[type="date"]::-ms-clear {
+        display: none;
+    }
+</style>
 @code {
     private List<Subscribtion> allItems = new();
     private List<Subscribtion> pagedItems = new();
@@ -76,7 +102,9 @@
     private int CurrentPage = 1;
     private int PageSize = 25;
 
-    private DateTime startDate = DateTime.Today.AddMonths(-1);
+    private DateTime startDate = DateTime.Today.AddMonths(-2);
+
+    private ElementReference endDateInput;
     private DateTime endDate = DateTime.Today;
 
     protected override async Task OnInitializedAsync()
@@ -123,5 +151,13 @@
         PageSize = newSize;
         CurrentPage = 1;
         UpdatePagedItems();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("disableFutureDates", endDateInput);
+        }
     }
 }

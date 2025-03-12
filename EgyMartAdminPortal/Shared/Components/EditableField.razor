@@ -6,7 +6,7 @@
     @if (InputType == "textarea")
     {
         <div>
-            <textarea id="@Id" style="width: 100%; display: block;" @bind="EditingValue"></textarea>
+            <textarea id="@Id" style="width: 100%; display: block;" @bind="EditingValue" title="@Title"></textarea>
             <div class="mt-2">
                 <button class="btn btn-primary me-2" @onclick="SaveEdit">Save</button>
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
@@ -18,6 +18,7 @@
         <input type="text"
                class="form-control w-75"
                value="@EditingValue"
+               title="@Title"
                @ref="InputElement"
                @oninput="HandleInputChange"
                @onkeyup="HandleKeyPress"
@@ -30,16 +31,30 @@ else
     {
         <ion-icon name="@Value"
                   class="cursor-pointer w-75 fs-4"
+                  title="@Title"
                   @onclick="StartEditing"></ion-icon>
     }
     else if (InputType == "faIcon")
     {
         <i class="@Value cursor-pointer w-75 fs-4"
+           title="@Title"
            @onclick="StartEditing"></i>
     }
     else
     {
-        <span class="cursor-pointer w-75" @onclick="StartEditing">@Value</span>
+        @if (!IsEditing)
+        {
+            @if (typeof(T) == typeof(string) && Value is string strValue)
+            {
+                <span class="cursor-pointer w-75" @onclick="StartEditing">
+                    @((MarkupString)strValue)
+                </span>
+            }
+            else
+            {
+                <span class="cursor-pointer w-75" @onclick="StartEditing">@Value</span>
+            }
+        }
     }
 }
 
@@ -51,6 +66,7 @@ else
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
     [Parameter] public string InputType { get; set; } = "text"; // Supports "text", "textarea", "ionIcon", "faIcon"
+    [Parameter] public string Title { get; set; } = string.Empty; // New Parameter for Tooltips
 
     private bool IsEditing { get; set; } = false;
     private string EditingValue { get; set; } = "";
@@ -101,6 +117,20 @@ else
     {
         IsEditing = false;
 
+        if (InputType == "textarea")
+        {
+            try
+            {
+                Console.WriteLine("Fetching CKEditor content...");
+                EditingValue = await JSRuntime.InvokeAsync<string>("CKEditorInterop.getData", Id);
+                Console.WriteLine($"Fetched content: {EditingValue}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching CKEditor data: {ex.Message}");
+            }
+        }
+
         if (typeof(T) == typeof(int) && int.TryParse(EditingValue, out int intValue))
         {
             await ValueChanged.InvokeAsync((T)(object)intValue);
@@ -124,6 +154,7 @@ else
 
         await CleanupEditor();
     }
+
 
 
     private async Task CancelEdit()
@@ -155,8 +186,6 @@ else
         }
         return Task.CompletedTask;
     }
-
-
 
     public async ValueTask DisposeAsync()
     {

@@ -24,7 +24,7 @@
     </div>
     <div class="form-group">
         <label for="imageUpload">Upload Image</label>
-        <FileDropZone OnImageUploaded="HandleImageUploaded" />
+        <FileDropZone InputFile="true" OnImageUploaded="HandleImageUploaded" />
     </div>
     <div class="form-group">
         <label for="call2ActionURL">Action Url</label>
@@ -76,7 +76,7 @@
                             <EditableField T="string" Value="@item.Call2ActionMsg" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <FileDropZone ImageUrl="@item.ImageURL" InputFile="false"
+                            <FileDropZone ImageUrl="@item.ImageURL" CloseIcon="true" InputFile="false"
                                           OnImageUploaded="async (imageUrl) => await SaveEdit(item, nameof(item.ImageURL), imageUrl)" />
                         </td>
 

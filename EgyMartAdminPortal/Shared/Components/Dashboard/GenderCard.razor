@@ -9,13 +9,13 @@
         <svg width="120" height="120" viewBox="0 0 36 36">
             <!-- Female Stroke -->
             <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#990202" stroke-width="3">
-                <title>Female: @FemalePercentage.ToString("0.0")%</title>
+                <title>Female: @FemalePercentage.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%</title>
             </circle>
 
             <!-- Male Stroke -->
             <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#FF9D23" stroke-width="3"
                     stroke-dasharray="@MaleStrokeDash" stroke-dashoffset="0">
-                <title>Male: @MalePercentage.ToString("0.0")%</title>
+                <title>Male: @MalePercentage.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%</title>
             </circle>
 
             <!-- Circular Background for Text -->
@@ -48,8 +48,8 @@
     private double FemalePercentage => TotalCount == 0 ? 0 : (double)FemaleCount / TotalCount * 100;
     private int TotalCount => MaleCount + FemaleCount;
 
-    private string MaleStrokeDash => $"{MalePercentage}, 100";
-    private string FemaleStrokeDash => $"{FemalePercentage}, 100";
+    private string MaleStrokeDash => $"{MalePercentage.ToString(System.Globalization.CultureInfo.InvariantCulture)}, 100";
+    private string FemaleStrokeDash => $"{FemalePercentage.ToString(System.Globalization.CultureInfo.InvariantCulture)}, 100";
 
     protected override async Task OnInitializedAsync()
     {

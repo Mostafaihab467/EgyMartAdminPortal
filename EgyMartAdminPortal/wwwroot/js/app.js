@@ -25,28 +25,32 @@ window.focusElement = (element) => {
 };
 
 window.CKEditorInterop = {
-    editors: {},
+    instances: {},
 
-    init: (editorId, dotNetRef) => {
+    init: function (id, dotNetReference) {
         ClassicEditor
-            .create(document.getElementById(editorId))
+            .create(document.getElementById(id))
             .then(editor => {
-                window.CKEditorInterop.editors[editorId] = editor;
+                window.CKEditorInterop.instances[id] = editor;
                 editor.model.document.on('change:data', () => {
-                    dotNetRef.invokeMethodAsync('EditorDataChanged', editor.getData());
+                    dotNetReference.invokeMethodAsync('EditorDataChanged', editor.getData());
                 });
             })
-            .catch(error => console.error('CKEditor initialization error:', error));
+            .catch(error => console.error('CKEditor Init Error:', error));
     },
 
-    destroy: (editorId) => {
-        if (window.CKEditorInterop.editors[editorId]) {
-            window.CKEditorInterop.editors[editorId].destroy()
-                .then(() => delete window.CKEditorInterop.editors[editorId])
-                .catch(error => console.error('CKEditor destroy error:', error));
+    getData: function (id) {
+        return window.CKEditorInterop.instances[id]?.getData() || "";
+    },
+
+    destroy: function (id) {
+        if (window.CKEditorInterop.instances[id]) {
+            window.CKEditorInterop.instances[id].destroy()
+                .then(() => { delete window.CKEditorInterop.instances[id]; });
         }
     }
 };
+
 
 window.getActiveElementTag = () => {
     return document.activeElement.tagName.toLowerCase();
@@ -63,4 +67,14 @@ window.isInsideCKEditor = () => {
         activeElement = activeElement.parentElement;
     }
     return false;
+};
+
+window.disableFutureDates = (element) => {
+    let today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+    let minDate = new Date();
+    minDate.setMonth(minDate.getMonth() - 2); // Subtract 2 months
+    let minFormatted = minDate.toISOString().split("T")[0];
+
+    element.setAttribute("max", today);
+    element.setAttribute("min", minFormatted);
 };

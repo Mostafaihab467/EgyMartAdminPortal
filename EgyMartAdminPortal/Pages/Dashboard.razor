@@ -115,6 +115,10 @@
     private async Task LoadUserTypesData()
     {
         userTypesList = await DashboardService.UsersVerifiedCount();
+        if (userTypesList is null)
+        {
+            userTypesList = new List<UserTypeData>();
+        }
         StateHasChanged();
     }
 
@@ -146,12 +150,20 @@
     private async Task LoadProductViewsData()
     {
         productViewsList = await DashboardService.AllProductsViewCount(dayRange);
+        if (productViewsList is null)
+        {
+            productViewsList = new List<ProductViewData>();
+        }
         StateHasChanged();
     }
     
     private async Task LoadOSViewsData()
     {
         osViewsList = await DashboardService.OSViewsCount(dayRange);
+        if (osViewsList is null)
+        {
+            osViewsList = new List<OSData>();
+        }
         StateHasChanged();
     }
     // Console.WriteLine($"ViewCountByAge - {await DashboardService.ViewCountByAge()}");

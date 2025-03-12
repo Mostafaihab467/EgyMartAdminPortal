@@ -28,9 +28,13 @@
                 index++;
             }
         }
-        else
+        else if (Items is null)
         {
             <p class="text-muted">Loading...</p>
+        }
+        else
+        {
+            <p class="text-danger fw-bold">No Data Available</p>
         }
     </div>
 </div>
@@ -60,6 +64,8 @@
         if (Items is not null)
         {
             FilteredItems = ShowAll ? Items : Items.Take(5);
+        }else{
+            FilteredItems = null;
         }
     }
 
