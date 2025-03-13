@@ -53,8 +53,8 @@
                             <EditableField T="string"
                                            InputType="textarea"
                                            Value="@item.PageBody"
-                                           ValueChanged="@((value) => SaveEdit(item, nameof(item.PageBody), value))"
-                                           Title="@item.PageBody" />
+                                           Frame="true"
+                                           ValueChanged="@((value) => SaveEdit(item, nameof(item.PageBody), value))" />
 
                         </td>
                         <td class="cursor-pointer">

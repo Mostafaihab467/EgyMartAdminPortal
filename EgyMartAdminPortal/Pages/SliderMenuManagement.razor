@@ -76,11 +76,9 @@
                             <EditableField T="string" Value="@item.Call2ActionMsg" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <FileDropZone ImageUrl="@item.ImageURL" CloseIcon="true" InputFile="false"
+                            <FileDropZone ImageUrl="@item.ImageURL" CloseIcon="true"  InputFile="false"
                                           OnImageUploaded="async (imageUrl) => await SaveEdit(item, nameof(item.ImageURL), imageUrl)" />
                         </td>
-
-
                         <td class="cursor-pointer">
                             <EditableField T="string" Value="@item.Call2ActionURL" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
                         </td>

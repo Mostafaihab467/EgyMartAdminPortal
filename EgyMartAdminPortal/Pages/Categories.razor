@@ -101,7 +101,7 @@
                                             <th scope="col">CategoryTitle</th>
                                             <th scope="col">displayOrder</th>
                                             <th scope="col">Status</th>
-                                            <th scope="col">Actions</th>
+                                            @* <th scope="col">Actions</th> *@
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -309,7 +309,6 @@
         }
 
         item.IsActive = !currentStatus;
-
         var response = await CategoryService.ChangeStatusAsync(itemID, item.IsActive);
 
         if (!response.IsSuccessStatusCode)
