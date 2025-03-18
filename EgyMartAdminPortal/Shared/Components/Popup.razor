@@ -2,27 +2,30 @@
 
 @if (IsVisible)
 {
-    <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1" role="dialog">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@Title</h5>
-                    <button type="button" class="btn-close" @onclick="() => IsVisible = false"></button>
-                </div>
-                <div class="modal-body">
-                    @ChildContent
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => IsVisible = false">Close</button>
-                    @if (OnSave.HasDelegate)
-                    {
-                        <button type="button" class="btn btn-primary" @onclick="OnSave">Save</button>
-                    }
+    <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
+        <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@Title</h5>
+                        <button type="button" class="btn-close" @onclick="() => IsVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <DataAnnotationsValidator />
+                        @ChildContent
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="() => IsVisible = false">Close</button>
+                        @if (OnSave.HasDelegate)
+                        {
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
+        <div class="modal-backdrop fade show"></div>
+    </EditForm>
 }
 
 @code {
@@ -30,16 +33,21 @@
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public object? FormModel { get; set; }  // Pass the model from parent
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         var focusedElement = await JSRuntime.InvokeAsync<string>("getActiveElementTag");
         var isCKEditor = await JSRuntime.InvokeAsync<bool>("isInsideCKEditor");
 
-        if (e.Key == "Enter" && focusedElement != "textarea" && !isCKEditor) await Save();
-        else if (e.Key == "Escape") IsVisible = false;
+        if (e.Key == "Enter" && focusedElement != "textarea" && !isCKEditor)
+            await HandleSubmit();
+        else if (e.Key == "Escape")
+            IsVisible = false;
     }
 
-    private async Task Save() => await OnSave.InvokeAsync();
-
+    private async Task HandleSubmit()
+    {
+        await OnSave.InvokeAsync();
+    }
 }

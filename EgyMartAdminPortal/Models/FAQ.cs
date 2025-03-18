@@ -13,6 +13,8 @@ namespace EgyMartAdminPortal.Models
 
         [Required(ErrorMessage = "Answer is required.")]
         public string QAnswer { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Display Order is required.")]
         public int DisplayOrder { get; set; }
         public long BaseID { get; set; }
         public int LangID { get; set; }

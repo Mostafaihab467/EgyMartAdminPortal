@@ -9,18 +9,21 @@
     <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync" FormModel="newItem">
     <div class="form-group">
         <label for="mainTitle">Main Title</label>
         <input type="text" class="form-control" id="mainTitle" @bind="newItem.MainTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.MainTitle)" />
     </div>
     <div class="form-group">
         <label for="shortTitle">Short Title</label>
         <input type="text" class="form-control" id="shortTitle" @bind="newItem.ShortTitle" />
+        <ValidationMessage For="@(() => newItem.ShortTitle)" />
     </div>
     <div class="form-group">
         <label for="call2ActionMsg">Action Msg</label>
         <input type="text" class="form-control" id="call2ActionMsg" @bind="newItem.Call2ActionMsg" />
+        <ValidationMessage For="@(() => newItem.Call2ActionMsg)" />
     </div>
     <div class="form-group">
         <label for="imageUpload">Upload Image</label>
@@ -29,10 +32,13 @@
     <div class="form-group">
         <label for="call2ActionURL">Action Url</label>
         <input type="text" class="form-control" id="call2ActionURL" @bind="newItem.Call2ActionURL" />
+        <ValidationMessage For="@(() => newItem.Call2ActionURL)" />
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
-        <input type="number" class="form-control" id="displayOrder" @bind="newItem.DisplayOrder" />
+        <InputPositiveNumber Value="@newItem.DisplayOrder"
+                             ValueChanged="@(value => { newItem.DisplayOrder = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newItem.DisplayOrder)" />
     </div>
 </Popup>
 
@@ -66,34 +72,30 @@
                 @foreach (var item in pagedItems)
                 {
                     <tr>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.MainTitle" ValueChanged="value => SaveEdit(item, nameof(item.MainTitle), value)" />
+                        <td>
+                            <EditableField T="string" Value="@item.MainTitle" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.MainTitle), value)" />
+                        </td>
+                        <td>
+                            <EditableField T="string" Value="@item.ShortTitle" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.ShortTitle), value)" />
+                        </td>
+                        <td>
+                            <EditableField T="string" Value="@item.Call2ActionMsg" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.ShortTitle" ValueChanged="value => SaveEdit(item, nameof(item.ShortTitle), value)" />
-                        </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.Call2ActionMsg" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
-                        </td>
-                        <td class="cursor-pointer">
-                            <FileDropZone ImageUrl="@item.ImageURL" CloseIcon="true"  InputFile="false"
+                            <FileDropZone ImageUrl="@item.ImageURL" CloseIcon="true" InputFile="false"
                                           OnImageUploaded="async (imageUrl) => await SaveEdit(item, nameof(item.ImageURL), imageUrl)" />
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.Call2ActionURL" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
+                        <td>
+                            <EditableField T="string" Value="@item.Call2ActionURL" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
+                        <td>
+                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" Width="7" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                         <td>
                             <TranslatePopup Item="@newItem" Service="SliderMenuService" BaseID="@item.SliderID"

@@ -25,31 +25,34 @@ window.focusElement = (element) => {
 };
 
 window.CKEditorInterop = {
-    instances: {},
-
-    init: function (id, dotNetReference) {
+    init: function (id, dotNetRef) {
         ClassicEditor
-            .create(document.getElementById(id))
+            .create(document.getElementById(id), {
+                height: '75vh'
+            })
             .then(editor => {
-                window.CKEditorInterop.instances[id] = editor;
+                window[id] = editor;
                 editor.model.document.on('change:data', () => {
-                    dotNetReference.invokeMethodAsync('EditorDataChanged', editor.getData());
+                    dotNetRef.invokeMethodAsync('EditorDataChanged', editor.getData());
                 });
             })
-            .catch(error => console.error('CKEditor Init Error:', error));
+            .catch(error => console.error(error));
     },
-
+    focus: function (id) {
+        if (window[id]) {
+            window[id].editing.view.focus();
+        }
+    },
     getData: function (id) {
-        return window.CKEditorInterop.instances[id]?.getData() || "";
+        return window[id] ? window[id].getData() : '';
     },
-
     destroy: function (id) {
-        if (window.CKEditorInterop.instances[id]) {
-            window.CKEditorInterop.instances[id].destroy()
-                .then(() => { delete window.CKEditorInterop.instances[id]; });
+        if (window[id]) {
+            window[id].destroy().then(() => delete window[id]);
         }
     }
 };
+
 
 
 window.getActiveElementTag = () => {
@@ -77,4 +80,10 @@ window.disableFutureDates = (element) => {
 
     element.setAttribute("max", today);
     element.setAttribute("min", minFormatted);
+};
+
+window.preventZeroInput = function (event) {
+    if (event.key === "0" && event.target.value.length === 0) {
+        event.preventDefault();
+    }
 };

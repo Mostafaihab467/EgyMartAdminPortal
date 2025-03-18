@@ -1,30 +1,36 @@
-﻿@page "/footer-menu"
+﻿@page "/footer"
 @inject FooterMenuService FooterMenuService
 @inject ToastrService ToastService
 
-<PageTitle>FooterMenu Management</PageTitle>
-<h3>FooterMenuManagement</h3>
+<PageTitle>Footer</PageTitle>
+<h3>Footer</h3>
 
 <div class="mt-2">
     <button class="btn btn-primary" @onclick="() => ShowPopup(0)"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync" FormModel="newItem">
     <div class="form-group">
         <label for="pageTitle">Page Title</label>
         <input type="text" class="form-control" id="pageTitle" @bind="newItem.FooterItemTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.FooterItemTitle)" />
     </div>
     <div class="form-group">
         <label for="targetUrl">Target Url</label>
         <input class="form-control" id="targetUrl" @bind="@newItem.TargetUrl" />
+        <ValidationMessage For="@(() => newItem.TargetUrl)" />
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
-        <input type="number" class="form-control" id="displayOrder" @bind="newItem.DisplayOrder" />
+        <InputPositiveNumber Value="@newItem.DisplayOrder"
+                             ValueChanged="@(value => { newItem.DisplayOrder = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newItem.DisplayOrder)" />
     </div>
     <div class="form-group">
         <label for="columnIndex">Column Index</label>
-        <input type="number" class="form-control" id="columnIndex" @bind="newItem.ColumnIndex" />
+        <InputPositiveNumber Value="@newItem.ColumnIndex"
+                             ValueChanged="@(value => { newItem.ColumnIndex = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newItem.ColumnIndex)" />
     </div>
 </Popup>
 
@@ -56,34 +62,31 @@
                 @foreach (var item in pagedItems)
                 {
                     <tr>
-                        <th data-bs-toggle="collapse" data-bs-target="#@item.FooterItemID" class="cursor-pointer" scope="row">
-                            <EditableField T="string" Value="@item.FooterItemTitle" ValueChanged="value => SaveEdit(item, nameof(item.FooterItemTitle), value)" />
-                        </th>
-                        <td data-bs-toggle="collapse" data-bs-target="#@item.FooterItemID" class="cursor-pointer">
-                            <EditableField T="string" Value="@item.TargetUrl" ValueChanged="value => SaveEdit(item, nameof(item.TargetUrl), value)" />
-                        </td>
-                        <td data-bs-toggle="collapse" data-bs-target="#@item.FooterItemID" class="cursor-pointer">
-                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
-                        </td>
-                        <td data-bs-toggle="collapse" data-bs-target="#@item.FooterItemID" class="cursor-pointer">
-                            <EditableField T="int" InputType="number" Value="@item.ColumnIndex" ValueChanged="value => SaveEdit(item, nameof(item.ColumnIndex), value)" />
-                        </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.FooterItemID, item.IsActive, true)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.FooterItemID, item.IsActive, true)">Not Active</Badge>
-                            }
+
+                        <td>
+                            <EditableField T="string" Value="@item.FooterItemTitle" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.FooterItemTitle), value)" />
                         </td>
                         <td>
-                            @* <TranslatePopup Item="@newItem" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh">
-                            @*     <label for="pageTitle">Page Title</label> *@
-                            @*     <input id="pageTitle" class="form-control" @bind="@newItem.FooterItemTitle" /> *@
-                            @* </TranslatePopup> *@
+                            <EditableField T="string" Value="@item.TargetUrl" ValueChanged="value => SaveEdit(item, nameof(item.TargetUrl), value)" />
                         </td>
+                        <td>
+                            <EditableField T="int" InputType="number" Width="100" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
+                        </td>
+                        <td>
+                            <EditableField T="int" InputType="number" Width="100" Value="@item.ColumnIndex" ValueChanged="value => SaveEdit(item, nameof(item.ColumnIndex), value)" />
+                        </td>
+                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.FooterItemID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
+                        </td>
+                        @* <td> *@
+                        @*      <TranslatePopup Item="@newItem" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh"> *@
+                        @*          <label for="pageTitle">Page Title</label> *@
+                        @*          <input id="pageTitle" class="form-control" @bind="@newItem.FooterItemTitle" />  *@
+                        @*     </TranslatePopup>  *@
+                        @* </td> *@
                     </tr>
                 }
             </tbody>
@@ -115,7 +118,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-         await GetItemsAsync();
+        await GetItemsAsync();
     }
 
     private async Task GetItemsAsync()
@@ -142,7 +145,7 @@
         {
             await ToastService.ShowSuccessAsync("Page Created Successfully", "Success");
             showPopup = false;
-                await GetItemsAsync();
+            await GetItemsAsync();
         }
         else
         {
@@ -160,12 +163,10 @@
 
     }
 
-    private async Task ToggleStatus(int itemID, bool currentStatus, bool isParent)
+    private async Task ToggleStatus(int itemID, bool currentStatus)
     {
         showPopup = false;
-        var item = isParent
-            ? allItems.FirstOrDefault(i => i.FooterItemID == itemID)
-            : childItems.Values.SelectMany(list => list).FirstOrDefault(i => i.FooterItemID == itemID);
+        var item = allItems.FirstOrDefault(i => i.FooterItemID == itemID);
 
         if (item == null)
         {
@@ -224,7 +225,7 @@
 
         StateHasChanged();
     }
- 
+
 
     private void UpdatePagedItems()
     {

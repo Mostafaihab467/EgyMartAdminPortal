@@ -9,18 +9,22 @@
     <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync" FormModel="newItem">
     <div class="form-group">
         <label for="qTitle"> Question</label>
         <input type="text" class="form-control" id="qTitle" @bind="newItem.QTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.QTitle)" />
     </div>
     <div class="form-group">
         <label for="qAnswer">Answer</label>
-        <textarea type="text" class="form-control" id="qAnswer" @bind="newItem.QAnswer" rows="4" />
+        <CKEditor @bind-Value="@newItem.QAnswer" />
+        <ValidationMessage For="@(() => newItem.QAnswer)" />
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
-        <input type="number" class="form-control" id="displayOrder" @bind="newItem.DisplayOrder" />
+        <InputPositiveNumber Value="@newItem.DisplayOrder"
+                             ValueChanged="@(value => { newItem.DisplayOrder = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newItem.DisplayOrder)" />
     </div>
 </Popup>
 
@@ -51,24 +55,20 @@
                 @foreach (var item in pagedItems)
                 {
                     <tr>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.QTitle" ValueChanged="value => SaveEdit(item, nameof(item.QTitle), value)" />
+                        <td>
+                            <EditableField T="string" Value="@item.QTitle" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.QTitle), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" InputType="textarea" Value="@item.QAnswer" ValueChanged="value => SaveEdit(item, nameof(item.QAnswer), value)" />
+                        <td>
+                            <EditableField T="string" InputType="textarea" Frame="true" Width="100" Value="@item.QAnswer" ValueChanged="value => SaveEdit(item, nameof(item.QAnswer), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
+                        <td>
+                            <EditableField T="int" InputType="number" Width="100" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.Qid, item.IsActive)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.Qid, item.IsActive)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.Qid, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                         <td>
                             <TranslatePopup Item="@newItem" Service="FAQService" BaseID="item.Qid" OnTranslationSuccess="Refresh">

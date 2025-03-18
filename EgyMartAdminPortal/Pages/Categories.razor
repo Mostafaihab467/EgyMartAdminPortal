@@ -5,24 +5,28 @@
 
 
 
-<PageTitle>Categories Management</PageTitle>
-<h1>Category</h1>
+<PageTitle>Product Categories</PageTitle>
+<h1>Product Categories</h1>
 <div class="mt-2">
     <button class="btn btn-primary" @onclick="() => ShowPopup(0)"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateCategory">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateCategory" FormModel="newCategory">
     <div class="form-group">
         <label for="categoryTitle">Category Title</label>
         <input type="text" class="form-control" id="categoryTitle" @bind="@newCategory.CategoryTitle" @ref="@itemRef" />
+        <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
     </div>
     <div class="form-group">
         <label for="categoryImageURL">Category Image URL</label>
         <input type="text" class="form-control" id="categoryImageURL" @bind="newCategory.CategoryImageURL" />
+        <ValidationMessage For="@(() => newCategory.CategoryImageURL)" />
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
-        <input type="number" class="form-control" id="displayOrder" @bind="newCategory.DisplayOrder" />
+        <InputPositiveNumber Value="@newCategory.DisplayOrder"
+                             ValueChanged="@(value => { newCategory.DisplayOrder = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newCategory.DisplayOrder)" />
     </div>
 </Popup>
 
@@ -56,23 +60,21 @@
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer" scope="row">
                             <i class="fas fa-caret-right colored p-2 fs-6 @(expandedItems.Contains(item.CategoryID) ? "rotate-45" : "")" @onclick="() => ToggleChildItems(item.CategoryID)"></i>
                             @* <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(item.CategoryImageURL), value)" InputType="faIcon" /> *@
-                            <i class="@item.CategoryImageURL cursor-pointer w-75 fs-4"></i>
+                            <div class="cursor-pointer w-75 d-inline-block">
+                                <i class="@item.CategoryImageURL fs-4"></i>
+                            </div>
                         </td>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer">
                             <EditableField T="string" Value="@item.CategoryTitle" ValueChanged="value => SaveEdit(item, nameof(item.CategoryTitle), value)" />
                         </td>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="ps-5 cursor-pointer">
-                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
+                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="@(value => SaveEdit(item, nameof(item.DisplayOrder), value))" />
                         </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                         <td>
                             <Button class="btn btn-primary" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => ShowPopup(item.CategoryID)">
@@ -118,26 +120,22 @@
                                                 <td>
                                                     <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(child, nameof(child.DisplayOrder), value)" />
                                                 </td>
-                                                <td class="cursor-pointer">
-                                                    @if (child.IsActive)
-                                                    {
-                                                        <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">Active</Badge>
-                                                    }
-                                                    else
-                                                    {
-                                                        <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">Not Active</Badge>
-                                                    }
+                                                <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">
+                                                    <Badge Class="@($"p-2 {(child.IsActive ? "btn-success" : "btn-danger")}")"
+                                                           IndicatorType="BadgeIndicatorType.RoundedPill">
+                                                        @(child.IsActive ? "Active" : "Not Active")
+                                                    </Badge>
                                                 </td>
-                @*                                 <td> *@
-                @*                                     <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID" *@
-                @*                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
-                @* { *@
-                @*     { "CategoryImageURL", item.CategoryImageURL } *@
-                @* })"> *@
-                @*                                         <label for="pageTitle">Category Title</label> *@
-                @*                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" /> *@
-                @*                                     </TranslatePopup> *@
-                @*                                 </td> *@
+                                                @*                                 <td> *@
+                                                @*                                     <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID" *@
+                                                @*                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
+                                                @* { *@
+                                                @*     { "CategoryImageURL", item.CategoryImageURL } *@
+                                                @* })"> *@
+                                                @*                                         <label for="pageTitle">Category Title</label> *@
+                                                @*                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" /> *@
+                                                @*                                     </TranslatePopup> *@
+                                                @*                                 </td> *@
                                             </tr>
                                         }
                                     </tbody>
@@ -216,7 +214,13 @@
             await ToastService.ShowErrorAsync("Category Title or Category Icon is required", "Validation Error");
             return;
         }
+        if (newCategory.DisplayOrder == 0)
+        {
+            await ToastService.ShowErrorAsync("Display Order is required", "Validation Error");
+            return;
+        }
         newCategory.LangID = 1;
+        Console.WriteLine($"Creating category with DisplayOrder: {newCategory.DisplayOrder}");
         var response = await CategoryService.CreateAsync(newCategory);
         if (response.IsSuccessStatusCode)
         {

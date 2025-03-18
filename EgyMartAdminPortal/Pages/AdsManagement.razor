@@ -1,19 +1,20 @@
-﻿@page "/ads-management"
+﻿@page "/ads-subscriptions"
 
 @inject NavigationManager NavigationManager
 @inject SubscriptionService SubscriptionService
 @inject ToastrService ToastService
 
-<PageTitle>Ads Management</PageTitle>
-<h1>Ads Management</h1>
+<PageTitle>Ads Subscriptions</PageTitle>
+<h1>Ads Subscriptions</h1>
 <div class="mt-2">
     <button class="btn btn-primary" @onclick="() => ShowPopup(false, 0)"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateEditAdvertising">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateEditAdvertising" FormModel="newItem">
     <div class="form-group">
         <label for="planTitle">Plan Title</label>
         <input type="text" class="form-control" id="planTitle" @bind="newItem.PlanTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.PlanTitle)" />
     </div>
     <div class="form-group">
         <label for="planLocation">Plan Location</label>
@@ -24,24 +25,29 @@
                 <option value="@location.AdsLocationID">@location.AdsLocationTitle</option>
             }
         </select>
+        <ValidationMessage For="@(() => newItem.LocationID)" />
     </div>
     <div class="form-group">
         <label for="durationDays">Duration Per Day</label>
         <input type="number" class="form-control" id="durationDays" @bind="newItem.DurationDays" />
+        <ValidationMessage For="@(() => newItem.DurationDays)" />
     </div>
     <div class="form-group">
         <label for="costBefore">Cost Before</label>
         <input type="number" class="form-control" id="costBefore" @bind="newItem.CostBefore" />
+        <ValidationMessage For="@(() => newItem.CostBefore)" />
     </div>
     <div class="form-group">
         <label for="cost">Cost</label>
         <input type="number" class="form-control" id="cost" @bind="newItem.Cost" />
+        <ValidationMessage For="@(() => newItem.Cost)" />
     </div>
     <div class="form-group">
         <label for="planDescription">Plan Description</label>
-        <textarea class="form-control" id="planDescription" @bind="@newItem.PlanDescription" Rows="3" />
+        <textarea class="form-control" id="planDescription" @bind="@newItem.PlanDescription" Rows="3"></textarea>
     </div>
 </Popup>
+
 
 <div class="mt-3 text-center">
     <LoadingSpinner IsLoading="isLoading" />
@@ -80,20 +86,17 @@
                         <td>@item.DurationDays</td>
                         <td>@item.CostBefore</td>
                         <td>@item.Cost</td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.AdsPlanID, item.IsActive, false)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.AdsPlanID, item.IsActive, false)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(item.AdsPlanID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                            IndicatorType="BadgeIndicatorType.RoundedPill"
+                            @onclick="() => ToggleStatus(item.AdsPlanID, item.IsActive)">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                         <td>
                             <Button class="btn btn-primary" TooltipTitle="Edit" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Edit" @onclick="() => ShowPopup(true, item.AdsPlanID)"><i class="far fa-edit"></i></Button>
                             <TranslatePopup Item="@newItem" Service="SubscriptionService" BaseID="item.AdsPlanID"
-                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>{{ "AdsLocationTitle", item.AdsLocationTitle }})">
+                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>{{ "AdsLocationTitle", item.AdsLocationTitle }})">
                                 <label for="planTitle">Plan Title</label>
                                 <input id="planTitle" class="form-control" @bind="@newItem.PlanTitle" />
 
@@ -109,10 +112,10 @@
 
     <!-- Pagination Component -->
     <MPagination TItem="Subscription"
-                 Items="allItems"
-                 CurrentPage="@CurrentPage"
-                 PageSize="@PageSize"
-                 OnPageChanged="HandlePageChanged" />
+    Items="allItems"
+    CurrentPage="@CurrentPage"
+    PageSize="@PageSize"
+    OnPageChanged="HandlePageChanged" />
 }
 
 @code {
@@ -171,6 +174,10 @@
         }
         if (newItem.AdsPlanID == 0)
         {
+            if (string.IsNullOrEmpty(newItem.PlanTitle))
+            {
+                await ToastService.ShowErrorAsync("Plan Title is required.");
+            }
             var response = await SubscriptionService.CreateAsync(newItem);
 
             if (response.IsSuccessStatusCode)
@@ -241,7 +248,7 @@
         }
     }
 
-    private async Task ToggleStatus(long itemID, bool currentStatus, bool isParent)
+    private async Task ToggleStatus(long itemID, bool currentStatus)
     {
 
         showPopup = false;

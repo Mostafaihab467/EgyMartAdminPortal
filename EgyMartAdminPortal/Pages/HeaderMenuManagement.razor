@@ -11,18 +11,22 @@
     <button class="btn btn-primary" @onclick="() => ShowPopup(0)"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateItem">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateItem" FormModel="newItem">
     <div class="form-group">
         <label for="menuTitle">Menu Item Title</label>
         <input type="text" class="form-control" id="menuTitle" @bind="newItem.MenuItemTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.MenuItemTitle)" />
     </div>
     <div class="form-group">
         <label for="targetURL">Target URL</label>
         <input type="text" class="form-control" id="targetURL" @bind="newItem.TargetUrl" />
+        <ValidationMessage For="@(() => newItem.TargetUrl)" />
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
-        <input type="number" class="form-control" id="displayOrder" @bind="newItem.DisplayOrder" />
+        <InputPositiveNumber Value="@newItem.DisplayOrder"
+                             ValueChanged="@(value => { newItem.DisplayOrder = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newItem.DisplayOrder)" />
     </div>
 </Popup>
 
@@ -63,15 +67,11 @@
                         <td data-bs-toggle="collapse" data-bs-target="#@item.MenuItemID" class="cursor-pointer">
                             <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.MenuItemID, item.IsActive, true)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.MenuItemID, item.IsActive, true)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(item.MenuItemID, item.IsActive, true)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                         <td>
                             <Button class="btn btn-primary" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => ShowPopup(item.MenuItemID)">
@@ -116,15 +116,11 @@
                                                 <td class="cursor-pointer">
                                                     <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(child, nameof(child.DisplayOrder), value)" />
                                                 </td>
-                                                <td class="cursor-pointer">
-                                                    @if (child.IsActive)
-                                                    {
-                                                        <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.MenuItemID, child.IsActive, false)">Active</Badge>
-                                                    }
-                                                    else
-                                                    {
-                                                        <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(child.MenuItemID, child.IsActive, false)">Not Active</Badge>
-                                                    }
+                                                <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(child.MenuItemID, item.IsActive, false)">
+                                                    <Badge Class="@($"p-2 {(child.IsActive ? "btn-success" : "btn-danger")}")"
+                                                           IndicatorType="BadgeIndicatorType.RoundedPill">
+                                                        @(child.IsActive ? "Active" : "Not Active")
+                                                    </Badge>
                                                 </td>
                                                 <td>
                 @*                                     <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="child.MenuItemID" *@
@@ -209,7 +205,7 @@
             {
                 expandedItems.Add(newItem.ParentID);
             }
-            await ToastService.ShowSuccessAsync("Category Created Successfully", "Success");
+            await ToastService.ShowSuccessAsync("Header Menu Created Successfully", "Success");
             showPopup = false;
 
             if (newItem.ParentID == 0)
@@ -223,7 +219,7 @@
         }
         else
         {
-            await ToastService.ShowErrorAsync("Error While Creating New Category", "Error");
+            await ToastService.ShowErrorAsync("Error While Creating New Header Menu", "Error");
         }
 
     }

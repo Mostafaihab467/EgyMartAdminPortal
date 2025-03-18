@@ -1,22 +1,24 @@
-﻿@page "/fixed-page"
+﻿@page "/pages"
 @inject FixedPageService FixedPageService
 @inject ToastrService ToastService
 
-<PageTitle>FixedPage Management</PageTitle>
-<h3>FixedPageManagement</h3>
+<PageTitle>Pages</PageTitle>
+<h3>Pages</h3>
 
 <div class="mt-2">
     <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync">
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync" FormModel="newItem">
     <div class="form-group">
         <label for="pageTitle">Page Title</label>
         <input type="text" class="form-control" id="pageTitle" @bind="newItem.PageTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.PageTitle)" />
     </div>
-    <div class="form-group h-25">
+    <div class="form-group h-100">
         <label for="pageBody">Page Body</label>
         <CKEditor @bind-Value="@newItem.PageBody" />
+        <ValidationMessage For="@(() => newItem.PageBody)" />
     </div>
 </Popup>
 
@@ -50,22 +52,13 @@
                             <EditableField T="string" Value="@item.PageTitle" ValueChanged="value => SaveEdit(item, nameof(item.PageTitle), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <EditableField T="string"
-                                           InputType="textarea"
-                                           Value="@item.PageBody"
-                                           Frame="true"
-                                           ValueChanged="@((value) => SaveEdit(item, nameof(item.PageBody), value))" />
-
+                            <EditableField T="string" InputType="textarea" Frame="true" Width="100" Value="@item.PageBody" ValueChanged="value => SaveEdit(item, nameof(item.PageBody), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.PageID, item.IsActive)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.PageID, item.IsActive)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.PageID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                         <td>
                             <TranslatePopup Item="@newItem" Service="FixedPageService" BaseID="@item.PageID" OnTranslationSuccess="Refresh">

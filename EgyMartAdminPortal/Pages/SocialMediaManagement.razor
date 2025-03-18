@@ -4,8 +4,8 @@
 @inject SocialMediaService SocialMediaService
 @inject ToastrService ToastService
 
-<PageTitle>Social Media Management</PageTitle>
-<h1>Social Media Management</h1>
+<PageTitle>Social Media</PageTitle>
+<h1>Social Media</h1>
 
 <div class="mt-3 text-center">
     <LoadingSpinner IsLoading="isLoading" />
@@ -35,27 +35,23 @@
                 @foreach (var item in pagedItems)
                 {
                     <tr id="ad-@item.LinkID">
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.LinkTitle" ValueChanged="value => SaveEdit(item, nameof(item.LinkTitle), value)" />
+                        <td>
+                            <EditableField T="string" Value="@item.LinkTitle" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.LinkTitle), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.LinkTarget" ValueChanged="value => SaveEdit(item, nameof(item.LinkTarget), value)" />
+                        <td>
+                            <EditableField T="string" Value="@item.LinkTarget" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.LinkTarget), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="string" Value="@item.LinkIcon" ValueChanged="value => SaveEdit(item, nameof(item.LinkIcon), value)" InputType="faIcon" />
+                        <td>
+                            <i class="@item.LinkIcon fs-5"></i>
                         </td>
-                        <td class="cursor-pointer">
-                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
+                        <td>
+                            <EditableField T="int" InputType="number" Width="100" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
                         </td>
-                        <td class="cursor-pointer">
-                            @if (item.IsActive)
-                            {
-                                <Badge Class="p-2 btn-success" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.LinkID, item.IsActive)">Active</Badge>
-                            }
-                            else
-                            {
-                                <Badge Class="p-2 btn-danger" IndicatorType="BadgeIndicatorType.RoundedPill" @onclick="() => ToggleStatus(item.LinkID, item.IsActive)">Not Active</Badge>
-                            }
+                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.LinkID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
                         </td>
                     </tr>
                 }
@@ -145,7 +141,6 @@
             item.IsActive = currentStatus;
             await ToastService.ShowErrorAsync("Error updating status", "Error");
         }
-
         StateHasChanged();
     }
 
