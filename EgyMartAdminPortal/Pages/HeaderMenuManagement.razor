@@ -59,7 +59,7 @@
                     <tr>
                         <th data-bs-toggle="collapse" data-bs-target="#@item.MenuItemID" class="cursor-pointer" scope="row">
                             <i class="fas fa-caret-right colored p-2 fs-6 @(expandedItems.Contains(item.MenuItemID) ? "rotate-45" : "")" @onclick="() => ToggleChildItems(item.MenuItemID)"></i>
-                            <EditableField T="string" Value="@item.MenuItemTitle" ValueChanged="value => SaveEdit(item, nameof(item.MenuItemTitle), value)" />
+                            <EditableField T="string" Value="@item.MenuItemTitle" Width="92" ValueChanged="value => SaveEdit(item, nameof(item.MenuItemTitle), value)" />
                         </th>
                         <td data-bs-toggle="collapse" data-bs-target="#@item.MenuItemID" class="cursor-pointer">
                             <EditableField T="string" Value="@item.TargetUrl" ValueChanged="value => SaveEdit(item, nameof(item.TargetUrl), value)" />
@@ -78,14 +78,15 @@
                                 <i class="fas fa-id-badge"></i>
                             </Button>
 
-                @*             <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID" *@
-                @*             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
-                @* { *@
-                @*     { "TargetUrl", item.TargetUrl } *@
-                @* })"> *@
-                @*                 <label for="pageTitle">Page Title</label> *@
-                @*                 <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" /> *@
-                @*             </TranslatePopup> *@
+                             <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="item.MenuItemID" 
+                             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> 
+                 {
+                     { "TargetUrl", item.TargetUrl }
+                 })">
+                                 <label for="pageTitle">Page Title</label>
+                                <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
+                                <ValidationMessage For="@(() => newItem.MenuItemTitle)" />
+                            </TranslatePopup>
                         </td>
                     </tr>
                     <tr class="collapse @(expandedItems.Contains(item.MenuItemID) ? "show" : "")" id="@($"child-{item.MenuItemID}")" data-bs-parent=".table">
@@ -123,14 +124,15 @@
                                                     </Badge>
                                                 </td>
                                                 <td>
-                @*                                     <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="child.MenuItemID" *@
-                @*                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
-                @* { *@
-                @*     { "TargetUrl", child.TargetUrl } *@
-                @* })"> *@
-                @*                                         <label for="mainItemTitle">Main Title</label> *@
-                @*                                         <input id="mainItemTitle" class="form-control" bind="@child.MenuItemTitle" /> *@
-                @*                                     </TranslatePopup> *@
+                                                     <TranslatePopup Item="@newItem" Service="HeaderMenuService" BaseID="child.MenuItemID"
+                                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                 {
+                     { "TargetUrl", child.TargetUrl }
+                 })">
+                                                         <label for="mainItemTitle">Main Title</label>
+                                                         <input id="mainItemTitle" class="form-control" bind="@child.MenuItemTitle" />
+                                                        <ValidationMessage For="@(() => newItem.MenuItemTitle)" />
+                                                     </TranslatePopup> 
                                                 </td>
                                             </tr>
                                         }

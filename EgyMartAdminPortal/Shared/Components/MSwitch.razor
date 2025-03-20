@@ -1,0 +1,68 @@
+﻿<div class="custom-switch">
+    <input type="checkbox" id="@SwitchId" checked="@Value" @onchange="ToggleValue" />
+    <label for="@SwitchId" class="switch-label"></label>
+    <span class="switch-text">@Label</span>
+</div>
+
+@code {
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public string Label { get; set; } = "Custom Switch";
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+
+    private string SwitchId { get; } = "switch-" + Guid.NewGuid().ToString("N");
+
+    private async Task ToggleValue(ChangeEventArgs e)
+    {
+        Value = (bool)e.Value!; // **ERROR FIX:** Explicitly convert the value
+        await ValueChanged.InvokeAsync(Value);
+    }
+}
+
+
+
+<style>
+    .custom-switch {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .custom-switch input {
+            display: none;
+        }
+
+    .switch-label {
+        position: relative;
+        width: 50px;
+        height: 25px;
+        background-color: #ccc;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+        .switch-label::before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 2.5px;
+            left: 2.5px;
+            transition: transform 0.3s;
+        }
+
+    input:checked + .switch-label {
+        background-color: #990202; /* Green when ON */
+    }
+
+        input:checked + .switch-label::before {
+            transform: translateX(25px);
+        }
+
+    .switch-text {
+        font-size: 14px;
+        color: #333;
+    }
+</style>

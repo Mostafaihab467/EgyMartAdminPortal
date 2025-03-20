@@ -1,5 +1,269 @@
-﻿<h3>AttributePage</h3>
+﻿@page "/attributes"
+@inject AttributeService AttributeService
+@inject ToastrService ToastService
+@inject NavigationManager Navigation
+
+<PageTitle>Attributes</PageTitle>
+<h1>Attributes</h1>
+
+<div class="mt-2">
+    <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
+</div>
+
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync" FormModel="@newItem">
+    <div class="form-group">
+        <label for="attributeTitle">Attribute Title</label>
+        <input type="text" class="form-control" id="attributeTitle" @bind="newItem.AttributeTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.AttributeTitle)" />
+    </div>
+    <div class="form-group my-2">
+        <MSwitch Label="Show Across All Category" @bind-Value="newItem.ShowAcrossAllCategory" />
+    </div>
+</Popup>
+
+<div class="mt-3 text-center">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+@if (!isLoading)
+{
+    @if (allItems.Count == 0)
+    {
+        <p class="text-center">@notFound</p>
+    }
+    else
+    {
+        <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Attribute Title</th>
+                    <th>Show Across All Category</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in pagedItems)
+                {
+                    <tr>
+                        <td class="cursor-pointer">
+                            <EditableField T="string" Value="@item.AttributeTitle" ValueChanged="value => SaveEdit(item, nameof(item.AttributeTitle), value)" />
+                        </td>
+                        <td class="cursor-pointer" style="width: 20%;" @onclick="value => SaveEdit(item, nameof(item.ShowAcrossAllCategory), value)">
+                            <MSwitch Label="@(item.ShowAcrossAllCategory? "Show": "Not Show")" @bind-Value="item.ShowAcrossAllCategory" />
+                        </td>
+                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.AttributeID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                            IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
+                        </td>
+                        <td>
+                            <CategoryLinkPopup AttributeID="@item.AttributeID" />
+                            <TranslatePopup Item="@newItem" Service="AttributeService" BaseID="@item.AttributeID"
+                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                {
+                    { "ShowAcrossAllCategory", item.ShowAcrossAllCategory },
+                    { "AttributeTypeID", item.AttributeTypeID },
+                })">
+                                >
+                                <label for="attributeTitle">Attribute Title</label>
+                                <input id="attributeTitle" class="form-control" @bind="@newItem.AttributeTitle" />
+                            </TranslatePopup>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+
+<!-- Pagination Component -->
+<MPagination TItem="Attributes"
+Items="allItems"
+CurrentPage="@CurrentPage"
+PageSize="@PageSize"
+OnPageChanged="HandlePageChanged" />
 
 @code {
+    private List<Attributes> allItems = new();
+    private List<Attributes> pagedItems = new();
+    private Attributes newItem = new();
+    public ElementReference itemRef;
 
+    private HashSet<long> expandedItems = new();
+
+    private string notFound = "No Attributes Found";
+    private string popupTitle = "Add New Attributes";
+    private bool showPopup = false;
+    private bool isLoading = true;
+
+    private int CurrentPage = 1;
+    private int PageSize = 25;
+
+    private void ShowPopup()
+    {
+        showPopup = true;
+        newItem = new Attributes();
+        StateHasChanged();
+        Task.Delay(100).ContinueWith(async _ => await itemRef.FocusAsync());
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetItemsAsync();
+    }
+
+    private async Task GetItemsAsync()
+    {
+        // var response = await AttributeService.GetAsync();
+
+        #region Dummy Data
+        var random = new Random();
+        var response = new List<Attributes>
+{
+    new Attributes { AttributeID = 1, AttributeTitle = "Color", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 2, AttributeTitle = "Size", AttributeTypeID = 2, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 3, AttributeTitle = "Material", AttributeTypeID = 3, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 4, AttributeTitle = "Brand", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 5, AttributeTitle = "Weight", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 6, AttributeTitle = "Dimensions", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 7, AttributeTitle = "Voltage", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 8, AttributeTitle = "Power Consumption", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 9, AttributeTitle = "Warranty", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 10, AttributeTitle = "Battery Life", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 11, AttributeTitle = "Connectivity", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 12, AttributeTitle = "Storage Capacity", AttributeTypeID = 1, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 13, AttributeTitle = "Screen Size", AttributeTypeID = 2, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 14, AttributeTitle = "Processor", AttributeTypeID = 3, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 15, AttributeTitle = "Operating System", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 16, AttributeTitle = "Camera Resolution", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 17, AttributeTitle = "Audio Output", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 18, AttributeTitle = "Water Resistance", AttributeTypeID = 1, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 19, AttributeTitle = "Smart Features", AttributeTypeID = 2, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
+    new Attributes { AttributeID = 20, AttributeTitle = "Touch Sensitivity", AttributeTypeID = 3, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 }
+};
+        #endregion
+
+        if (response != null)
+        {
+            allItems = response;
+            isLoading = false;
+            UpdatePagedItems();
+        }
+        else
+        {
+            isLoading = false;
+            await ToastService.ShowErrorAsync("Error While Getting Attributes", "Error");
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        newItem.RcBy = 0;
+        newItem.AttributeTypeID = 1;
+        var response = await AttributeService.CreateAsync(newItem);
+
+        if (response.Success)
+        {
+            await ToastService.ShowSuccessAsync("Attribute Created Successfully", "Success");
+            showPopup = false;
+            await GetItemsAsync();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error While Creating New Attribute", "Error");
+        }
+    }
+
+    private async Task SaveEdit(Attributes item, string fieldName, object newValue)
+    {
+        showPopup = false;
+        var property = typeof(Attributes).GetProperty(fieldName);
+        if (property == null) return;
+
+        var currentValue = property.GetValue(item);
+        if (currentValue?.ToString() == newValue?.ToString()) return;
+
+        if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
+        {
+            property.SetValue(item, intValue);
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            property.SetValue(item, newValue!.ToString());
+        }
+
+        var response = await AttributeService.EditAsync(item);
+        if (response.Success)
+        {
+            await ToastService.ShowSuccessAsync("Update successful", "Success");
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error updating Attribute", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SetLink(long AttributeID, long CategoryID)
+    {
+        await AttributeService.SetLinkAsync(AttributeID, CategoryID);
+    }
+    
+    private async Task DeleteLink(long LinkID)
+    {
+        await AttributeService.DeleteLinkAsync(LinkID);
+    }
+
+    private async Task ToggleStatus(long ID, bool currentStatus)
+    {
+        showPopup = false;
+        var item = allItems.FirstOrDefault(i => i.AttributeID == ID);
+
+        if (item == null)
+        {
+            await ToastService.ShowErrorAsync("Item not found", "Error");
+            return;
+        }
+
+        item.IsActive = !currentStatus;
+        var response = await AttributeService.ChangeStatusAsync(ID, item.IsActive);
+
+        if (response.Data == 0)
+        {
+            item.IsActive = currentStatus;
+            await ToastService.ShowErrorAsync("Error updating status", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private void UpdatePagedItems()
+    {
+        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        showPopup = false;
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task Refresh()
+    {
+        showPopup = false;
+        await ToastService.ShowSuccessAsync("Attribute translation completed!", "Success");
+    }
 }

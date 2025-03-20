@@ -105,15 +105,15 @@
         try
         {
             var response = await SocialMediaService.GetAsync();
-            if (response.Success)
+            if (response.Count != 0)
             {
-                allItems = response.Data;
+                allItems = response;
                 isLoading = false;
                 UpdatePagedItems();
             }
             else
             {
-                await ToastService.ShowErrorAsync(response.ResponseEngMsg);
+                await ToastService.ShowErrorAsync("Error While Getting Icons", "Error");
             }
 
         }

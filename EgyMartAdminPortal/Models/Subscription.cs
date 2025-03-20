@@ -23,6 +23,8 @@ namespace EgyMartAdminPortal.Models
         [Range(0, double.MaxValue, ErrorMessage = "Cost must be non-negative.")]
         [Compare(nameof(CostBefore), ErrorMessage = "Cost must be less than Cost Before.")]
         public double Cost { get; set; }
+
+        [Required(ErrorMessage = "Plan Description is required.")]
         public string PlanDescription { get; set; }
         public int LangID { get; set; }
 

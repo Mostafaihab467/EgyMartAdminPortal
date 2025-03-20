@@ -16,7 +16,7 @@ namespace EgyMartAdminPortal.Models
         public string Call2ActionMsg { get; set; }
 
         [Required(ErrorMessage = "Image is required.")]
-        public string ImageURL { get; set; }
+        public string ImageBase64 { get; set; }
 
         [Required(ErrorMessage = "Call2ActionURL is required.")]
         public string Call2ActionURL { get; set; }

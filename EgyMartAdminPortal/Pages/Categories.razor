@@ -81,14 +81,15 @@
                                 <i class="fas fa-id-badge"></i>
                             </Button>
 
-                            @*             <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="item.CategoryID" *@
-                            @*                             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
-                            @* { *@
-                            @*     { "CategoryImageURL", item.CategoryImageURL } *@
-                            @* })"> *@
-                            @*                 <label for="pageTitle">Category Title</label> *@
-                            @*                 <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" /> *@
-                            @*             </TranslatePopup> *@
+                            <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="item.CategoryID"
+                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                             {
+                                 { "CategoryImageURL", item.CategoryImageURL }
+                             })">
+                                <label for="pageTitle">Category Title</label>
+                                <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
+                                <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
+                            </TranslatePopup>
                         </td>
                     </tr>
                     <tr class="collapse @(expandedItems.Contains(item.CategoryID) ? "show" : "")" id="@($"child-{item.CategoryID}")" data-bs-parent=".table">
@@ -103,7 +104,7 @@
                                             <th scope="col">CategoryTitle</th>
                                             <th scope="col">displayOrder</th>
                                             <th scope="col">Status</th>
-                                            @* <th scope="col">Actions</th> *@
+                                            <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -126,16 +127,17 @@
                                                         @(child.IsActive ? "Active" : "Not Active")
                                                     </Badge>
                                                 </td>
-                                                @*                                 <td> *@
-                                                @*                                     <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID" *@
-                                                @*                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> *@
-                                                @* { *@
-                                                @*     { "CategoryImageURL", item.CategoryImageURL } *@
-                                                @* })"> *@
-                                                @*                                         <label for="pageTitle">Category Title</label> *@
-                                                @*                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" /> *@
-                                                @*                                     </TranslatePopup> *@
-                                                @*                                 </td> *@
+                                                <td>
+                                                    <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID"
+                                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                                                 {
+                                                     { "CategoryImageURL", item.CategoryImageURL }
+                                                 })">
+                                                        <label for="pageTitle">Category Title</label>
+                                                        <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
+                                                        <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
+                                                    </TranslatePopup>
+                                                </td>
                                             </tr>
                                         }
                                     </tbody>
@@ -209,22 +211,10 @@
 
     private async Task CreateCategory()
     {
-        if (string.IsNullOrWhiteSpace(newCategory.CategoryTitle) || string.IsNullOrWhiteSpace(newCategory.CategoryImageURL))
-        {
-            await ToastService.ShowErrorAsync("Category Title or Category Icon is required", "Validation Error");
-            return;
-        }
-        if (newCategory.DisplayOrder == 0)
-        {
-            await ToastService.ShowErrorAsync("Display Order is required", "Validation Error");
-            return;
-        }
         newCategory.LangID = 1;
-        Console.WriteLine($"Creating category with DisplayOrder: {newCategory.DisplayOrder}");
         var response = await CategoryService.CreateAsync(newCategory);
         if (response.IsSuccessStatusCode)
         {
-            // ✅ Ensure parent category expands
             if (!expandedItems.Contains(newCategory.ParentID))
             {
                 expandedItems.Add(newCategory.ParentID);
@@ -250,9 +240,9 @@
     private async Task GetCategoriesAsync()
     {
         var response = await CategoryService.GetAsync();
-        if (response.Success)
+        if (response.Count != 0)
         {
-            allItems = response.Data;
+            allItems = response;
             isLoading = false;
             CurrentPage = 1;
             UpdatePagedItems();

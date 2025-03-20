@@ -1,4 +1,5 @@
-﻿namespace EgyMartAdminPortal.Models.Dashoard
+﻿#nullable disable
+namespace EgyMartAdminPortal.Models.Dashoard
 {
     public class BrowserData
     {

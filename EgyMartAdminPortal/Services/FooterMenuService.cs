@@ -15,8 +15,25 @@ namespace EgyMartAdminPortal.Services
 
         public async Task<List<FooterMenu>> GetAsync()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<FooterMenu>>>($"{ApiUrl}/GetList"))!;
-            return response.Data;
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<FooterMenu>>>($"{ApiUrl}/GetList");
+
+                if (response == null || response.Data == null)
+                    return [];
+
+                return response.Data;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("API returned 404 - Resource not found.");
+                return []; // Return an empty list instead of throwing an error
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return []; // Handle other errors gracefully
+            }
         }
         
         public async Task<List<FooterMenu>> GetByLangAsync(int langID, long baseID)

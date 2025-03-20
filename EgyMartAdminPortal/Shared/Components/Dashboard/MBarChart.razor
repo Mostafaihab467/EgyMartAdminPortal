@@ -8,8 +8,9 @@
         @foreach (var data in SortedData)
         {
             <rect x="@GetXPosition(data.ViewDay!)" y="@GetYPosition(data.ViewsCount)"
-            width="25" height="@GetBarHeight(data.ViewsCount)"
-            fill="#990202" rx="4"></rect>
+                  width="@BarWidth" height="@GetBarHeight(data.ViewsCount)"
+                  fill="@BarColor" rx="4"></rect>
+            @((MarkupString)$"<text x='{GetXPosition(data.ViewDay!) + (BarWidth / 2)}' y='{GetYPosition(data.ViewsCount) - 5}' font-size='10' fill='black' text-anchor='middle'>{data.ViewsCount}</text>")
         }
     </svg>
 
@@ -25,17 +26,24 @@
 @code {
     [Parameter] public string Title { get; set; } = "Title";
     [Parameter] public List<ViewDayData> ViewData { get; set; } = new();
+    [Parameter] public string BarColor { get; set; } = "#990202";
+    [Parameter] public int MaxHeight { get; set; } = 90;
+
     private readonly string[] WeekDays = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" };
+    private const int BarSpacing = 35;
+    private const int BarWidth = 25;
 
-    private IEnumerable<ViewDayData> SortedData => WeekDays.Select(d =>
-    (ViewData ?? new List<ViewDayData>())
-    .FirstOrDefault(v => GetShortDay(v.ViewDay!) == d) ?? new ViewDayData { ViewDay = d, ViewsCount = 0 });
+    private IEnumerable<ViewDayData> SortedData => (ViewData ?? new List<ViewDayData>())
+    .Any() ? WeekDays.Select(d =>
+        ViewData!.FirstOrDefault(v => GetShortDay(v.ViewDay!) == d) ?? new ViewDayData { ViewDay = d, ViewsCount = 0 })
+    : new List<ViewDayData>();
 
 
-    private int GetXPosition(string day) => Array.IndexOf(WeekDays, GetShortDay(day)) * 35 + 10;
-    private int GetYPosition(int count) => 100 - (count * 90 / 100);
-    private int GetBarHeight(int count) => (count * 90 / 100);
-    private string GetShortDay(string fullDay) => fullDay[..2]; // Convert "Monday" to "Mo"
+    private int GetXPosition(string day) => Array.IndexOf(WeekDays, GetShortDay(day)) * BarSpacing + 10;
+    private int GetYPosition(int count) => 100 - (count * MaxHeight / (GetMaxViewCount() == 0 ? 1 : GetMaxViewCount()));
+    private int GetBarHeight(int count) => (count * MaxHeight / (GetMaxViewCount() == 0 ? 1 : GetMaxViewCount()));
+    private string GetShortDay(string? fullDay) => !string.IsNullOrEmpty(fullDay) && fullDay.Length >= 2 ? fullDay[..2] : "--";
+    private int GetMaxViewCount() => ViewData.Any() ? ViewData.Max(v => v.ViewsCount) : 100;
 }
 
 <style>
@@ -43,7 +51,8 @@
         max-width: 250px;
         border-radius: 10px;
     }
-    .fs-15{
-        font-size:12px;
+
+    .fs-15 {
+        font-size: 12px;
     }
 </style>

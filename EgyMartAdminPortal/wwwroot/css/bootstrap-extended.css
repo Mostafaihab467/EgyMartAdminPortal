@@ -276,9 +276,11 @@ textarea.form-control-lg {
 .form-switch .form-check-input:not(:disabled):checked, .form-switch .form-check-input:not(:disabled):focus {
   box-shadow: none !important; }
 
-.form-switch .form-check-label {
-  line-height: 1.7rem;
-  /*For Switch text*/ }
+    .form-switch .form-check-label {
+        line-height: 1.7rem;
+        padding-top: 0.2rem;
+        /*For Switch text*/
+    }
 
 .form-switch .form-check-label .switch-text-left,
 .form-switch .form-check-label .switch-text-right,

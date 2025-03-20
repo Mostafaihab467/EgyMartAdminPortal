@@ -27,7 +27,7 @@
     </div>
     <div class="form-group">
         <label for="imageUpload">Upload Image</label>
-        <FileDropZone InputFile="true" OnImageUploaded="HandleImageUploaded" />
+        <FileDropZone InputFile="true" OnImageUploaded="@(EventCallback.Factory.Create<string>(this, HandleImageUploaded))" />
     </div>
     <div class="form-group">
         <label for="call2ActionURL">Action Url</label>
@@ -37,7 +37,7 @@
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
         <InputPositiveNumber Value="@newItem.DisplayOrder"
-                             ValueChanged="@(value => { newItem.DisplayOrder = value; StateHasChanged(); })" />
+        ValueChanged="@(value => { newItem.DisplayOrder = value; StateHasChanged(); })" />
         <ValidationMessage For="@(() => newItem.DisplayOrder)" />
     </div>
 </Popup>
@@ -82,8 +82,8 @@
                             <EditableField T="string" Value="@item.Call2ActionMsg" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <FileDropZone ImageUrl="@item.ImageURL" CloseIcon="true" InputFile="false"
-                                          OnImageUploaded="async (imageUrl) => await SaveEdit(item, nameof(item.ImageURL), imageUrl)" />
+                            <FileDropZone Image="@item.ImageBase64" CloseIcon="true" InputFile="false"
+                            OnImageUploaded="async (imageBase64) => await SaveEdit(item, nameof(item.ImageBase64), imageBase64)" />
                         </td>
                         <td>
                             <EditableField T="string" Value="@item.Call2ActionURL" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
@@ -93,13 +93,13 @@
                         </td>
                         <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.SliderID, item.IsActive)">
                             <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
-                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                            IndicatorType="BadgeIndicatorType.RoundedPill">
                                 @(item.IsActive ? "Active" : "Not Active")
                             </Badge>
                         </td>
                         <td>
                             <TranslatePopup Item="@newItem" Service="SliderMenuService" BaseID="@item.SliderID"
-                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
                 {
                     { "Call2ActionURL", item.Call2ActionURL }
                 })">
@@ -110,7 +110,7 @@
                                 <label for="call2ActionMsg">Action Msg</label>
                                 <input id="call2ActionMsg" class="form-control" @bind="@newItem.Call2ActionMsg" />
                                 <label for="imageURL">Image Url</label>
-                                <input id="imageURL" class="form-control" @bind="@newItem.ImageURL" />
+                                <FileDropZone InputFile="true" OnImageUploaded="@(EventCallback.Factory.Create<string>(this, HandleEditImageUploaded))" />
                             </TranslatePopup>
                         </td>
                     </tr>
@@ -122,10 +122,10 @@
 
 <!-- Pagination Component -->
 <MPagination TItem="SliderMenu"
-             Items="allItems"
-             CurrentPage="@CurrentPage"
-             PageSize="@PageSize"
-             OnPageChanged="HandlePageChanged" />
+Items="allItems"
+CurrentPage="@CurrentPage"
+PageSize="@PageSize"
+OnPageChanged="HandlePageChanged" />
 
 @code {
     private List<SliderMenu> allItems = new();
@@ -137,6 +137,7 @@
     private string notFound = "No Pages Found";
     private string popupTitle = "Add New Page";
     private bool showPopup;
+    private bool IsCreate = false;
     private int CurrentPage = 1;
     private int PageSize = 25;
 
@@ -149,7 +150,6 @@
     {
         showPopup = true;
         newItem = new SliderMenu();
-        StateHasChanged();
         Task.Delay(100).ContinueWith(async _ => await itemRef.FocusAsync());
     }
 
@@ -263,9 +263,15 @@
         await ToastService.ShowSuccessAsync("Menu translation completed!", "Success");
     }
 
-    private void HandleImageUploaded(string imageUrl)
+    private async Task HandleImageUploaded(string base64Image)
     {
-        newItem.ImageURL = imageUrl;
-        StateHasChanged();
+        newItem.ImageBase64 = base64Image;
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task HandleEditImageUploaded(string base64Image)
+    {
+        showPopup = false;
+        newItem.ImageBase64 = base64Image;
+        await InvokeAsync(StateHasChanged);
     }
 }

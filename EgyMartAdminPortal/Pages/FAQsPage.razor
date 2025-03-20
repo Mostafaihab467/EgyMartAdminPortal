@@ -1,4 +1,4 @@
-﻿@page "/faqs"
+﻿@page "/faq"
 @inject FAQService FAQService
 @inject ToastrService ToastService
 
@@ -9,7 +9,7 @@
     <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Class="m-model" Title="@popupTitle" OnSave="CreateAsync" FormModel="newItem">
+<Popup IsVisible="showPopup" Title="@popupTitle" Class="m-model" OnSave="CreateAsync" FormModel="newItem">
     <div class="form-group">
         <label for="qTitle"> Question</label>
         <input type="text" class="form-control" id="qTitle" @bind="newItem.QTitle" @ref="itemRef" />
@@ -41,37 +41,25 @@
     else
     {
         <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Question</th>
-                    <th>Answer</th>
-                    <th>DisplayOrder</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in pagedItems)
-                {
-                    <tr>
-                        <td>
-                            <EditableField T="string" Value="@item.QTitle" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.QTitle), value)" />
-                        </td>
-                        <td>
+        <div class="row">
+            @foreach (var item in pagedItems)
+            {
+                <div class="col-md-4">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <EditableField T="string" Value="@item.QTitle" Width="73" ValueChanged="value => SaveEdit(item, nameof(item.QTitle), value)" />
+                            <span class="ms-auto cursor-pointer" @onclick="() => ToggleStatus(item.Qid, item.IsActive)">
+                                <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                                       IndicatorType="BadgeIndicatorType.RoundedPill">
+                                    @(item.IsActive ? "Active" : "Not Active")
+                                </Badge>
+                            </span>
+                        </div>
+                        <div class="card-body">
                             <EditableField T="string" InputType="textarea" Frame="true" Width="100" Value="@item.QAnswer" ValueChanged="value => SaveEdit(item, nameof(item.QAnswer), value)" />
-                        </td>
-                        <td>
-                            <EditableField T="int" InputType="number" Width="100" Value="@item.DisplayOrder" ValueChanged="value => SaveEdit(item, nameof(item.DisplayOrder), value)" />
-                        </td>
-                        <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.Qid, item.IsActive)">
-                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
-                                   IndicatorType="BadgeIndicatorType.RoundedPill">
-                                @(item.IsActive ? "Active" : "Not Active")
-                            </Badge>
-                        </td>
-                        <td>
-                            <TranslatePopup Item="@newItem" Class="m-model" Service="FAQService" BaseID="item.Qid" OnTranslationSuccess="Refresh">
+                        </div>
+                        <div class="card-footer">
+                            <TranslatePopup Item="@newItem" Service="FAQService" Class="m-model" BaseID="item.Qid" OnTranslationSuccess="Refresh">
                                 <label for="qTitle">Question Title</label>
                                 <input id="qTitle" class="form-control" @bind="@newItem.QTitle" />
                                 <ValidationMessage For="@(() => newItem.QTitle)" />
@@ -79,11 +67,11 @@
                                 <CKEditor @bind-Value="@newItem.QAnswer" />
                                 <ValidationMessage For="@(() => newItem.QAnswer)" />
                             </TranslatePopup>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     }
 }
 

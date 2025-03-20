@@ -1,0 +1,99 @@
+﻿@inject AttributeService AttributeService
+@inject CategoryService CategoryService
+
+<Button Color="ButtonColor.Primary" TooltipTitle="Link To Category" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Link To Category" @onclick="() => isPopupVisible = true">
+    <i class="fa-solid fa-link"></i>
+</Button>
+
+<!-- Popup -->
+@if (isPopupVisible)
+{
+    <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Category</h5>
+                    <button type="button" class="btn-close" @onclick="() => isPopupVisible = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (categories != null && categories.Any())
+                    {
+                        @foreach (var category in categories)
+                        {
+                            <div class="d-flex gap-2">
+                                <input type="checkbox" id="@category.CategoryID"
+                                       checked="@linkedCategories.Contains(category.CategoryID)"
+                                       @onchange="async (_) => await ToggleCategory(category.CategoryID)" />
+                                <label for="@category.CategoryID">@category.CategoryTitle</label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p>No categories available.</p>
+                    }
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => isPopupVisible = false">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .category-item input {
+    transform: scale(1.2);
+    }
+
+</style>
+
+@code {
+    private bool isPopupVisible = false;
+    private List<Category> categories = new();
+    private HashSet<long> linkedCategories = new(); // Track checked categories
+
+    [Parameter] public long AttributeID { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await CategoryService.GetAsync(); // Fetch categories
+        // var linked = await AttributeService.GetLinkedCategoriesAsync(AttributeID);
+        // linkedCategories = new HashSet<long>(linked.Select(c => c.CategoryID));
+        StateHasChanged();
+    }
+
+    private async Task ToggleCategory(long categoryId)
+    {
+        if (linkedCategories.Contains(categoryId))
+        {
+            linkedCategories.Remove(categoryId);
+            await DeleteLink(categoryId);
+        }
+        else
+        {
+            linkedCategories.Add(categoryId);
+            await SetLink(AttributeID, categoryId);
+        }
+    }
+
+    private async Task SetLink(long attributeID, long categoryID)
+    {
+        await AttributeService.SetLinkAsync(attributeID, categoryID);
+    }
+
+    private async Task DeleteLink(long categoryID)
+    {
+        await AttributeService.DeleteLinkAsync(categoryID);
+    }
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            isPopupVisible = false;
+        else if (e.Key == "Escape")
+            isPopupVisible = false;
+    }
+}

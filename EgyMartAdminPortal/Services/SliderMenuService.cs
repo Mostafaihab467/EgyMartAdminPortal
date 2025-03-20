@@ -15,8 +15,25 @@ namespace EgyMartAdminPortal.Services
 
         public async Task<List<SliderMenu>> GetAsync()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<SliderMenu>>>($"{ApiUrl}/GetList"))!;
-            return response.Data ?? [];
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<SliderMenu>>>($"{ApiUrl}/GetList");
+
+                if (response == null || response.Data == null)
+                    return [];
+
+                return response.Data;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("API returned 404 - Resource not found.");
+                return []; // Return an empty list instead of throwing an error
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return []; // Handle other errors gracefully
+            }
         }
         
         public async Task<List<SliderMenu>> GetByLangAsync(int langID,long baseID)
@@ -32,7 +49,7 @@ namespace EgyMartAdminPortal.Services
                 MainTitle = item.MainTitle,
                 ShortTitle = item.ShortTitle,
                 Call2ActionMsg = item.Call2ActionMsg,
-                ImageURL = item.ImageURL,
+                ImageBase64 = item.ImageBase64,
                 Call2ActionURL = item.Call2ActionURL,
                 DisplayOrder = item.DisplayOrder
             };
@@ -47,6 +64,7 @@ namespace EgyMartAdminPortal.Services
                 ShortTitle = item.ShortTitle,
                 MainTitle = item.MainTitle,
                 Call2ActionMsg = item.Call2ActionMsg,
+                ImageBase64 = item.ImageBase64,
                 Call2ActionURL = item.Call2ActionURL,
                 DisplayOrder = item.DisplayOrder
             };

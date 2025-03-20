@@ -9,10 +9,27 @@ namespace EgyMartAdminPortal.Services
     {
         private readonly HttpClient _httpClient = httpClient;
         protected string ApiUrl = "cms/api/v1/WidgetsSocialMedia";
-        public async Task<ApiResponse<List<SocialMedia>>> GetAsync()
+        public async Task<List<SocialMedia>> GetAsync()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<SocialMedia>>>($"{ApiUrl}/Get?reptype=1"))!;
-            return response;
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<SocialMedia>>>($"{ApiUrl}/Get?reptype=1");
+
+                if (response == null || response.Data == null)
+                    return [];
+
+                return response.Data;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("API returned 404 - Resource not found.");
+                return []; // Return an empty list instead of throwing an error
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return []; // Handle other errors gracefully
+            }
         }
 
         public async Task<HttpResponseMessage>  CreateAsync(SocialMedia social)

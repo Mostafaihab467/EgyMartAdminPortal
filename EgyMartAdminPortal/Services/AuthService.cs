@@ -20,7 +20,7 @@ namespace EgyMartAdminPortal.Services
             User = user;
         }
 
-        public async Task GetUser()
+        public async Task<UserData> GetUser()
         {
             var userDataJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "userData");
             if (!string.IsNullOrEmpty(userDataJson))
@@ -32,6 +32,7 @@ namespace EgyMartAdminPortal.Services
                 // Redirect to login page
                 Navigation.NavigateTo("/login");
             }
+            return User;
         }
 
         public async Task<string> GetToken()

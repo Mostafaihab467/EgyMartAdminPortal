@@ -99,9 +99,11 @@
                             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>{{ "AdsLocationTitle", item.AdsLocationTitle }})">
                                 <label for="planTitle">Plan Title</label>
                                 <input id="planTitle" class="form-control" @bind="@newItem.PlanTitle" />
+                                <ValidationMessage For="@(() => newItem.PlanTitle)" />
 
                                 <label for="planDescription" class="mt-2">Plan Description</label>
                                 <textarea id="planDescription" class="form-control" @bind="@newItem.PlanDescription"></textarea>
+                                <ValidationMessage For="@(() => newItem.PlanDescription)" />
                             </TranslatePopup>
                         </td>
                     </tr>

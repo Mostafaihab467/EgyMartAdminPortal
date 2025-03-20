@@ -9,7 +9,7 @@
     <button class="btn btn-primary" @onclick="() => ShowPopup()"><i class="fas fa-plus-circle"></i> Add New</button>
 </div>
 
-<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateAsync" FormModel="newItem">
+<Popup IsVisible="showPopup" Title="@popupTitle" Class="m-model" OnSave="CreateAsync" FormModel="newItem">
     <div class="form-group">
         <label for="pageTitle">Page Title</label>
         <input type="text" class="form-control" id="pageTitle" @bind="newItem.PageTitle" @ref="itemRef" />
@@ -61,12 +61,13 @@
                             </Badge>
                         </td>
                         <td>
-                            <TranslatePopup Item="@newItem" Service="FixedPageService" BaseID="@item.PageID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Class="m-model" Service="FixedPageService" BaseID="@item.PageID" OnTranslationSuccess="Refresh">
                                 <label for="pageTitle">Page Title</label>
                                 <input id="pageTitle" class="form-control" @bind="@newItem.PageTitle" />
-
+                                <ValidationMessage For="@(() => newItem.PageTitle)" />
                                 <label for="pageBody" class="mt-2">Page Body</label>
-                                <textarea id="pageBody" class="form-control" @bind="@newItem.PageBody"></textarea>
+                                <CKEditor @bind-Value="@newItem.PageBody" />
+                                <ValidationMessage For="@(() => newItem.PageBody)" />
                             </TranslatePopup>
 
                         </td>

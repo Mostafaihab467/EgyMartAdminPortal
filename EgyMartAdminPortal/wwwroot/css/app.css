@@ -474,5 +474,8 @@ code {
 }
     .btn-sm:hover {
         color: var(--primary-color);
-        background-color: var(--background-primary-color);;
+        background-color: var(--background-primary-color);
     }
+.m-model {
+    max-width: 50rem !important;
+}

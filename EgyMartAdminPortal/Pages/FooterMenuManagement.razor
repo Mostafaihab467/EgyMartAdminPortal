@@ -55,7 +55,7 @@
                     <th scope="col">Display Order</th>
                     <th scope="col">Column Index</th>
                     <th scope="col">Status</th>
-                    @* <th scope="col">Actions</th> *@
+                    <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -81,12 +81,17 @@
                                 @(item.IsActive ? "Active" : "Not Active")
                             </Badge>
                         </td>
-                        @* <td> *@
-                        @*      <TranslatePopup Item="@newItem" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh"> *@
-                        @*          <label for="pageTitle">Page Title</label> *@
-                        @*          <input id="pageTitle" class="form-control" @bind="@newItem.FooterItemTitle" />  *@
-                        @*     </TranslatePopup>  *@
-                        @* </td> *@
+                         <td>
+                            <TranslatePopup Item="@newItem" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                 {
+                     { "TargetUrl", item.TargetUrl },
+                     { "ColumnIndex", item.ColumnIndex }
+                 })">
+                                  <label for="pageTitle">Page Title</label>
+                                  <input id="pageTitle" class="form-control" @bind="@newItem.FooterItemTitle" />
+                                <ValidationMessage For="@(() => newItem.FooterItemTitle)" />
+                             </TranslatePopup>
+                         </td>
                     </tr>
                 }
             </tbody>
@@ -133,7 +138,7 @@
         else
         {
             isLoading = false;
-            await ToastService.ShowErrorAsync("Error While Getting Items", "Error");
+            await ToastService.ShowErrorAsync("Error While Getting Pages", "Error");
         }
     }
 
@@ -149,7 +154,7 @@
         }
         else
         {
-            await ToastService.ShowErrorAsync("Error While Creating New Icon", "Error");
+            await ToastService.ShowErrorAsync("Error While Creating New Page", "Error");
         }
     }
 

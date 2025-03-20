@@ -7,12 +7,32 @@ namespace EgyMartAdminPortal.Services
     {
         private readonly HttpClient _httpClient = httpClient;
         protected string ApiUrl = "products/api/v1/CategoryList";
-        public async Task<ApiResponse<List<Category>>> GetAsync()
+        public async Task<List<Category>> GetAsync()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=0"))!;
-            return response;
-        }
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=1");
 
+                if (response == null || response.Data == null)
+                    return [];
+
+                return response.Data;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("API returned 404 - Resource not found.");
+                return []; // Return an empty list instead of throwing an error
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return []; // Handle other errors gracefully
+            }
+        }
+        public string GetTranslateApiUrl()
+        {
+            return $"{ApiUrl}";
+        }
         public async Task<ApiResponse<List<Category>>> GetChildAsync(long categoryID)
         {
             var response = await _httpClient.GetAsync($"{ApiUrl}/GetChild/{categoryID}/0");
@@ -26,7 +46,6 @@ namespace EgyMartAdminPortal.Services
 
             return data ?? new();
         }
-
         public async Task<HttpResponseMessage> CreateAsync(Category category)
         {
             var Cattquest = new Category
@@ -40,7 +59,6 @@ namespace EgyMartAdminPortal.Services
             var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/Create", Cattquest);
             return response;
         }
-
         public async Task<HttpResponseMessage> EditAsync(Category category)
         {
             var Cattquest = new Category
@@ -54,7 +72,6 @@ namespace EgyMartAdminPortal.Services
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/Edit", Cattquest);
             return response;
         }
-
         public async Task<HttpResponseMessage> ChangeStatusAsync(long rID, bool isActive)
         {
             var requestPayload = new
@@ -65,6 +82,11 @@ namespace EgyMartAdminPortal.Services
 
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/ChangeStatus", requestPayload);
             return response;
+        }
+        public async Task<List<Category>> GetByLangAsync(int langID, long baseID)
+        {
+            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetByLang?BaseID={baseID}&LangID={langID}"))!;
+            return response.Data;
         }
     }
 }

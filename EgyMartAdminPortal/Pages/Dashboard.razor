@@ -62,7 +62,7 @@
                         <CalendarCard FromDate="@FromDate" ToDate="@ToDate" OnDateRangeChanged="@LoadDashboardData" />
 
                         <!-- User Verified Card -->
-                        <VerifiedCard Title="User Verification" Items="userTypesList"
+                        <VerifiedCard Title="User Verification" SeeAllbtn="false" Items="userTypesList"
                                       GetLabel="user => ((UserTypeData)user).UserType"
                                       GetCount="user => ((UserTypeData)user).PendingCount" />
                     </div>

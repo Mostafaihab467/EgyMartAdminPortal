@@ -48,52 +48,49 @@ else
     <div class="cursor-pointer d-inline-block" style="width:@(Width)%;" @onclick="StartEditing">
         @if (Frame)
         {
-            <span class="cursor-pointer w-100 preview-text" @onmouseover="StartPreview" @onmouseout="HidePreview">@Value</span>
+            <div class="html-preview" @onclick="StartEditing">
+                <iframe id="@($"{Id}_iframe")"
+                        srcdoc="@ConvertToHtml(Value?.ToString() ?? "")"
+                        class="img-thumbnail"
+                        style="width: 100%; height: 300px; border: none; overflow-y:auto;"
+                        sandbox="allow-scripts allow-same-origin"
+                        @onload="EnableIframeClick"></iframe>
+            </div>
+
         }
         else
         {
             <span class="cursor-pointer w-100">@Value</span>
         }
-
-        @if (!string.IsNullOrEmpty(HtmlPreview) && !IsEditing)
-        {
-            <div class="html-preview" style="display: @(ShowPreview ? "block" : "none");">
-                <iframe srcdoc="@HtmlPreview" class="img-thumbnail"></iframe>
-            </div>
-        }
     </div>
+
 }
 
 
 <style>
-    .preview-text {
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        display: inline-block;
-        max-width: 52rem;
-    }
-
     .html-preview {
-        position: absolute;
-        width: 200px;
-        height: 220px;
-        border: 1px solid #ddd;
-        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-        background: white;
-        overflow: hidden;
-        z-index: 10;
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
     }
 
-        .html-preview iframe {
+        /* Create an overlay that captures pointer events */
+        .html-preview::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            border: none;
+            background: transparent;
+            cursor: pointer;
         }
-
     .ck-editor__editable {
         min-height: 75vh !important; /* Force height to 75% */
+        width: 50rem !important;
+        max-width: 100%;
     }
+
 </style>
 
 @code {
@@ -111,27 +108,28 @@ else
     private string EditingValue { get; set; } = "1";
     private int NumericValue { get; set; } = 1;
     private string HtmlPreview { get; set; } = "";
-    private bool ShowPreview { get; set; } = false;
     private ElementReference InputElement { get; set; }
     private DotNetObjectReference<EditableField<T>>? _dotNetRef;
 
     private InputPositiveNumber? InputNumberComponent;
 
-    private async void StartPreview()
+
+    private string ConvertToHtml(string text)
     {
-        if (typeof(T) == typeof(string))
-        {
-            HtmlPreview = Value?.ToString() ?? "";
-        }
-        ShowPreview = true;
-        await Task.Delay(300);
-        StateHasChanged();
+        if (string.IsNullOrWhiteSpace(text))
+            return "<p></p>"; // Avoid empty frames
+
+        // Replace new lines with <br> for better formatting
+        string htmlContent = Regex.Replace(text, @"\r?\n", "<br>");
+
+        // Additional formatting if needed
+        return $"<div style='padding: 10px; font-family: Arial, sans-serif;'>{htmlContent}</div>";
     }
 
-    private void HidePreview()
+    private async Task EnableIframeClick()
     {
-        ShowPreview = false;
-        StateHasChanged();
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await JSRuntime.InvokeVoidAsync("enableIframeClick", $"{Id}_iframe", _dotNetRef);
     }
 
     static bool IsNumericLetter(string letter, string text)
@@ -158,7 +156,7 @@ else
         return false;
     }
 
-    private async void StartEditing()
+    private async Task StartEditing()
     {
         IsEditing = true;
 
@@ -290,6 +288,12 @@ else
             Console.WriteLine($"Failed to convert {data} to {typeof(T)}");
         }
         return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task OnIframeClick()
+    {
+        await StartEditing();
     }
 
     public async ValueTask DisposeAsync()
