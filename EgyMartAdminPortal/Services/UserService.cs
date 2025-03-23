@@ -10,14 +10,12 @@ namespace EgyMartAdminPortal.Services
         private async Task<ApiResponse<List<T>>> FetchPendingUsersAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<T>>>($"{ApiUrl}/{endpoint}");
-            //Console.WriteLine(response);
             return response!;
         }
         private async Task<bool> VerifyUserAsync(string userType, long userId, int status)
         {
             var userParam = (userType == "Supplier") ? "userID" : "customerID";
-            var response =await _httpClient.PutAsync($"{ApiUrl}/{userType}/Verify?{userParam}={userId}&verifiedID=2", null);
-            //Console.WriteLine(response);
+            var response =await _httpClient.PutAsync($"{ApiUrl}/{userType}/Verify?{userParam}={userId}&verifiedID={status}", null);
             return response.IsSuccessStatusCode;
         }
 
@@ -27,6 +25,17 @@ namespace EgyMartAdminPortal.Services
         public async Task<bool> VerifySupplierAsync(long supplierId, int status) => await VerifyUserAsync("Supplier", supplierId, status);
         public async Task<bool> VerifyCustomerAsync(long customerId, int status) => await VerifyUserAsync("Customer", customerId, status);
 
+        public async Task<byte[]> DownloadSupplierAttachmentAsync(long OwnerID)
+        {
+            var response = await _httpClient.GetAsync($"{ApiUrl}/download_verficationFilePDf/{OwnerID}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+
+            throw new Exception("Failed to download attachment");
+        }
 
     }
 }

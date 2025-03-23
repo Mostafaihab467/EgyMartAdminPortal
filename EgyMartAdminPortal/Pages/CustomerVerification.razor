@@ -98,7 +98,7 @@
     private async Task<bool> VerifyUserAsync(long userId, bool isVerify)
     {
         return isVerify
-            ? await UserService.VerifyCustomerAsync(userId, 2)
+            ? await UserService.VerifyCustomerAsync(userId, 1)
             : await UserService.VerifyCustomerAsync(userId, 2);
     }
 

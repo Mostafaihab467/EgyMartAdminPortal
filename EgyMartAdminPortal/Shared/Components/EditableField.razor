@@ -48,14 +48,18 @@ else
     <div class="cursor-pointer d-inline-block" style="width:@(Width)%;" @onclick="StartEditing">
         @if (Frame)
         {
-            <div class="html-preview" @onclick="StartEditing">
-                <iframe id="@($"{Id}_iframe")"
-                        srcdoc="@ConvertToHtml(Value?.ToString() ?? "")"
-                        class="img-thumbnail"
-                        style="width: 100%; height: 300px; border: none; overflow-y:auto;"
-                        sandbox="allow-scripts allow-same-origin"
-                        @onload="EnableIframeClick"></iframe>
-            </div>
+            @* <div class="html-preview" @onclick="StartEditing"> *@
+            @*     <iframe id="@($"{Id}_iframe")" *@
+            @*             srcdoc="@ConvertToHtml(Value?.ToString() ?? "")" *@
+            @*             class="img-thumbnail" *@
+            @*             style="width: 100%; height: 300px; border: none; overflow-y:auto; font-size:10px;" *@
+            @*             sandbox="allow-scripts allow-same-origin" *@
+            @*             @onload="EnableIframeClick"></iframe> *@
+            @* </div> *@
+
+            <Button class="btn btn-primary" @onclick="StartEditing">
+                <i class="fa-solid fa-file-lines"></i><span class="ms-2">Show Cotent Of Page</span>
+            </Button>
 
         }
         else
@@ -89,6 +93,10 @@ else
         min-height: 75vh !important; /* Force height to 75% */
         width: 50rem !important;
         max-width: 100%;
+    }
+
+    .ck.ck-toolbar.ck-toolbar_grouping{
+        width:50rem !important;
     }
 
 </style>

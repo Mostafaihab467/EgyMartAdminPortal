@@ -67,7 +67,6 @@
                     { "ShowAcrossAllCategory", item.ShowAcrossAllCategory },
                     { "AttributeTypeID", item.AttributeTypeID },
                 })">
-                                >
                                 <label for="attributeTitle">Attribute Title</label>
                                 <input id="attributeTitle" class="form-control" @bind="@newItem.AttributeTitle" />
                             </TranslatePopup>
@@ -118,34 +117,7 @@ OnPageChanged="HandlePageChanged" />
 
     private async Task GetItemsAsync()
     {
-        // var response = await AttributeService.GetAsync();
-
-        #region Dummy Data
-        var random = new Random();
-        var response = new List<Attributes>
-{
-    new Attributes { AttributeID = 1, AttributeTitle = "Color", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 2, AttributeTitle = "Size", AttributeTypeID = 2, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 3, AttributeTitle = "Material", AttributeTypeID = 3, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 4, AttributeTitle = "Brand", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 5, AttributeTitle = "Weight", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 6, AttributeTitle = "Dimensions", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 7, AttributeTitle = "Voltage", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 8, AttributeTitle = "Power Consumption", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 9, AttributeTitle = "Warranty", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 10, AttributeTitle = "Battery Life", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 11, AttributeTitle = "Connectivity", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 12, AttributeTitle = "Storage Capacity", AttributeTypeID = 1, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 13, AttributeTitle = "Screen Size", AttributeTypeID = 2, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 14, AttributeTitle = "Processor", AttributeTypeID = 3, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 15, AttributeTitle = "Operating System", AttributeTypeID = 1, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 16, AttributeTitle = "Camera Resolution", AttributeTypeID = 2, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 17, AttributeTitle = "Audio Output", AttributeTypeID = 3, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 18, AttributeTitle = "Water Resistance", AttributeTypeID = 1, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 19, AttributeTitle = "Smart Features", AttributeTypeID = 2, ShowAcrossAllCategory = true, RcBy = 6, IsActive = random.Next(2) == 1 },
-    new Attributes { AttributeID = 20, AttributeTitle = "Touch Sensitivity", AttributeTypeID = 3, ShowAcrossAllCategory = false, RcBy = 6, IsActive = random.Next(2) == 1 }
-};
-        #endregion
+        var response = await AttributeService.GetAsync();
 
         if (response != null)
         {
