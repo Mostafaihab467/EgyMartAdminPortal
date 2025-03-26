@@ -94,7 +94,7 @@
                             </Badge>
                         </td>
                         <td>
-                            <Button class="btn btn-primary" TooltipTitle="Edit" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Edit" @onclick="() => ShowPopup(true, item.AdsPlanID)"><i class="far fa-edit"></i></Button>
+                            <Button class="btn btn-primary" TooltipTitle="Edit" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Edit" @onclick="() => ShowPopup(true, item.AdsPlanID)"><i class="fas fa-edit"></i></Button>
                             <TranslatePopup Item="@newItem" Service="SubscriptionService" BaseID="item.AdsPlanID"
                             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>{{ "AdsLocationTitle", item.AdsLocationTitle }})">
                                 <label for="planTitle">Plan Title</label>

@@ -17,7 +17,7 @@
     </div>
     <div class="form-group h-100">
         <label for="pageBody">Page Body</label>
-        <CKEditor @bind-Value="@newItem.PageBody" />
+        <CKEditor @bind-Value="@newItem.PageBody"/>
         <ValidationMessage For="@(() => newItem.PageBody)" />
     </div>
 </Popup>

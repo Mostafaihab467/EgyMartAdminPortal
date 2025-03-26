@@ -33,15 +33,15 @@
             <tbody>
                 @foreach (var user in pagedItems)
                 {
-                    <tr id="user-@user.SupplierID" class="@(user.IsDeleting ? "slide-out" : "")">
+                    <tr id="user-@user.SupplierID" class="@(user.IsDeleted ? "slide-out" : "")">
                         <td>@user.SupplierID</td>
                         <td>@user.DisplayName</td>
                         <td>@user.UserName</td>
                         <td>@user.RegisterdSince</td>
                         <td>
-                            <UserVerification CustomerID="@user.SupplierID" IsVerified="@user.IsVerified" IsRefused="@user.IsRefused"
-                            VerifyUser="@((isVerify) => VerifyUserAsync(user.SupplierID, isVerify))"
-                            OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.ID))" />
+                            <UserVerification UserID="@user.SupplierID" IsSupplier="true" VerificationStatus="@user.VerificationStatus"
+                                              VerifyUser="(status) => VerifyUserAsync(user.SupplierID, status)"
+                                              OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.UserID))" />
                         </td>
                     </tr>
                 }
@@ -50,10 +50,10 @@
 
         <!-- Pagination Component -->
         <MPagination TItem="Supplier"
-        Items="allItems"
-        CurrentPage="@CurrentPage"
-        PageSize="@PageSize"
-        OnPageChanged="HandlePageChanged" />
+                     Items="allItems"
+                     CurrentPage="@CurrentPage"
+                     PageSize="@PageSize"
+                     OnPageChanged="HandlePageChanged" />
     }
 }
 
@@ -62,8 +62,6 @@
     private List<Supplier> pagedItems = new();
     private string notFound = "No Pending Suppliers Found";
     private bool isLoading = true;
-
-    private bool IsShowBtn = true;
 
     private int CurrentPage = 1;
     private int PageSize = 25;
@@ -97,16 +95,26 @@
         }
     }
 
-    private async Task<bool> VerifyUserAsync(long userId, bool isVerify)
+    private async Task<bool> VerifyUserAsync(long userId, short status)
     {
-        return isVerify
-            ? await UserService.VerifySupplierAsync(userId, 1)
-            : await UserService.VerifySupplierAsync(userId, 2);
+        var user = allItems.FirstOrDefault(u => u.SupplierID == userId);
+        if (user == null)
+        {
+            await ToastService.ShowErrorAsync("User not found.");
+            return false;
+        }
+
+        var success = await UserService.VerifyCustomerAsync(userId, status);
+        if (success)
+        {
+            user.VerificationStatus = status; // Update locally
+        }
+        return success;
     }
 
     private void HandleUserUpdate(Supplier user)
     {
-        user.IsDeleting = true;
+        user.IsDeleted = true;
         StateHasChanged();
         Task.Delay(500).ContinueWith(_ =>
         {
@@ -114,8 +122,6 @@
             UpdatePagedItems();
             StateHasChanged();
         });
-
-        IsShowBtn = !user.IsDeleting;
     }
 
     private async Task ShowAttachement(long supplierID)

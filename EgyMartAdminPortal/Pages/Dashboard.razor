@@ -93,9 +93,9 @@
     protected override async Task OnInitializedAsync()
     {
         await AuthService.GetUser();
-        if (AuthService.User is not null && !string.IsNullOrEmpty(AuthService.User.displayName))
+        if (AuthService.User is not null && !string.IsNullOrEmpty(AuthService.User.DisplayName))
         {
-            userName = AuthService.User.displayName;
+            userName = AuthService.User.DisplayName;
         }
 
         subscriptionCount = (await DashboardService.SubscriptionCount()).ToString();

@@ -1,7 +1,6 @@
 ﻿@inject IJSRuntime JSRuntime
 
-<textarea id="@Id" rows="5" style="width: 100%; max-width: 50rem; display: block;"></textarea>
-
+<textarea id="@Id" style="width: 100%; max-width: 50rem; height: 75vh; display: block;"></textarea>
 @code {
     private string? _id;
     private readonly string _uid = Guid.NewGuid().ToString("N");

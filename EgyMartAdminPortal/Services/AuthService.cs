@@ -13,21 +13,21 @@ namespace EgyMartAdminPortal.Services
         private readonly NavigationManager Navigation = navigation;
         private const string ApiUrl = "auth/api/v1/Auth";
 
-        public UserData User { get; private set; } = new UserData();
+        public Person User { get; private set; } = new Person();
 
-        public void SetUser(UserData user)
+        public void SetUser(Person user)
         {
             User = user;
         }
 
-        public async Task<UserData> GetUser()
+        public async Task<Person> GetUser()
         {
             var userDataJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "userData");
             if (!string.IsNullOrEmpty(userDataJson))
             {
-                User = JsonSerializer.Deserialize<UserData>(userDataJson) ?? new UserData();
+                User = JsonSerializer.Deserialize<Person>(userDataJson) ?? new Person();
             }
-            if (User.displayName == null)
+            if (User.DisplayName == null)
             {
                 // Redirect to login page
                 Navigation.NavigateTo("/login");
@@ -40,7 +40,7 @@ namespace EgyMartAdminPortal.Services
             return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", ["authToken"]);
         }
 
-        public async Task<ApiResponse<UserData>> LoginAsync(string userName, string password)
+        public async Task<ApiResponse<Person>> LoginAsync(string userName, string password)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace EgyMartAdminPortal.Services
                 if (response == null)
                 {
                     await _jsRuntime.InvokeVoidAsync("console.error", "No response from server");
-                    return new ApiResponse<UserData> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
+                    return new ApiResponse<Person> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
                 }
 
                 if (!response.IsSuccessStatusCode)
@@ -60,7 +60,7 @@ namespace EgyMartAdminPortal.Services
                     string errorMsg = await response.Content.ReadAsStringAsync();
                     await _jsRuntime.InvokeVoidAsync("console.warn", $"Login failed: {response.StatusCode} - {errorMsg}");
 
-                    return new ApiResponse<UserData>
+                    return new ApiResponse<Person>
                     {
                         Success = false,
                         ResponseEngMsg = "Login failed, Invalid Username or Password",
@@ -69,7 +69,7 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonSerializer.Deserialize<ApiResponse<UserData>>(responseContent, new JsonSerializerOptions
+                var apiResponse = JsonSerializer.Deserialize<ApiResponse<Person>>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
@@ -84,7 +84,7 @@ namespace EgyMartAdminPortal.Services
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", User.IsVerfied);
                 }
 
-                return apiResponse ?? new ApiResponse<UserData>
+                return apiResponse ?? new ApiResponse<Person>
                 {
                     Success = false,
                     ResponseEngMsg = "Invalid response from server",
@@ -94,7 +94,7 @@ namespace EgyMartAdminPortal.Services
             catch (HttpRequestException ex) when (ex.InnerException?.Message.Contains("SSL") == true)
             {
                 await _jsRuntime.InvokeVoidAsync("console.error", "SSL Error: Invalid certificate or SSL misconfiguration.");
-                return new ApiResponse<UserData>
+                return new ApiResponse<Person>
                 {
                     Success = false,
                     ResponseEngMsg = "SSL error: Invalid certificate",
@@ -104,7 +104,7 @@ namespace EgyMartAdminPortal.Services
             catch (HttpRequestException ex)
             {
                 await _jsRuntime.InvokeVoidAsync("console.error", $"HTTP Request Error: {ex.Message}");
-                return new ApiResponse<UserData>
+                return new ApiResponse<Person>
                 {
                     Success = false,
                     ResponseEngMsg = "Network error, please try again",
@@ -114,7 +114,7 @@ namespace EgyMartAdminPortal.Services
             catch (TaskCanceledException)
             {
                 await _jsRuntime.InvokeVoidAsync("console.warn", "Request timed out.");
-                return new ApiResponse<UserData>
+                return new ApiResponse<Person>
                 {
                     Success = false,
                     ResponseEngMsg = "Request timed out",
@@ -124,7 +124,7 @@ namespace EgyMartAdminPortal.Services
             catch (Exception ex)
             {
                 await _jsRuntime.InvokeVoidAsync("console.error", $"Unexpected error: {ex.Message}");
-                return new ApiResponse<UserData>
+                return new ApiResponse<Person>
                 {
                     Success = false,
                     ResponseEngMsg = "An unexpected error occurred",
@@ -140,7 +140,7 @@ namespace EgyMartAdminPortal.Services
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "userData");
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
 
-            User = new UserData();
+            User = new Person();
 
             // Redirect to login page
             Navigation.NavigateTo("/login");

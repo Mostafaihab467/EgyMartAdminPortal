@@ -1,0 +1,75 @@
+﻿@code {
+    [Parameter] public Person Person { get; set; } = new();
+}
+
+<div class="col-md-3 mb-3">
+    <div class="card text-center shadow-sm p-3 bg-white rounded-3">
+        <!-- Verification Badge at Top Left -->
+        <div class="position-absolute top-0 start-0 m-2">
+            <span class="badge @(Person.VerificationStatus == 1? "bg-success": Person.VerificationStatus == 2 ? "bg-danger" : "bg-warning")">@(Person.VerificationStatus == 1 ? "Verified" : Person.VerificationStatus == 2 ? "Denied" : "Pending")</span>
+        </div>
+
+        <!-- Profile Image Overlapping the Card -->
+        <div class="d-flex justify-content-center">
+            <div class="profile-image-container d-flex justify-content-center align-items-center">
+                <img src="@Person.ProfileImage" class="rounded border border-3 border-white shadow" width="100" height="100" alt="@Person.DisplayName" />
+            </div>
+        </div>
+
+        <!-- Card Content -->
+        <div class="pt-2">
+
+            <h5 class="mt-2">@Person.DisplayName</h5>
+            <p class="text-muted">@Person.UserName</p>
+            <div class="d-flex justify-content-center gap-3 my-3">
+                <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="@(Person.IsActive? "Make Suspend":"Make Active")" TooltipPlacement="TooltipPlacement.Top"
+                        data-bs-original-title="">
+                    <i class="fa-solid @(Person.IsActive? "fa-pause": "fa-play") text-primary"></i>
+                </Button>
+                <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
+                        data-bs-original-title="Show Attachment">
+                    <i class="fa-solid fa-video text-primary"></i>
+                </Button>
+                <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
+                        data-bs-original-title="Show Attachment">
+                    <i class="fa-solid fa-ellipsis text-primary"></i>
+                </Button>
+            </div>
+
+            <small class="text-muted">Registered Since: @Person.RegisterdSince.ToString("dd MMM yyyy")</small>
+
+            <div class="mt-2">
+                <span class="badge @(Person.IsActive ? "bg-success" : "bg-danger")">@(Person.IsActive ? "Active" : "Suspend")</span>
+            </div>
+
+            <div class="d-flex justify-content-center mt-3">
+                <button class="btn btn-outline-primary me-2" disabled="@(Person.IsDeleted)">Send Message</button>
+                <button class="btn btn-outline-secondary" disabled="@(Person.IsDeleted)">Profile</button>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 text-muted">
+                <div class="d-flex align-items-center gap-4 px-2">
+                    <div class="d-flex align-items-center gap-2 rounded-3 bg-light">
+                        <i class="bi bi-list-task"></i>
+                        <span class="fs-6">2</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 rounded-3 bg-light">
+                        <i class="bi bi-chat-dots"></i>
+                        <span>3</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 px-2 rounded-3 bg-light">
+                    <i class="bi bi-clock"></i>
+                    <span>@Person.LADate.ToString("dd MMM yyyy") Left</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-image-container {
+        margin-top: -40px;
+    }
+</style>

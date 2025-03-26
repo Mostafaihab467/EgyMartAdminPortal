@@ -33,14 +33,14 @@
             <tbody>
                 @foreach (var user in pagedItems)
                 {
-                    <tr id="user-@user.CustomerID" class="@(user.IsDeleting ? "slide-out" : "")">
+                    <tr id="user-@user.CustomerID" class="@(user.IsDeleted ? "slide-out" : "")">
                         <td>@user.CustomerID</td>
                         <td>@user.DisplayName</td>
                         <td>@user.UserName</td>
                         <td>@user.RegisterdSince</td>
                         <td>
-                            <UserVerification CustomerID="@user.CustomerID" IsVerified="@user.IsVerified" IsRefused="@user.IsRefused"
-                                              VerifyUser="@((isVerify) => VerifyUserAsync(user.CustomerID, isVerify))"
+                            <UserVerification UserID="@user.CustomerID" VerificationStatus="@user.VerificationStatus"
+                                              VerifyUser="(status) => VerifyUserAsync(user.CustomerID, status)"
                                               OnUserUpdated="@(() => HandleUserUpdate(user))" />
                         </td>
                     </tr>
@@ -95,16 +95,26 @@
         }
     }
 
-    private async Task<bool> VerifyUserAsync(long userId, bool isVerify)
+    private async Task<bool> VerifyUserAsync(long userId, short status)
     {
-        return isVerify
-            ? await UserService.VerifyCustomerAsync(userId, 1)
-            : await UserService.VerifyCustomerAsync(userId, 2);
+        var user = allItems.FirstOrDefault(u => u.CustomerID == userId);
+        if (user == null)
+        {
+            await ToastService.ShowErrorAsync("User not found.");
+            return false;
+        }
+
+        var success = await UserService.VerifyCustomerAsync(userId, status);
+        if (success)
+        {
+            user.VerificationStatus = status;
+        }
+        return success;
     }
 
     private void HandleUserUpdate(Customer user)
     {
-        user.IsDeleting = true;
+        user.IsDeleted = true;
         StateHasChanged();
         Task.Delay(500).ContinueWith(_ =>
         {

@@ -1,22 +1,25 @@
 ﻿@inject ToastrService ToastService
 
 <div class="d-inline-block">
-    @if (!IsVerified && !IsRefused)
+    @if (VerificationStatus == 0)
     {
         <Button class="btn btn-primary me-2" TooltipTitle="Verify" TooltipPlacement="TooltipPlacement.Top"
-        data-bs-original-title="Verify" @onclick="() => VerificationUser(true)">
+                data-bs-original-title="Verify" @onclick="() => VerificationUser(1)">
             <i class="fas fa-user-check"></i>
         </Button>
 
         <Button class="btn btn-primary me-2" TooltipTitle="Deny" TooltipPlacement="TooltipPlacement.Top"
-        data-bs-original-title="Deny" @onclick="() => VerificationUser(false)">
+                data-bs-original-title="Deny" @onclick="() => VerificationUser(2)">
             <i class="fa-solid fa-ban"></i>
         </Button>
+        @if (IsSupplier)
+        {
+            <Button class="btn btn-primary" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
+                    data-bs-original-title="Show Attachment" @onclick="() => ShowAttachement()">
+                <i class="fa-solid fa-file-pdf"></i>
+            </Button>
+        }
 
-        <Button class="btn btn-primary" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
-        data-bs-original-title="Show Attachment" @onclick="() => ShowAttachement()">
-            <i class="fa-solid fa-file-pdf"></i>
-        </Button>
     }
     else
     {
@@ -25,38 +28,28 @@
 </div>
 
 @code {
-    [Parameter] public long CustomerID { get; set; }
-    [Parameter] public bool IsVerified { get; set; }
-    [Parameter] public bool IsRefused { get; set; }
+    [Parameter] public long UserID { get; set; }
+    [Parameter] public int VerificationStatus { get; set; } // 0 = Pending, 1 = Verified, 2 = Denied
+    [Parameter] public bool IsSupplier { get; set; } = false;
     [Parameter] public EventCallback OnUserUpdated { get; set; }
     [Parameter] public EventCallback OnShowAttachment { get; set; }
-    [Parameter] public Func<bool, Task<bool>>? VerifyUser { get; set; }
+    [Parameter] public Func<short, Task<bool>>? VerifyUser { get; set; }
 
-    private string StatusText => IsVerified ? "Verified" : IsRefused ? "Denied" : "";
-    private string StatusClass => IsVerified ? "text-success" : "text-danger";
+    private string StatusText => VerificationStatus == 1 ? "Verified" : VerificationStatus == 2 ? "Denied" : "";
+    private string StatusClass => VerificationStatus == 1 ? "text-success" : "text-danger";
 
-    private async Task VerificationUser(bool isVerify)
+    private async Task VerificationUser(short status)
     {
         if (VerifyUser != null)
         {
-            var response = await VerifyUser.Invoke(isVerify);
+            var response = await VerifyUser.Invoke(status);
 
             if (response)
             {
-                if (isVerify)
-                {
-                    IsVerified = true;
-                    StateHasChanged();
-                    await Task.Delay(3000);
-                    await ToastService.ShowSuccessAsync("User Verified Successfully", "Success");
-                }
-                else
-                {
-                    IsRefused = true;
-                    StateHasChanged();
-                    await Task.Delay(3000);
-                    await ToastService.ShowSuccessAsync("User Denied Successfully", "Success");
-                }
+                VerificationStatus = status;
+                StateHasChanged();
+                await Task.Delay(3000);
+                await ToastService.ShowSuccessAsync(status == 1 ? "User Verified Successfully" : "User Denied Successfully", "Success");
 
                 await OnUserUpdated.InvokeAsync();
             }
@@ -65,6 +58,6 @@
 
     private async Task ShowAttachement()
     {
-        await OnShowAttachment.InvokeAsync(CustomerID);
+        await OnShowAttachment.InvokeAsync(UserID);
     }
 }

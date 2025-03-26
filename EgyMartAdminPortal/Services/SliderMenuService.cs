@@ -72,6 +72,8 @@ namespace EgyMartAdminPortal.Services
             return response;
         }
 
+        //public async Task<HttpResponseMessage> EditImageAsync(long itemID, string imageBase64){}
+
         public async Task<ApiResponse<int>> ChangeStatusAsync(int ID, bool newState)
         {
             var response = await _httpClient.PutAsync($"{ApiUrl}/ChangeStatus/{ID}?IsActive={newState}", null);

@@ -137,7 +137,6 @@ OnPageChanged="HandlePageChanged" />
     private string notFound = "No Pages Found";
     private string popupTitle = "Add New Page";
     private bool showPopup;
-    private bool IsCreate = false;
     private int CurrentPage = 1;
     private int PageSize = 25;
 
@@ -274,4 +273,5 @@ OnPageChanged="HandlePageChanged" />
         newItem.ImageBase64 = base64Image;
         await InvokeAsync(StateHasChanged);
     }
+
 }

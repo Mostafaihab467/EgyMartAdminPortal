@@ -7,22 +7,12 @@
     @if (InputType == "textarea" && Frame)
     {
         <div>
-            <textarea id="@Id" style="width: 100%; height: 75vh; display: block;" @bind="EditingValue"></textarea>
+            <textarea id="@Id" style="width: 50rem; max-width: 50rem; height: 75vh; display: block;" @bind="EditingValue"></textarea>
             <div class="mt-2">
                 <button class="btn btn-primary me-2" @onclick="SaveEdit">Save</button>
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
             </div>
         </div>
-    }
-    else if (InputType == "textarea" && !Frame)
-    {
-        <textarea type="text"
-                  class="form-control w-100"
-                  value="@EditingValue"
-                  @ref="InputElement"
-                  @oninput="HandleInputChange"
-                  @onkeyup="HandleKeyPress"
-                  @onblur="SaveEdit" />
     }
     else if (InputType == "number")
     {
@@ -57,7 +47,7 @@ else
             @*             @onload="EnableIframeClick"></iframe> *@
             @* </div> *@
 
-            <Button class="btn btn-primary" @onclick="StartEditing">
+            <Button class="btn btn-primary">
                 <i class="fa-solid fa-file-lines"></i><span class="ms-2">Show Cotent Of Page</span>
             </Button>
 
@@ -69,7 +59,6 @@ else
     </div>
 
 }
-
 
 <style>
     .html-preview {
@@ -89,17 +78,23 @@ else
             background: transparent;
             cursor: pointer;
         }
+
     .ck-editor__editable {
         min-height: 75vh !important; /* Force height to 75% */
-        width: 50rem !important;
-        max-width: 100%;
+        max-width: 50rem !important;
+        min-width: 40rem !important;
     }
 
-    .ck.ck-toolbar.ck-toolbar_grouping{
-        width:50rem !important;
+    .ck.ck-sticky-panel__content.ck-sticky-panel__content_sticky{
+        max-width: 50rem !important;
+    }
+
+    .ck.ck-toolbar.ck-toolbar_grouping {
+        max-width: 50rem !important;
     }
 
 </style>
+
 
 @code {
     private string? _id;
@@ -185,7 +180,6 @@ else
             _dotNetRef = DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("CKEditorInterop.init", Id, _dotNetRef);
             await Task.Delay(200);
-            await JSRuntime.InvokeVoidAsync("CKEditorInterop.focus", Id);
         }
         else if (InputType == "number" && InputNumberComponent is not null)
         {

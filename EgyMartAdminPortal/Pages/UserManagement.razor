@@ -1,0 +1,100 @@
+﻿@page "/user-management"
+
+<PageTitle>User Management</PageTitle>
+<h3 class="mb-4">User Management</h3>
+
+<div class="d-flex align-items-center">
+    <ul class="nav nav-tabs border-0">
+        @foreach (var tab in Tabs)
+        {
+            <li class="nav-item">
+                <button class="nav-link @(tab.IsActive ? "active text-primary border-bottom border-primary" : "text-muted")"
+                        @onclick="() => SelectTab(tab)">
+                    @tab.Name <span class="badge bg-light text-dark ms-1">@tab.Count</span>
+                </button>
+            </li>
+        }
+    </ul>
+    @* <div class="ms-auto"> *@
+    @*     <button class="btn btn-light bg-white"><i class="fa-solid fa-grip"></i></button> *@
+    @*     <button class="btn btn-light bg-white"><i class="fa-solid fa-list-ul"></i></button> *@
+    @* </div> *@
+</div>
+
+<div class="tab-content mt-3">
+    <div class="row">
+        @foreach (var person in FilteredPeople)
+        {
+            <PeopleCard Person="@person" />
+        }
+    </div>
+</div>
+
+@code {
+    public class TabItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public short UserTypeID { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private Dictionary<short, string> UserTypeNames = new()
+    {
+        { 1, "Admins" },
+        { 2, "Suppliers" },
+        { 3, "Customers" },
+    };
+
+    private List<TabItem> Tabs = new();
+    private List<Person> FilteredPeople = new();
+
+    private List<Person> People = new()
+    {
+        new Person { UserID = 1, UserTypeID = 1, DisplayName = "John Doe", UserName = "johndoe15@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2020, 5, 1), IsVerfied = true, IsActive = true, VerificationStatus = 1 },
+        new Person { UserID = 2, UserTypeID = 2, DisplayName = "Jane Smith", UserName = "janesmith25@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2019, 7, 15), IsVerfied = true, IsActive = false, VerificationStatus = 1 },
+        new Person { UserID = 3, UserTypeID = 3, DisplayName = "Alice Johnson", UserName = "alicej30@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2021, 3, 20), IsVerfied = true, IsActive = true, VerificationStatus = 0 },
+        new Person { UserID = 4, UserTypeID = 2, DisplayName = "Bob Brown", UserName = "bobbrown255@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 2 },
+        new Person { UserID = 5, UserTypeID = 3, DisplayName = "Charlie White", UserName = "charliewhite150@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 0 },
+        new Person { UserID = 6, UserTypeID = 1, DisplayName = "David Green", UserName = "davidgreen2025@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 1 },
+        new Person { UserID = 7, UserTypeID = 3, DisplayName = "Eva Black", UserName = "evablack2030@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 2 }
+    };
+
+    protected override void OnInitialized()
+    {
+        // Add "All" tab with total count
+        Tabs.Add(new TabItem
+            {
+                Name = "All",
+                Count = People.Count,
+                UserTypeID = 0, // Special value for "All"
+                IsActive = true // Default active
+            });
+
+        // Generate user type tabs
+        Tabs.AddRange(People.GroupBy(p => p.UserTypeID)
+                            .Select(g => new TabItem
+                                {
+                                    Name = UserTypeNames.ContainsKey(g.Key) ? UserTypeNames[g.Key] : $"Type {g.Key}",
+                                    Count = g.Count(),
+                                    UserTypeID = g.Key,
+                                    IsActive = false
+                                }));
+
+        UpdateFilteredPeople(0); // Show all by default
+    }
+
+    void SelectTab(TabItem selectedTab)
+    {
+        foreach (var tab in Tabs)
+        {
+            tab.IsActive = tab == selectedTab;
+        }
+        UpdateFilteredPeople(selectedTab.UserTypeID);
+    }
+
+    void UpdateFilteredPeople(short userTypeID)
+    {
+        FilteredPeople = (userTypeID == 0) ? People.ToList() : People.Where(p => p.UserTypeID == userTypeID).ToList();
+    }
+}

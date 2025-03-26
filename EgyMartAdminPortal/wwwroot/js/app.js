@@ -24,39 +24,38 @@ window.focusElement = (element) => {
     }
 };
 
+
 window.CKEditorInterop = {
     init: (editorId, dotNetRef) => {
         ClassicEditor
             .create(document.querySelector(`#${editorId}`), {
-                width: '50rem',
-                extraPlugins: [MyCustomUploadAdapterPlugin], // Custom Upload Adapter
+                extraPlugins: [MyCustomUploadAdapterPlugin],
                 toolbar: [
                     'undo', 'redo', '|',
-                    'bold', 'italic', 'underline', 'strikethrough', '|',
+                    'bold', 'italic', '|',
                     'heading', '|',
                     'link', 'blockQuote', '|',
                     'bulletedList', 'numberedList', '|',
-                    'alignment', 'indent', 'outdent', '|',
-                    'code', 'codeBlock', '|',
+                    'indent', 'outdent', '|',
                     'insertTable'
                 ],
             })
             .then(editor => {
                 window[editorId] = editor;
+                editor.editing.view.focus();
+                let editableElement = editor.ui.view.editable.element;
+
+                // Ensure correct width on initialization
+                editableElement.style.width = '100%';
+                editableElement.style.maxWidth = '50rem';
+
                 editor.model.document.on('change:data', () => {
                     dotNetRef.invokeMethodAsync('EditorDataChanged', editor.getData());
                 });
-                editor.ui.view.editable.element.style.width = '50rem';
-                editor.ui.view.editable.element.style.maxWidth = '100%'
             })
             .catch(error => {
                 console.error('CKEditor error:', error);
             });
-    },
-    focus: function (id) {
-        if (window[id]) {
-            window[id].editing.view.focus();
-        }
     },
     getData: function (id) {
         return window[id] ? window[id].getData() : '';
@@ -67,7 +66,6 @@ window.CKEditorInterop = {
         }
     }
 };
-
 
 
 window.getActiveElementTag = () => {

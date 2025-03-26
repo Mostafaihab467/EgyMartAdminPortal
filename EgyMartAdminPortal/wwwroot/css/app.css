@@ -255,7 +255,7 @@ code {
 }
 
 .nav-link:focus, .nav-link:hover {
-    color: #7367f0;
+    color: var(--primary-color);
 }
 
 .nav-link, .dropdown-item {
@@ -478,4 +478,55 @@ code {
     }
 .m-model {
     max-width: 50rem !important;
+}
+
+/* wwwroot/css/app.css */
+.dropdown-user {
+    display: flex;
+    align-items: center;
+}
+
+.avatar-status-online {
+    position: absolute;
+    bottom: 0;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background-color: #28a745; /* Green dot for online status */
+    border-radius: 50%;
+    border: 2px solid #fff; /* White border around the dot */
+    top: 6px;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+}
+
+    .dropdown-item i {
+        width: 20px;
+        text-align: center;
+    }
+
+
+.nav-tabs .nav-link.active {
+    position: relative;
+    color: var(--primary-color);
+}
+
+.nav-tabs .nav-link:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(30deg, var(--primary-color), var(--primary-color)) !important;
+    transition: transform 0.3s;
+    transform: translate3d(0, 150%, 0);
 }
