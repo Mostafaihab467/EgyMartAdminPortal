@@ -147,3 +147,12 @@ window.enableIframeClick = (iframeId, dotNetRef) => {
         });
     };
 };
+
+document.addEventListener('click', function (event) {
+    var dropdowns = document.querySelectorAll('.dropdown-menu');
+    dropdowns.forEach(function (dropdown) {
+        if (!dropdown.parentElement.contains(event.target)) {
+            dropdown.classList.remove('show'); // Hide the dropdown
+        }
+    });
+});

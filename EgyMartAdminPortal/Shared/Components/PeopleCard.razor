@@ -1,13 +1,13 @@
-﻿@code {
-    [Parameter] public Person Person { get; set; } = new();
-}
-
-<div class="col-md-3 mb-3">
+﻿
+<div class="col-md-3 my-3">
     <div class="card text-center shadow-sm p-3 bg-white rounded-3">
         <!-- Verification Badge at Top Left -->
-        <div class="position-absolute top-0 start-0 m-2">
-            <span class="badge @(Person.VerificationStatus == 1? "bg-success": Person.VerificationStatus == 2 ? "bg-danger" : "bg-warning")">@(Person.VerificationStatus == 1 ? "Verified" : Person.VerificationStatus == 2 ? "Denied" : "Pending")</span>
-        </div>
+        <Tooltip class="position-absolute top-0 start-0 m-2" Title="Verification Status" Placement="TooltipPlacement.Top">
+           <span class="badge @(Person.VerificationStatus == 1? "bg-success": Person.VerificationStatus == 2 ? "bg-danger" : "bg-warning")">@(Person.VerificationStatus == 1 ? "Verified" : Person.VerificationStatus == 2 ? "Denied" : "Pending")</span>
+        </Tooltip>
+        <Tooltip class="position-absolute top-0 end-0 m-2" Title="User Type" Placement="TooltipPlacement.Top">
+           <span class="badge bg-success">@(Person.UserTypeID == 1 ? "Admin" : Person.VerificationStatus == 2 ? "Supplier" : "Customer")</span>
+        </Tooltip>
 
         <!-- Profile Image Overlapping the Card -->
         <div class="d-flex justify-content-center">
@@ -23,45 +23,62 @@
             <p class="text-muted">@Person.UserName</p>
             <div class="d-flex justify-content-center gap-3 my-3">
                 <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="@(Person.IsActive? "Make Suspend":"Make Active")" TooltipPlacement="TooltipPlacement.Top"
-                        data-bs-original-title="">
-                    <i class="fa-solid @(Person.IsActive? "fa-pause": "fa-play") text-primary"></i>
+                        data-bs-original-title="" @onclick="SetActiveStatus">
+                    <i class="fa-solid @(Person.IsActive? "fa-lock": "fa-lock-open") text-primary"></i>
                 </Button>
-                <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
-                        data-bs-original-title="Show Attachment">
-                    <i class="fa-solid fa-video text-primary"></i>
-                </Button>
-                <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
-                        data-bs-original-title="Show Attachment">
-                    <i class="fa-solid fa-ellipsis text-primary"></i>
-                </Button>
+                @* <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top" *@
+                @*         data-bs-original-title=""> *@
+                @*     <i class="fa-solid fa-video text-primary"></i> *@
+                @* </Button> *@
+                <div class="dropdown">
+                    <Button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow-sm width-10-per dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-expanded="false"
+                            TooltipTitle="More" TooltipPlacement="TooltipPlacement.Top">
+                        <i class="fa-solid fa-ellipsis text-primary"></i>
+                    </Button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <button class="dropdown-item @(Person.VerificationStatus == 1 ? "disabled" : "")" @onclick="() => SetVerificationStatus(1)">
+                                <i class="fa-solid fa-circle-check"></i> Make Verified
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item @(Person.VerificationStatus == 2 ? "disabled" : "")" @onclick="() => SetVerificationStatus(2)">
+                                <i class="fa-solid fa-circle-xmark"></i> Make Denied
+                            </button>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
             <small class="text-muted">Registered Since: @Person.RegisterdSince.ToString("dd MMM yyyy")</small>
 
             <div class="mt-2">
-                <span class="badge @(Person.IsActive ? "bg-success" : "bg-danger")">@(Person.IsActive ? "Active" : "Suspend")</span>
+                <Tooltip Title="Active Status" Placement="TooltipPlacement.Top">
+                    <span class="badge @(Person.IsActive ? "bg-success" : "bg-danger")">@(Person.IsActive ? "Active" : "Suspend")</span>
+                </Tooltip>
             </div>
 
-            <div class="d-flex justify-content-center mt-3">
-                <button class="btn btn-outline-primary me-2" disabled="@(Person.IsDeleted)">Send Message</button>
-                <button class="btn btn-outline-secondary" disabled="@(Person.IsDeleted)">Profile</button>
-            </div>
+            @* <div class="d-flex justify-content-center mt-3"> *@
+            @*     <button class="btn btn-outline-primary me-2" disabled="@(Person.IsDeleted)">Send Message</button> *@
+            @*     <button class="btn btn-outline-secondary" disabled="@(Person.IsDeleted)">Profile</button> *@
+            @* </div> *@
 
             <div class="d-flex justify-content-between align-items-center mt-3 text-muted">
                 <div class="d-flex align-items-center gap-4 px-2">
-                    <div class="d-flex align-items-center gap-2 rounded-3 bg-light">
-                        <i class="bi bi-list-task"></i>
-                        <span class="fs-6">2</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 rounded-3 bg-light">
-                        <i class="bi bi-chat-dots"></i>
-                        <span>3</span>
-                    </div>
+                    <Tooltip Class="d-flex align-items-center gap-2 rounded-3 bg-light p-1" Title="Fail Login Count" Placement="TooltipPlacement.Top">
+                        <i class="fa-solid fa-key"></i>
+                        <span class="fs-6">@Person.FailLoginCount</span>
+                    </Tooltip>
+                    @* <div class="d-flex align-items-center gap-2 rounded-3 bg-light"> *@
+                    @*     <i class="bi bi-chat-dots"></i> *@
+                    @*     <span>3</span> *@
+                    @* </div> *@
                 </div>
-                <div class="d-flex align-items-center gap-2 px-2 rounded-3 bg-light">
+                <Tooltip Class="d-flex align-items-center gap-2 rounded-3 bg-light p-1" Title="Last Login Date" Placement="TooltipPlacement.Top">
                     <i class="bi bi-clock"></i>
                     <span>@Person.LADate.ToString("dd MMM yyyy") Left</span>
-                </div>
+                </Tooltip>
             </div>
 
         </div>
@@ -70,6 +87,24 @@
 
 <style>
     .profile-image-container {
-        margin-top: -40px;
+        margin-top: -20%;
     }
 </style>
+
+@code {
+    [Parameter] public Person Person { get; set; } = new();
+
+    private void SetVerificationStatus(short status)
+    {
+        if (Person.VerificationStatus != status)
+        {
+            Person.VerificationStatus = status;
+        }
+    }
+    
+    private void SetActiveStatus()
+    {
+        Person.IsActive = !Person.IsActive;
+    }
+
+}

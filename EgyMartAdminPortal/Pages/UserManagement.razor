@@ -9,7 +9,7 @@
         {
             <li class="nav-item">
                 <button class="nav-link @(tab.IsActive ? "active text-primary border-bottom border-primary" : "text-muted")"
-                        @onclick="() => SelectTab(tab)">
+                @onclick="() => SelectTab(tab)">
                     @tab.Name <span class="badge bg-light text-dark ms-1">@tab.Count</span>
                 </button>
             </li>
@@ -23,12 +23,19 @@
 
 <div class="tab-content mt-3">
     <div class="row">
-        @foreach (var person in FilteredPeople)
+        @foreach (var person in pagedItems)
         {
             <PeopleCard Person="@person" />
         }
     </div>
 </div>
+
+<!-- Pagination Component -->
+<MPagination TItem="Person"
+Items="FilteredPeople"
+CurrentPage="@CurrentPage"
+PageSize="@PageSize"
+OnPageChanged="HandlePageChanged" />
 
 @code {
     public class TabItem
@@ -48,20 +55,16 @@
 
     private List<TabItem> Tabs = new();
     private List<Person> FilteredPeople = new();
+    private List<Person> pagedItems = new();
+    private List<Person> People = new();
 
-    private List<Person> People = new()
-    {
-        new Person { UserID = 1, UserTypeID = 1, DisplayName = "John Doe", UserName = "johndoe15@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2020, 5, 1), IsVerfied = true, IsActive = true, VerificationStatus = 1 },
-        new Person { UserID = 2, UserTypeID = 2, DisplayName = "Jane Smith", UserName = "janesmith25@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2019, 7, 15), IsVerfied = true, IsActive = false, VerificationStatus = 1 },
-        new Person { UserID = 3, UserTypeID = 3, DisplayName = "Alice Johnson", UserName = "alicej30@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2021, 3, 20), IsVerfied = true, IsActive = true, VerificationStatus = 0 },
-        new Person { UserID = 4, UserTypeID = 2, DisplayName = "Bob Brown", UserName = "bobbrown255@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 2 },
-        new Person { UserID = 5, UserTypeID = 3, DisplayName = "Charlie White", UserName = "charliewhite150@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 0 },
-        new Person { UserID = 6, UserTypeID = 1, DisplayName = "David Green", UserName = "davidgreen2025@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 1 },
-        new Person { UserID = 7, UserTypeID = 3, DisplayName = "Eva Black", UserName = "evablack2030@egymart.com", ProfileImage = "https://picsum.photos/200/300", RegisterdSince = new DateTime(2018, 9, 10), IsVerfied = true, IsActive = true, VerificationStatus = 2 }
-    };
+    private int CurrentPage = 1;
+    private int PageSize = 12;
 
     protected override void OnInitialized()
     {
+        GenerateUsers();
+
         // Add "All" tab with total count
         Tabs.Add(new TabItem
             {
@@ -90,11 +93,53 @@
         {
             tab.IsActive = tab == selectedTab;
         }
+        CurrentPage = 1;
         UpdateFilteredPeople(selectedTab.UserTypeID);
     }
 
     void UpdateFilteredPeople(short userTypeID)
     {
         FilteredPeople = (userTypeID == 0) ? People.ToList() : People.Where(p => p.UserTypeID == userTypeID).ToList();
+        UpdatePagedItems();
+    }
+
+    private void GenerateUsers()
+    {
+        string[] names = { "John", "Jane", "Alice", "Bob", "Charlie", "David", "Eva", "Frank", "Grace", "Henry" };
+        string[] surnames = { "Doe", "Smith", "Johnson", "Brown", "White", "Green", "Black", "Adams", "Clark", "Davis" };
+        Random rnd = new Random();
+
+        for (int i = 1; i <= 40; i++)
+        {
+            string firstName = names[rnd.Next(names.Length)];
+            string lastName = surnames[rnd.Next(surnames.Length)];
+            string email = $"{firstName.ToLower()}{lastName.ToLower()}{rnd.Next(10, 99)}@egymart.com";
+
+            People.Add(new Person
+                {
+                    UserID = i,
+                    UserTypeID = (short)rnd.Next(1, 4),
+                    DisplayName = $"{firstName} {lastName}",
+                    UserName = email,
+                    ProfileImage = "https://picsum.photos/200/300",
+                    RegisterdSince = new DateTime(rnd.Next(2015, 2023), rnd.Next(1, 13), rnd.Next(1, 28)), // Random date from 2015-2023
+                    IsVerfied = rnd.Next(2) == 1, // Random true/false
+                    IsActive = rnd.Next(2) == 1, // Random true/false
+                    VerificationStatus = (short)rnd.Next(0, 3), // 0 = Pending, 1 = Verified, 2 = Denied
+                    FailLoginCount = rnd.Next(0, 10) // Random login fail count
+                });
+        }
+    }
+
+    private void UpdatePagedItems()
+    {
+        
+        pagedItems = FilteredPeople.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
     }
 }
