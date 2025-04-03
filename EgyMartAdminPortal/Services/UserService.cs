@@ -37,5 +37,24 @@ namespace EgyMartAdminPortal.Services
             throw new Exception("Failed to download attachment");
         }
 
+
+        public async Task<ApiResponse<int>> CreateAsync(Person newPerson)
+        {
+            //var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/Create", newPerson);
+
+            //if (!response.IsSuccessStatusCode)
+            //    return new ApiResponse<int> { Success = false, Data = 0, ResponseEngMsg = $"Error: {response.StatusCode}" };
+
+            //var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
+            //return result ?? new ApiResponse<int> { Success = false, Data = 0 };
+
+            return new ApiResponse<int>
+            {
+                Success = false,
+                Data = 0,
+                ResponseEngMsg = "CreateAsync method is not implemented yet."
+            };
+        }
+
     }
 }

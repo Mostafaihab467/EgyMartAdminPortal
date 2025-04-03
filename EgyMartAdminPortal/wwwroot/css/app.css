@@ -530,3 +530,11 @@ code {
     transition: transform 0.3s;
     transform: translate3d(0, 150%, 0);
 }
+
+.h-90 {
+    height: 90% !important;
+}
+
+.border-primary {
+    border-color: var(--primary-color) !important
+}
