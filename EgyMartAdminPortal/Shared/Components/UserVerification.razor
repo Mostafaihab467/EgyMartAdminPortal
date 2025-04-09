@@ -29,7 +29,7 @@
 
 @code {
     [Parameter] public long UserID { get; set; }
-    [Parameter] public int VerificationStatus { get; set; } // 0 = Pending, 1 = Verified, 2 = Denied
+    [Parameter] public int? VerificationStatus { get; set; } // 0 = Pending, 1 = Verified, 2 = Denied
     [Parameter] public bool IsSupplier { get; set; } = false;
     [Parameter] public EventCallback OnUserUpdated { get; set; }
     [Parameter] public EventCallback OnShowAttachment { get; set; }

@@ -1,5 +1,4 @@
-﻿@* Shared/UserDropdown.razor *@
-@inject NavigationManager Navigation
+﻿@inject NavigationManager Navigation
 @inject AuthService AuthService
 
 <li class="nav-item dropdown dropdown-user">
@@ -8,7 +7,7 @@
             <span class="user-name fw-bolder">@User!.DisplayName</span>
         </div>
         <span class="avatar">
-            <img class="round" src="@User.ProfileImage" alt="avatar" height="40" width="40">
+            <img class="round" src="@CurrentImageUrl" alt="avatar" height="40" width="40" @onerror="LoadFallbackImage">
             <span class="avatar-status-online"></span>
         </span>
         <span>
@@ -16,14 +15,49 @@
         </span>
     </a>
     <div class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="dropdown-user">
-        <a class="dropdown-item fs-6"><i class="fas fa-unlock-alt"></i> Change Password</a>
+        <a class="dropdown-item fs-6" @onclick="ShowPasswordChangePopup"><i class="fas fa-unlock-alt"></i> Change Password</a>
         <div class="dropdown-divider"></div>
         <a class="dropdown-item fs-6" @onclick="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 </li>
 
+<!-- OUTSIDE of dropdown menu -->
+<ChangePass UserID="User.UserID"
+            ChangePasswordMethod="HandlePasswordChange"
+            OnPasswordChanged="HandlePasswordChanged"
+            IsVisible="IsPasswordPopupVisible"
+            OnClose="HidePasswordChangePopup" />
+
 @code {
     [Parameter] public Person? User { get; set; }
 
+    private string CurrentImageUrl => string.IsNullOrEmpty(User.ProfileImage) ? "images/avatars/user.jpg" : User.ProfileImage;
+
+    private bool IsPasswordPopupVisible = false;
+
+    private void ShowPasswordChangePopup() => IsPasswordPopupVisible = true;
+    private void HidePasswordChangePopup() => IsPasswordPopupVisible = false;
+
     private async Task Logout() => await AuthService.LogoutAsync();
+
+    private async Task<bool> HandlePasswordChange(long userID, string newPassword, string confirmPassword)
+    {
+        if (newPassword != confirmPassword)
+        {
+            return false;
+        }
+
+        var response = await AuthService.ChangePasswordAsync(userID, newPassword, confirmPassword);
+        return response;
+    }
+
+    private void HandlePasswordChanged()
+    {
+        HidePasswordChangePopup(); // hide after success
+    }
+
+    private void LoadFallbackImage()
+    {
+        User.ProfileImage = "images/avatars/user.jpg";
+    }
 }

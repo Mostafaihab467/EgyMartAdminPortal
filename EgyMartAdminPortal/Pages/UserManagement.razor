@@ -29,21 +29,17 @@
         {
             <li class="nav-item">
                 <button class="nav-link @(tab.IsActive ? "active text-primary border-bottom border-primary" : "text-muted")"
-                        @onclick="() => SelectTab(tab)">
+                @onclick="() => SelectTab(tab)">
                     @tab.Name <span class="badge bg-light text-dark ms-1">@tab.Count</span>
                 </button>
             </li>
         }
     </ul>
-    @* <div class="ms-auto"> *@
-    @*     <button class="btn btn-light bg-white"><i class="fa-solid fa-grip"></i></button> *@
-    @*     <button class="btn btn-light bg-white"><i class="fa-solid fa-list-ul"></i></button> *@
-    @* </div> *@
 </div>
 
 <div class="tab-content mt-3">
     <div class="row">
-        @if (Tabs.Any(t => t.IsActive && t.UserTypeID == 1)) // If "Admins" tab is active
+        @if (SelectedTab != null)
         {
             <div class="col-md-3 my-3">
                 <div class="card add-admin-card cursor-pointer border-primary shadow-sm p-3 bg-white rounded-3 h-90 d-flex align-items-center justify-content-center" @onclick="AddUser">
@@ -53,7 +49,6 @@
                     </div>
                 </div>
             </div>
-
         }
 
         @foreach (var person in pagedItems)
@@ -63,23 +58,23 @@
     </div>
 </div>
 
-<!-- Pagination Component -->
 <MPagination TItem="Person"
-             Items="FilteredPeople"
-             CurrentPage="@CurrentPage"
-             PageSize="@PageSize"
-             OnPageChanged="HandlePageChanged" />
+Items="FilteredPeople"
+CurrentPage="@CurrentPage"
+PageSize="@PageSize"
+OnPageChanged="HandlePageChanged" />
 
 <style>
     .add-admin-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-        .add-admin-card:hover {
-            transform: scale(0.9);
-            box-shadow: 0px 5px 15px rgba(0, 0, 255, 0.2); /* Soft blue glow */
-        }
+    .add-admin-card:hover {
+    transform: scale(0.9);
+    box-shadow: 0px 5px 15px rgba(0, 0, 255, 0.2);
+    }
 </style>
+
 @code {
     public class TabItem
     {
@@ -91,9 +86,9 @@
 
     private Dictionary<short, string> UserTypeNames = new()
     {
-        { 1, "Admins" },
+        { 5, "Admins" },
         { 2, "Suppliers" },
-        { 3, "Customers" },
+        { 1, "Customers" },
     };
 
     private List<TabItem> Tabs = new();
@@ -101,37 +96,54 @@
     private List<Person> pagedItems = new();
     private List<Person> People = new();
     private Person newItem = new();
+    private TabItem SelectedTab { get; set; } = default!;
     public ElementReference itemRef;
 
     private string popupTitle = "Add New Admin";
     private bool showPopup = false;
+    private bool isLoading = true;
 
     private int CurrentPage = 1;
-    private int PageSize = 12;
+    private int PageSize = 50;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        GenerateUsers();
+        await GetUsersByTypeAsync();
         showPopup = false;
-        // Tabs.Add(new TabItem
-        //     {
-        //         Name = "All",
-        //         Count = People.Count,
-        //         UserTypeID = 0, Special value for "All"
-        //         IsActive = true Default active
-        //     });
+    }
 
-        // Generate user type tabs
-        Tabs.AddRange(People.GroupBy(p => p.UserTypeID)
-                            .Select(g => new TabItem
-                                {
-                                    Name = UserTypeNames.ContainsKey(g.Key) ? UserTypeNames[g.Key] : $"Type {g.Key}",
-                                    Count = g.Count(),
-                                    UserTypeID = g.Key,
-                                    IsActive = false
-                                }));
+    private async Task GetUsersByTypeAsync()
+    {
+        People.Clear();
+        foreach (var userType in UserTypeNames.Keys)
+        {
+            var result = await UserService.GetListByTypeAsync(userType, CurrentPage, PageSize);
+            Console.WriteLine($"User Type: {userType},  result: {result?.ResponseEngMsg ?? "NULL"}");
 
-        UpdateFilteredPeople(0); // Show all by default
+            if (result?.Success == true && result.Data != null)
+            {
+                People.AddRange(result.Data);
+            }
+            else
+            {
+                Console.WriteLine($"User Type: {userType} failed or returned null data.");
+            }
+
+        }
+
+        Tabs = People.GroupBy(p => p.UserTypeID)
+                     .Select(g => new TabItem
+                         {
+                             Name = UserTypeNames.ContainsKey(g.Key) ? UserTypeNames[g.Key] : $"Type {g.Key}",
+                             Count = g.Count(),
+                             UserTypeID = g.Key,
+                             IsActive = false
+                         }).ToList();
+
+        if (Tabs.Count > 0)
+        {
+            SelectTab(Tabs.First());
+        }
     }
 
     void SelectTab(TabItem selectedTab)
@@ -142,6 +154,7 @@
             tab.IsActive = tab == selectedTab;
         }
         CurrentPage = 1;
+        SelectedTab = selectedTab;
         UpdateFilteredPeople(selectedTab.UserTypeID);
     }
 
@@ -156,56 +169,36 @@
     {
         showPopup = true;
         newItem = new Person();
-        Console.WriteLine("Add User Clicked");
     }
 
     private async Task CreateAsync()
     {
-        newItem.UserTypeID = 1;
-        newItem.FailLoginCount = 0;
-        newItem.VerificationStatus = 0;
-        newItem.IsActive = true;
-        var response = await UserService.CreateAsync(newItem);
-
-        if (response.Success)
+        try
         {
-            await ToastService.ShowSuccessAsync("Attribute Created Successfully", "Success");
-            // await GetItemsAsync();
-            showPopup = false;
+            newItem.UserTypeID = 1;
+            newItem.FailLoginCount = 0;
+            newItem.VerificationStatus = 0;
+            newItem.IsActive = true;
+
+            var response = await UserService.CreateUserAsync(newItem);
+
+            if (response.Success)
+            {
+                newItem.UserID = response.Data;
+                People.Add(newItem);
+                UpdateFilteredPeople(SelectedTab.UserTypeID);
+
+                await ToastService.ShowSuccessAsync("User Created Successfully", "Success");
+                showPopup = false;
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? "Error While Creating New User", "Error");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            await ToastService.ShowErrorAsync("Error While Creating New Attribute", "Error");
-        }
-
-    }
-
-    private void GenerateUsers()
-    {
-        showPopup = false;
-        string[] names = { "John", "Jane", "Alice", "Bob", "Charlie", "David", "Eva", "Frank", "Grace", "Henry" };
-        string[] surnames = { "Doe", "Smith", "Johnson", "Brown", "White", "Green", "Black", "Adams", "Clark", "Davis" };
-        Random rnd = new Random();
-
-        for (int i = 1; i <= 40; i++)
-        {
-            string firstName = names[rnd.Next(names.Length)];
-            string lastName = surnames[rnd.Next(surnames.Length)];
-            string email = $"{firstName.ToLower()}{lastName.ToLower()}{rnd.Next(10, 99)}@egymart.com";
-
-            People.Add(new Person
-                {
-                    UserID = i,
-                    UserTypeID = (short)rnd.Next(1, 4),
-                    DisplayName = $"{firstName} {lastName}",
-                    UserName = email,
-                    ProfileImage = "https://picsum.photos/200/300",
-                    RegisterdSince = new DateTime(rnd.Next(2015, 2023), rnd.Next(1, 13), rnd.Next(1, 28)), // Random date from 2015-2023
-                    IsVerfied = rnd.Next(2) == 1, // Random true/false
-                    IsActive = rnd.Next(2) == 1, // Random true/false
-                    VerificationStatus = (short)rnd.Next(0, 3), // 0 = Pending, 1 = Verified, 2 = Denied
-                    FailLoginCount = rnd.Next(0, 10) // Random login fail count
-                });
+            await ToastService.ShowErrorAsync($"Unexpected error: {ex.Message}", "Error");
         }
     }
 

@@ -168,6 +168,7 @@
             return;
         }
 
+
         if (Item is FixedPage fixedPage)
         {
             fixedPage.LangID = LangID;
@@ -180,6 +181,16 @@
 
         SetPropertyIfExists(Item, "LangID", LangID);
         SetPropertyIfExists(Item, "BaseID", (int)(BaseID > int.MaxValue ? 0 : BaseID));
+        
+        if(Item is Attributes attribute)
+        {
+            SetPropertyIfExists(Item, "AttributeID", BaseID);
+        }
+        
+        if(Item is Category)
+        {
+            SetPropertyIfExists(Item, "CategoryID", BaseID);
+        }
 
         if (!ValidateRequiredFields(Item))
         {
@@ -235,7 +246,6 @@
         return property?.GetValue(obj);
     }
 
-
     private bool ValidateRequiredFields(object obj)
     {
         var missingFields = new List<string>();
@@ -244,7 +254,6 @@
         {
             var value = property.GetValue(obj);
 
-            // Assuming empty strings and nulls are invalid values
             if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
             {
                 missingFields.Add(property.Name);
@@ -305,7 +314,6 @@
             Console.WriteLine($"Property {propertyName} not found or not writable on {obj.GetType().Name}");
         }
     }
-
 
     private async Task ShowTranslationPopup()
     {

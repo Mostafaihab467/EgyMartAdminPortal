@@ -50,9 +50,12 @@
                         <td class="cursor-pointer">
                             <EditableField T="string" Value="@item.AttributeTitle" ValueChanged="value => SaveEdit(item, nameof(item.AttributeTitle), value)" />
                         </td>
-                        <td class="cursor-pointer" style="width: 20%;" @onclick="value => SaveEdit(item, nameof(item.ShowAcrossAllCategory), value)">
-                            <MSwitch Label="@(item.ShowAcrossAllCategory? "Show": "Not Show")" @bind-Value="item.ShowAcrossAllCategory" />
+                        <td class="cursor-pointer" style="width: 20%;">
+                            <MSwitch Label="@(item.ShowAcrossAllCategory ? "Show" : "Not Show")"
+                                     Value="item.ShowAcrossAllCategory"
+                                     ValueChanged="async _ => await SaveEdit(item, nameof(item.ShowAcrossAllCategory), !item.ShowAcrossAllCategory)" />
                         </td>
+
                         <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.AttributeID, item.IsActive)">
                             <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
                             IndicatorType="BadgeIndicatorType.RoundedPill">
@@ -61,14 +64,12 @@
                         </td>
                         <td>
                             <CategoryLinkPopup AttributeID="@item.AttributeID" />
-                            <TranslatePopup Item="@newItem" Service="AttributeService" BaseID="@item.AttributeID"
-                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
-                {
-                    { "ShowAcrossAllCategory", item.ShowAcrossAllCategory },
-                    { "AttributeTypeID", item.AttributeTypeID },
-                })">
+                            
+                            <TranslatePopup Item="@newItem" Service="AttributeService" BaseID="item.AttributeID"
+                                            OnTranslationSuccess="Refresh">
                                 <label for="attributeTitle">Attribute Title</label>
                                 <input id="attributeTitle" class="form-control" @bind="@newItem.AttributeTitle" />
+                                <ValidationMessage For="@(() => newItem.AttributeTitle)" />
                             </TranslatePopup>
                         </td>
                     </tr>
@@ -119,8 +120,6 @@ OnPageChanged="HandlePageChanged" />
     {
         var response = await AttributeService.GetAsync();
 
-       
-
         if (response != null)
         {
             allItems = response;
@@ -169,8 +168,15 @@ OnPageChanged="HandlePageChanged" />
         {
             property.SetValue(item, newValue!.ToString());
         }
+        else if (property.PropertyType == typeof(bool) && bool.TryParse(newValue!.ToString(), out bool boolValue))
+        {
+            property.SetValue(item, boolValue);
+        }
+
+        Console.WriteLine($"SaveEdit called for {property?.Name} = {newValue}");
 
         var response = await AttributeService.EditAsync(item);
+
         if (response.Success)
         {
             await ToastService.ShowSuccessAsync("Update successful", "Success");

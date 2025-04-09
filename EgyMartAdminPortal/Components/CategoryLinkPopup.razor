@@ -1,29 +1,34 @@
 ﻿@inject AttributeService AttributeService
-@inject CategoryService CategoryService
+@inject ToastrService ToastService
 
-<Button Color="ButtonColor.Primary" TooltipTitle="Link To Category" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Link To Category" @onclick="() => isPopupVisible = true">
+<Button Color="ButtonColor.Primary" TooltipTitle="Link To Category"
+TooltipPlacement="TooltipPlacement.Top"
+@onclick="() => isPopupVisible = true">
     <i class="fa-solid fa-link"></i>
 </Button>
 
-<!-- Popup -->
 @if (isPopupVisible)
 {
-    <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1" role="dialog">
+    <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Select Category</h5>
-                    <button type="button" class="btn-close" @onclick="() => isPopupVisible = false"></button>
+                    <button type="button" class="btn-close" @onclick="ClosePopup"></button>
                 </div>
                 <div class="modal-body">
-                    @if (categories != null && categories.Any())
+                    @if (isLoading)
+                    {
+                        <p>Loading categories...</p>
+                    }
+                    else if (categories != null && categories.Any())
                     {
                         @foreach (var category in categories)
                         {
-                            <div class="d-flex gap-2">
+                            <div class="d-flex gap-2 category-item">
                                 <input type="checkbox" id="@category.CategoryID"
-                                       checked="@linkedCategories.Contains(category.CategoryID)"
-                                       @onchange="async (_) => await ToggleCategory(category.CategoryID)" />
+                                checked="@category.LinkID.HasValue"
+                                @onchange="async (_) => await ToggleCategory(category.CategoryID, category.LinkID)" />
                                 <label for="@category.CategoryID">@category.CategoryTitle</label>
                             </div>
                         }
@@ -32,10 +37,9 @@
                     {
                         <p>No categories available.</p>
                     }
-
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => isPopupVisible = false">Close</button>
+                    <button class="btn btn-secondary" @onclick="ClosePopup">Close</button>
                 </div>
             </div>
         </div>
@@ -47,53 +51,104 @@
     .category-item input {
     transform: scale(1.2);
     }
-
 </style>
 
 @code {
     private bool isPopupVisible = false;
-    private List<Category> categories = new();
-    private HashSet<long> linkedCategories = new(); // Track checked categories
+    private bool isLoading = false;
+    private bool isFirstLoad = false;
+
+    private List<LinksAC> categories = new();
+    private HashSet<long> linkedCategories = new();
 
     [Parameter] public long AttributeID { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        categories = await CategoryService.GetAsync(); // Fetch categories
-        // var linked = await AttributeService.GetLinkedCategoriesAsync(AttributeID);
-        // linkedCategories = new HashSet<long>(linked.Select(c => c.CategoryID));
-        StateHasChanged();
+        if (isPopupVisible && !isFirstLoad)
+        {
+            isFirstLoad = true;
+            isLoading = true;
+            await LoadCategories();
+            StateHasChanged(); // Refresh UI after loading
+        }
     }
 
-    private async Task ToggleCategory(long categoryId)
+    private async Task LoadCategories()
     {
-        if (linkedCategories.Contains(categoryId))
+        try
         {
-            linkedCategories.Remove(categoryId);
-            await DeleteLink(categoryId);
+            var result = await AttributeService.GetLinkMatrixAsync(AttributeID);
+            categories = result ?? new List<LinksAC>();
+            linkedCategories = categories.Where(c => c.LinkID.HasValue)
+                                         .Select(c => c.CategoryID)
+                                         .ToHashSet();
+        }
+        catch
+        {
+            await ToastService.ShowErrorAsync("Failed to load categories.", "Error");
+        }
+
+        isLoading = false;
+    }
+
+    private void ClosePopup()
+    {
+        isPopupVisible = false;
+    }
+
+    private async Task ToggleCategory(long categoryId, long? linkID)
+    {
+        bool isLinked = linkedCategories.Contains(categoryId);
+        var category = categories.FirstOrDefault(c => c.CategoryID == categoryId);
+
+        if (category == null)
+            return;
+
+        if (isLinked && linkID != null)
+        {
+            var response = await AttributeService.DeleteLinkAsync(linkID);
+
+            if (response.Success)
+            {
+                linkedCategories.Remove(categoryId);
+                category.LinkID = null;
+
+                await ToastService.ShowSuccessAsync("Link removed successfully.", "Unlinked");
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("Failed to remove link.", "Error");
+            }
         }
         else
         {
-            linkedCategories.Add(categoryId);
-            await SetLink(AttributeID, categoryId);
+            var response = await AttributeService.SetLinkAsync(AttributeID, categoryId);
+
+            if (response.Success)
+            {
+                if (category != null)
+                {
+                    await LoadCategories();
+                    linkedCategories.Add(categoryId);
+                }
+
+                await ToastService.ShowSuccessAsync("Link added successfully.", "Linked");
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("Failed to add link.", "Error");
+            }
         }
-    }
 
-    private async Task SetLink(long attributeID, long categoryID)
-    {
-        await AttributeService.SetLinkAsync(attributeID, categoryID);
-    }
-
-    private async Task DeleteLink(long categoryID)
-    {
-        await AttributeService.DeleteLinkAsync(categoryID);
+        StateHasChanged(); // Refresh UI
     }
 
     private void HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
-            isPopupVisible = false;
-        else if (e.Key == "Escape")
-            isPopupVisible = false;
+        if (e.Key == "Escape")
+        {
+            ClosePopup();
+        }
     }
 }

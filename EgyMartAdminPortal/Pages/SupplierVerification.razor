@@ -104,7 +104,7 @@
             return false;
         }
 
-        var success = await UserService.VerifyCustomerAsync(userId, status);
+        var success = await UserService.VerifySupplierAsync(userId, status);
         if (success)
         {
             user.VerificationStatus = status; // Update locally

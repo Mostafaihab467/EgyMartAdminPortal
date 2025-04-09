@@ -38,7 +38,7 @@ namespace EgyMartAdminPortal.Services
         
         public async Task<List<HeaderMenu>> GetByLangAsync(int langID, long baseID)
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<HeaderMenu>>>($"{ApiUrl}/GetByLang?BaseID={baseID}&LangID={langID}"))!;
+            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<HeaderMenu>>>($"{ApiUrl}/GetByLang/{baseID}/{langID}"))!;
             return response.Data;
         }
 

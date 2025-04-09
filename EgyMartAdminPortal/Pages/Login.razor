@@ -45,7 +45,17 @@
                                         <label for="remember-me" class="form-check-label">Remember Me</label>
                                     </div>
                                 </div>
-                                <button class="btn btn-primary w-100" type="submit">Login</button>
+                                <button class="btn btn-primary w-100" type="submit">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        <span>Loading... </span>
+                                    }
+                                    else
+                                    {
+                                        <span>Login</span>
+                                    }
+                                </button>
                             </EditForm>
                         </div>
                     </div>
@@ -60,6 +70,7 @@
     private string logo = "images/logo/newlogo.png";
     private LoginModel loginModel = new();
     private EditContext? editContext;
+    private bool isLoading = false;
 
     protected override void OnInitialized()
     {
@@ -80,14 +91,24 @@
 
     private async Task AdminLogin()
     {
-        var response = await AccountService.LoginAsync(loginModel.Email, loginModel.Password);
-        if (response.Success)
+        isLoading = true;
+
+        try
         {
-            NavigationManager.NavigateTo("/");
+            var response = await AccountService.LoginAsync(loginModel.Email, loginModel.Password);
+            if (response.Success)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync($"{response.ResponseEngMsg}", "Error");
+            }
         }
-        else
+        finally
         {
-            await ToastService.ShowErrorAsync($"{response.ResponseEngMsg}", "Error");
+            isLoading = false;
+            StateHasChanged(); // Optional, ensures UI refresh
         }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Text.Json;
+using static System.Net.WebRequestMethods;
 
 namespace EgyMartAdminPortal.Services
 {
@@ -45,9 +46,8 @@ namespace EgyMartAdminPortal.Services
             try
             {
                 var requestBody = new { UserName = userName, Password = password };
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // Timeout after 10 seconds
 
-                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody, cts.Token);
+                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
 
                 if (response == null)
                 {
@@ -81,7 +81,7 @@ namespace EgyMartAdminPortal.Services
                     // Save user data and token
                     var userDataJson = JsonSerializer.Serialize(User);
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", User.IsVerfied);
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", apiResponse.Data.IsVerfied);
                 }
 
                 return apiResponse ?? new ApiResponse<Person>
@@ -133,7 +133,28 @@ namespace EgyMartAdminPortal.Services
             }
         }
 
+        public async Task<bool> ChangePasswordAsync(long userId, string newPassword, string confirmPassword)
+        {
+            var url = $"{ApiUrl}/AdminPassword/ChangePassword?UserID={userId}";
 
+            var changePasswordRequest = new
+            {
+                newPassword = newPassword,
+                confirmPassword = confirmPassword
+            };
+
+            var response = await _httpClient.PutAsJsonAsync(url, changePasswordRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            else
+            {
+                // Handle error response or return false
+                return false;
+            }
+        }
 
         public async Task LogoutAsync()
         {

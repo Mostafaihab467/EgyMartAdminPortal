@@ -1,7 +1,6 @@
 ﻿using EgyMartAdminPortal.Models;
 using System;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 
 namespace EgyMartAdminPortal.Services
 {
@@ -37,6 +36,7 @@ namespace EgyMartAdminPortal.Services
         {
             return $"{ApiUrl}";
         }
+        
         public async Task<ApiResponse<int>> CreateAsync(Attributes newAttribute)
         {
             var user = await authService.GetUser();
@@ -50,16 +50,18 @@ namespace EgyMartAdminPortal.Services
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
             return result ?? new ApiResponse<int> { Success = false, Data = 0 };
         }
-        public async Task<ApiResponse<List<Attributes>>> EditAsync(Attributes updatedAttribute)
+        
+        public async Task<ApiResponse<int>> EditAsync(Attributes updatedAttribute)
         {
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/Edit", updatedAttribute);
 
             if (!response.IsSuccessStatusCode)
-                return new ApiResponse<List<Attributes>> { Success = false, Data = [], ResponseEngMsg = $"Error: {response.StatusCode}" };
+                return new ApiResponse<int> { Success = false, Data = 0, ResponseEngMsg = $"Error: {response.StatusCode}" };
 
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<Attributes>>>();
-            return result ?? new ApiResponse<List<Attributes>> { Success = false, Data = [] };
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
+            return result ?? new ApiResponse<int> { Success = false, Data = 0 };
         }
+        
         public async Task<ApiResponse<int>> ChangeStatusAsync(long AttributeID, bool IsActive)
         {
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/ChangeStatus/{AttributeID}/{IsActive}", new { });
@@ -70,9 +72,36 @@ namespace EgyMartAdminPortal.Services
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
             return result ?? new ApiResponse<int> { Success = false, Data = 0 };
         }
-        public async Task<ApiResponse<int>> SetLinkAsync(long id1, long id2)
+
+        public async Task<List<LinksAC>> GetLinkMatrixAsync(long attributeID)
         {
-            var response = await _httpClient.PostAsync($"{ApiUrl}/SetLink/{id1}/{id2}", null);
+            try
+            {
+                string url = $"{ApiUrl}/GetLinkMatrix?AttributID={attributeID}";
+                var response = await _httpClient.GetAsync(url);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<LinksAC>>>();
+                    return result?.Data ?? [];
+                }
+                else
+                {
+                    // Handle the case where the response is not successful
+                    return [];
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (network issues, etc.)
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return [];
+            }
+        }
+
+        public async Task<ApiResponse<int>> SetLinkAsync(long AttributeID, long CategoryID)
+        {
+            var response = await _httpClient.PostAsync($"{ApiUrl}/SetLink/{AttributeID}/{CategoryID}", null);
 
             if (!response.IsSuccessStatusCode)
                 return new ApiResponse<int> { Success = false, Data = 0, ResponseEngMsg = $"Error: {response.StatusCode}" };
@@ -80,7 +109,7 @@ namespace EgyMartAdminPortal.Services
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
             return result ?? new ApiResponse<int> { Success = false, Data = 0 };
         }
-        public async Task<ApiResponse<int>> DeleteLinkAsync(long id)
+        public async Task<ApiResponse<int>> DeleteLinkAsync(long? id)
         {
             var response = await _httpClient.DeleteAsync($"{ApiUrl}/BreakLink/{id}");
 
@@ -92,7 +121,7 @@ namespace EgyMartAdminPortal.Services
         }
         public async Task<List<Attributes>> GetByLangAsync(int langID, long baseID)
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Attributes>>>($"{ApiUrl}/GetByLang?BaseID={baseID}&LangID={langID}"))!;
+            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Attributes>>>($"{ApiUrl}/GetTranslateByID/{baseID}/{langID}"))!;
             return response.Data;
         }
     }
