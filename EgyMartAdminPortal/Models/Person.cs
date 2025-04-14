@@ -1,11 +1,26 @@
-﻿namespace EgyMartAdminPortal.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace EgyMartAdminPortal.Models
 {
     public class Person
     {
         public long UserID { get; set; }
         public short UserTypeID { get; set; }
+
+        [Required(ErrorMessage = "Please Enter Display Name")]
         public string DisplayName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please Enter Email")]
+        [EmailAddress(ErrorMessage = "Email must be like this : ex12@example.com")]
         public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please Enter Password")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required]
+        [Compare("Password", ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
         public string? ProfileImage { get; set; } = string.Empty;
         public bool IsVerfied { get; set; } = false;
         public bool IsActive { get; set; } = true;

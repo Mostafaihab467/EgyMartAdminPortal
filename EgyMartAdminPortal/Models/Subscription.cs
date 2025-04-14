@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace EgyMartAdminPortal.Models
 {
-    public class Subscription
+    public class Subscription : IValidatableObject
     {
         public long AdsPlanID { get; set; }
 
@@ -18,11 +18,10 @@ namespace EgyMartAdminPortal.Models
         public int DurationDays { get; set; }
 
         [Range(0, double.MaxValue, ErrorMessage = "Cost Before must be non-negative.")]
-        public double CostBefore { get; set; }
+        public double CostBefore { get; set; } = 0.0;
 
         [Range(0, double.MaxValue, ErrorMessage = "Cost must be non-negative.")]
-        [Compare(nameof(CostBefore), ErrorMessage = "Cost must be less than Cost Before.")]
-        public double Cost { get; set; }
+        public double Cost { get; set; } = 0.0;
 
         [Required(ErrorMessage = "Plan Description is required.")]
         public string PlanDescription { get; set; }
@@ -32,5 +31,16 @@ namespace EgyMartAdminPortal.Models
         public long BaseID { get; set; }
         public bool IsActive { get; set; }
         public string AdsLocationTitle { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (Cost >= CostBefore)
+            {
+                yield return new ValidationResult(
+                    "Cost must be less than Cost Before.",
+                    new[] { nameof(Cost) } // Targets the 'Cost' field
+                );
+            }
+        }
     }
 }

@@ -27,21 +27,30 @@ namespace EgyMartAdminPortal.Services
         public async Task<bool> VerifySupplierAsync(long supplierId, int status) => await VerifyUserAsync("Supplier", supplierId, status);
         public async Task<bool> VerifyCustomerAsync(long customerId, int status) => await VerifyUserAsync("Customer", customerId, status);
 
-        public async Task<ApiResponse<long>> CreateUserAsync(Person request)
+        public async Task<ApiResponse<CreateUserResult>> CreateUserAsync(Person request)
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}Auth/UsersManagment/Create", request);
+                var bayload = new
+                {
+                    request.DisplayName,
+                    request.UserName,
+                    request.Password,
+                    request.UserTypeID,
+                    request.FirstLogin,
+                };
+                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}UsersManagment/Create", bayload);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<ApiResponse<long>>();
-                    return result ?? new ApiResponse<long> { Success = false, ResponseEngMsg = "Empty response from server." };
+                    var result = await response.Content.ReadFromJsonAsync<ApiResponse<CreateUserResult>>();
+                    Console.WriteLine(result!.Data.UserId);
+                    return result ?? new ApiResponse<CreateUserResult> { Success = false, ResponseEngMsg = "Empty response from server." };
                 }
                 else
                 {
                     var error = await response.Content.ReadAsStringAsync();
-                    return new ApiResponse<long>
+                    return new ApiResponse<CreateUserResult>
                     {
                         Success = false,
                         ResponseEngMsg = $"Server error: {error}"
@@ -50,7 +59,24 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<long>
+                return new ApiResponse<CreateUserResult>
+                {
+                    Success = false,
+                    ResponseEngMsg = $"Exception: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ApiResponse<List<UserTypeWithCount>>> GetUsersTypesAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<UserTypeWithCount>>>($"{ApiUrl}UsersManagment/Types/GetListWithCount");
+                return response ?? new ApiResponse<List<UserTypeWithCount>> { Success = false, ResponseEngMsg = "No data returned." };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<List<UserTypeWithCount>>
                 {
                     Success = false,
                     ResponseEngMsg = $"Exception: {ex.Message}"
@@ -81,10 +107,10 @@ namespace EgyMartAdminPortal.Services
                             {
                                 person.ProfileImage = $"images/avatars/user.jpg";
                             }
-                            if (!person.ProfileImage!.StartsWith("https://"))
-                            {
-                                person.ProfileImage = $"https://192.168.1.163:412/Uploads/ProfileImgs/{person.ProfileImage}";
-                            }
+                            //if (!person.ProfileImage!.StartsWith("https://"))
+                            //{
+                            //    person.ProfileImage = $"https://api.egyptbigmart.com:5051/Uploads/ProfileImgs/{person.ProfileImage}";
+                            //}
                         }
                     }
                     return result ?? new ApiResponse<List<Person>> { Success = false, ResponseEngMsg = "Empty response from server." };

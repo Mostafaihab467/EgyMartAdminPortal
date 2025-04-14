@@ -82,8 +82,8 @@
                             <EditableField T="string" Value="@item.Call2ActionMsg" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionMsg), value)" />
                         </td>
                         <td class="cursor-pointer">
-                            <FileDropZone Image="@item.ImageBase64" CloseIcon="true" InputFile="false"
-                            OnImageUploaded="async (imageBase64) => await SaveEdit(item, nameof(item.ImageBase64), imageBase64)" />
+                            <FileDropZone Image="@item.ImageURL" CloseIcon="true" InputFile="false"
+                                          OnImageUploaded="@(EventCallback.Factory.Create<string>(this, image => HandleEditImageUploaded(item, image)))" />
                         </td>
                         <td>
                             <EditableField T="string" Value="@item.Call2ActionURL" Width="100" ValueChanged="value => SaveEdit(item, nameof(item.Call2ActionURL), value)" />
@@ -110,7 +110,7 @@
                                 <label for="call2ActionMsg">Action Msg</label>
                                 <input id="call2ActionMsg" class="form-control" @bind="@newItem.Call2ActionMsg" />
                                 <label for="imageURL">Image Url</label>
-                                <FileDropZone InputFile="true" OnImageUploaded="@(EventCallback.Factory.Create<string>(this, HandleEditImageUploaded))" />
+                                <FileDropZone InputFile="true" OnImageUploaded="@(EventCallback.Factory.Create<string>(this, HandleEditImageUploadedTrans))" />
                             </TranslatePopup>
                         </td>
                     </tr>
@@ -264,14 +264,48 @@ OnPageChanged="HandlePageChanged" />
 
     private async Task HandleImageUploaded(string base64Image)
     {
-        newItem.ImageBase64 = base64Image;
-        await InvokeAsync(StateHasChanged);
-    }
-    private async Task HandleEditImageUploaded(string base64Image)
-    {
-        showPopup = false;
-        newItem.ImageBase64 = base64Image;
+        // Strip the "data:image/png;base64," prefix if present
+        if (base64Image.StartsWith("data:image"))
+        {
+            var base64Parts = base64Image.Split(',');
+            newItem.ImageURL = base64Parts.Length > 1 ? base64Parts[1] : base64Image;
+        }
+        else
+        {
+            newItem.ImageURL = base64Image;
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task HandleEditImageUploadedTrans(string base64Image)
+    {
+        newItem.ImageURL = base64Image;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleEditImageUploaded(SliderMenu item, string base64Image)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(base64Image))
+            return;
+
+        // ✅ Remove data URI prefix if it exists
+        var base64Data = base64Image.Contains(",") ? base64Image.Split(',')[1] : base64Image;
+
+        // Just for UI preview
+        item.ImageURL = base64Image;
+
+        var response = await SliderMenuService.EditSliderImageAsync(item.SliderID, base64Data);
+
+        if (response)
+        {
+            await ToastService.ShowSuccessAsync("Image updated successfully!", "Success");
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Failed to update image", "Error");
+        }
+
+        await GetAsync(); // Refresh
+    }
 }

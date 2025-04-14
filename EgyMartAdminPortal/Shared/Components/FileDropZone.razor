@@ -102,7 +102,7 @@ else
         isUploading = false;
 
         // Emit ImageUrl to parent
-        await OnImageUploaded.InvokeAsync(base64String);
+        await OnImageUploaded.InvokeAsync(Image);
     }
 
     private void ToggleInputFile()

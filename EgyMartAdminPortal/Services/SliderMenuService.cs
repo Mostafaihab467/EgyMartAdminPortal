@@ -1,5 +1,7 @@
 ﻿using EgyMartAdminPortal.Models;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text;
 
 namespace EgyMartAdminPortal.Services
 {
@@ -44,14 +46,14 @@ namespace EgyMartAdminPortal.Services
 
         public async Task<HttpResponseMessage> CreateAsync(SliderMenu item)
         {
-            var request = new SliderMenu
+            var request = new
             {
-                MainTitle = item.MainTitle,
-                ShortTitle = item.ShortTitle,
-                Call2ActionMsg = item.Call2ActionMsg,
-                ImageBase64 = item.ImageBase64,
-                Call2ActionURL = item.Call2ActionURL,
-                DisplayOrder = item.DisplayOrder
+                item.ShortTitle,
+                item.MainTitle,
+                item.Call2ActionMsg,
+                item.Call2ActionURL,
+                item.DisplayOrder,
+                ImageBase64 = item.ImageURL
             };
             var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/Create", request);
             return response;
@@ -64,7 +66,7 @@ namespace EgyMartAdminPortal.Services
                 ShortTitle = item.ShortTitle,
                 MainTitle = item.MainTitle,
                 Call2ActionMsg = item.Call2ActionMsg,
-                ImageBase64 = item.ImageBase64,
+                ImageURL = item.ImageURL,
                 Call2ActionURL = item.Call2ActionURL,
                 DisplayOrder = item.DisplayOrder
             };
@@ -72,7 +74,33 @@ namespace EgyMartAdminPortal.Services
             return response;
         }
 
-        //public async Task<HttpResponseMessage> EditImageAsync(long itemID, string imageBase64){}
+        public async Task<bool> EditSliderImageAsync(int sliderId, string base64Image)
+        {
+            try
+            {
+                var jsonContent = JsonSerializer.Serialize(base64Image);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PutAsync($"{ApiUrl}/EditImage/{sliderId}", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {errorMessage}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                return false;
+            }
+        }
+
 
         public async Task<ApiResponse<int>> ChangeStatusAsync(int ID, bool newState)
         {

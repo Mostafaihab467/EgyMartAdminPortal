@@ -156,3 +156,16 @@ document.addEventListener('click', function (event) {
         }
     });
 });
+
+function handleImageError(imageElement) {
+    // Check if the image exists by making a request
+    fetch(imageElement.src)
+        .then(response => {
+            if (response.status === 404) {
+                imageElement.src = "images/avatars/user.jpg"; // Fallback image
+            }
+        })
+        .catch(() => {
+            imageElement.src = "images/avatars/user.jpg"; // Fallback image on error
+        });
+}
