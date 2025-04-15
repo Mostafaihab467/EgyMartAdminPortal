@@ -1,6 +1,8 @@
 ﻿using EgyMartAdminPortal.Models;
 using System;
+using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using static System.Net.WebRequestMethods;
 
 namespace EgyMartAdminPortal.Services
@@ -178,17 +180,32 @@ namespace EgyMartAdminPortal.Services
             }
         }
 
-        public async Task<byte[]> DownloadSupplierAttachmentAsync(long OwnerID)
+        public async Task<string?> DownloadSupplierAttachmentAsync(long OwnerID)
         {
             var response = await _httpClient.GetAsync($"cms/api/v1/CompanyProfile/download_verficationFilePDf/{OwnerID}");
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadAsByteArrayAsync();
+                var json = await response.Content.ReadAsStringAsync();
+
+                var jsonDoc = JsonDocument.Parse(json);
+                var root = jsonDoc.RootElement;
+
+                if (root.TryGetProperty("data", out var dataElement))
+                {
+                    var base64Data = dataElement.GetString();
+                    return base64Data;
+                }
+
+                return null; // No data field found
+            }
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
             }
 
             throw new Exception("Failed to download attachment");
         }
-
     }
 }

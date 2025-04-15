@@ -101,7 +101,6 @@ namespace EgyMartAdminPortal.Services
             }
         }
 
-
         public async Task<ApiResponse<int>> ChangeStatusAsync(int ID, bool newState)
         {
             var response = await _httpClient.PutAsync($"{ApiUrl}/ChangeStatus/{ID}?IsActive={newState}", null);

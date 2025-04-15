@@ -109,8 +109,6 @@
                                 <input id="shortTitle" class="form-control" @bind="@newItem.ShortTitle" />
                                 <label for="call2ActionMsg">Action Msg</label>
                                 <input id="call2ActionMsg" class="form-control" @bind="@newItem.Call2ActionMsg" />
-                                <label for="imageURL">Image Url</label>
-                                <FileDropZone InputFile="true" OnImageUploaded="@(EventCallback.Factory.Create<string>(this, HandleEditImageUploadedTrans))" />
                             </TranslatePopup>
                         </td>
                     </tr>
@@ -275,12 +273,6 @@ OnPageChanged="HandlePageChanged" />
             newItem.ImageURL = base64Image;
         }
 
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task HandleEditImageUploadedTrans(string base64Image)
-    {
-        newItem.ImageURL = base64Image;
         await InvokeAsync(StateHasChanged);
     }
 

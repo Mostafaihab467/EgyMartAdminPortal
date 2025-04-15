@@ -31,7 +31,7 @@
                         </div>
                         <div class="modal-footer">
                             <button class="btn btn-secondary" @onclick="() => IsPopupVisible = false">Close</button>
-                            <button class="btn btn-primary" type="submit" @onclick="TranslatePage" disabled="@IsTranslating">
+                            <button class="btn btn-primary" type="submit" disabled="@IsTranslating">
                                 @(IsTranslating ? "Translating..." : "Translate")
                             </button>
                         </div>
@@ -123,7 +123,7 @@
 
                     if (result is IEnumerable<object> translations && translations.Cast<object>().Any())
                     {
-                        var firstTranslation = translations.Cast<object>().First();
+                        var firstTranslation = translations.Cast<object>().Last();
 
                         CopyProperties(firstTranslation, Item);
                     }
@@ -171,6 +171,11 @@
 
         if (Item is FixedPage fixedPage)
         {
+            if (fixedPage.PageBody == "-")
+            {
+                await ToastService.ShowErrorAsync("Page Body must be filled before translation.", "Validation Error");
+                return;
+            }
             fixedPage.LangID = LangID;
         }
 
@@ -181,13 +186,13 @@
 
         SetPropertyIfExists(Item, "LangID", LangID);
         SetPropertyIfExists(Item, "BaseID", (int)(BaseID > int.MaxValue ? 0 : BaseID));
-        
-        if(Item is Attributes attribute)
+
+        if (Item is Attributes attribute)
         {
             SetPropertyIfExists(Item, "AttributeID", BaseID);
         }
-        
-        if(Item is Category)
+
+        if (Item is Category)
         {
             SetPropertyIfExists(Item, "CategoryID", BaseID);
         }
@@ -275,7 +280,7 @@
 
         if (translations != null && translations.Count > 0)
         {
-            var translation = translations.First();
+            var translation = translations.Last();
             foreach (var property in typeof(T).GetProperties())
             {
                 var translatedValue = property.GetValue(translation);

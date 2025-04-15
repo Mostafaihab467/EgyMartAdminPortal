@@ -1,6 +1,8 @@
-﻿@inject IJSRuntime JSRuntime
+﻿@inherits InputBase<string>
+@inject IJSRuntime JSRuntime
 
 <textarea id="@Id" style="width: 100%; max-width: 50rem; height: 75vh; display: block;"></textarea>
+
 @code {
     private string? _id;
     private readonly string _uid = Guid.NewGuid().ToString("N");
@@ -11,12 +13,6 @@
         get => _id ?? $"CKEditor_{_uid}";
         set => _id = value;
     }
-
-    [Parameter]
-    public string? Value { get; set; }
-
-    [Parameter]
-    public EventCallback<string> ValueChanged { get; set; }
 
     private DotNetObjectReference<CKEditor>? _dotNetRef;
 
@@ -32,12 +28,18 @@
     [JSInvokable]
     public async Task EditorDataChanged(string data)
     {
-        if (Value != data) // Prevent unnecessary updates
+        if (CurrentValue != data)
         {
-            Value = data;
+            CurrentValue = data;
             await ValueChanged.InvokeAsync(data);
-            StateHasChanged();
         }
+    }
+
+    protected override bool TryParseValueFromString(string? value, out string result, out string validationErrorMessage)
+    {
+        result = value ?? string.Empty;
+        validationErrorMessage = string.Empty;
+        return true;
     }
 
     public async ValueTask DisposeAsync()
