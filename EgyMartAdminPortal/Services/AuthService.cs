@@ -78,9 +78,20 @@ namespace EgyMartAdminPortal.Services
                 {
                     User = apiResponse.Data;
 
-                    // Save user data and token
-                    var userDataJson = JsonSerializer.Serialize(User);
+                    var minimalUser = new
+                    {
+                        User.UserID,
+                        User.DisplayName,
+                        User.UserName,
+                        User.ProfileImage,
+                        User.IsActive,
+                        User.FirstLogin
+                    };
+
+                    var userDataJson = JsonSerializer.Serialize(minimalUser);
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
+
+                    // Save JWT token (replace IsVerfied with actual JWT property if needed)
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", apiResponse.Data.IsVerfied);
                 }
 
