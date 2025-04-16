@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using EgyMartAdminPortal.Services;
 using EgyMartAdminPortal.Handlers;
-using System.Net.Http;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
@@ -49,5 +49,8 @@ builder.Services.AddScoped<SubscriptionService>();
 builder.Services.AddScoped<SocialMediaService>();
 builder.Services.AddScoped<SubscribtionService>();
 builder.Services.AddScoped<UserService>();
+
+// Suppress HTTP client logging by setting LogLevel to Warning or higher in code
+builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 
 await builder.Build().RunAsync();

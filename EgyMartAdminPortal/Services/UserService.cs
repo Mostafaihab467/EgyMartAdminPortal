@@ -187,17 +187,16 @@ namespace EgyMartAdminPortal.Services
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-
                 var jsonDoc = JsonDocument.Parse(json);
                 var root = jsonDoc.RootElement;
 
-                if (root.TryGetProperty("data", out var dataElement))
+                if (root.TryGetProperty("data", out var dataElement) &&
+                    dataElement.TryGetProperty("fileBase64", out var fileBase64Element))
                 {
-                    var base64Data = dataElement.GetString();
-                    return base64Data;
+                    return fileBase64Element.GetString();
                 }
 
-                return null; // No data field found
+                return null;
             }
 
             if (response.StatusCode == HttpStatusCode.NotFound)
@@ -207,5 +206,6 @@ namespace EgyMartAdminPortal.Services
 
             throw new Exception("Failed to download attachment");
         }
+
     }
 }

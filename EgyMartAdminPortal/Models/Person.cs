@@ -23,7 +23,7 @@ namespace EgyMartAdminPortal.Models
 
         public string? ProfileImage { get; set; } = string.Empty;
         public bool IsVerfied { get; set; } = false;
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
         public bool FirstLogin { get; set; } = false;
         public int FailLoginCount { get; set; } = 0;
         public bool IsDeleted { get; set; }

@@ -1,30 +1,59 @@
-﻿using System.Security.Cryptography;
-using System.Text;
+﻿using EgyMartAdminPortal.Models;
+using Microsoft.JSInterop;
+using System.Text.Json;
 
 namespace EgyMartAdminPortal.Handlers
 {
     public class SignatureHandler : DelegatingHandler
     {
-        private readonly string _secretKey = "YourSecretKey";
+        private readonly IJSRuntime _jsRuntime;
+        private readonly string _ivBase64 = "UTlGSkt1eUZESk96aVhhbw==";
+
+        public SignatureHandler(IJSRuntime jsRuntime)
+        {
+            _jsRuntime = jsRuntime;
+        }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            var message = $"{request.Method}:{request.RequestUri}:{timestamp}";
-            var signature = GenerateSignature(_secretKey, message);
+            var userJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "userData");
+            string email = "";
 
-            request.Headers.Add("X-Timestamp", timestamp);
-            request.Headers.Add("X-Signature", signature);
+            if (string.IsNullOrEmpty(userJson) && request.Content != null)
+            {
+                var bodyContent = await request.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(bodyContent);
+                if (doc.RootElement.TryGetProperty("userName", out var emailElement))
+                {
+                    email = emailElement.GetString() ?? "";
+                }
+            }
+            else if (!string.IsNullOrEmpty(userJson))
+            {
+                try
+                {
+                    var user = JsonSerializer.Deserialize<Person>(userJson);
+                    email = user?.UserName ?? "";
+                }
+                catch
+                {
+                    email = "Anonymous";
+                }
+            }
+
+            var endpoint = request.RequestUri?.AbsolutePath ?? "/";
+            var body = "test";
+            var signature = await _jsRuntime.InvokeAsync<string>(
+                "cryptoHelper.signRequest",
+                email,
+                endpoint,
+                body,
+                _ivBase64
+            );
+
+            request.Headers.Add("sign", signature);
 
             return await base.SendAsync(request, cancellationToken);
         }
-
-        private string GenerateSignature(string secretKey, string message)
-        {
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
-            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
-            return Convert.ToBase64String(hash);
-        }
     }
-
 }

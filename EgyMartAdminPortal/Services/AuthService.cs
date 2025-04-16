@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Text.Json;
-using static System.Net.WebRequestMethods;
 
 namespace EgyMartAdminPortal.Services
 {
@@ -78,9 +77,20 @@ namespace EgyMartAdminPortal.Services
                 {
                     User = apiResponse.Data;
 
-                    // Save user data and token
-                    var userDataJson = JsonSerializer.Serialize(User);
+                    var minimalUser = new
+                    {
+                        User.UserID,
+                        User.DisplayName,
+                        User.UserName,
+                        User.ProfileImage,
+                        User.IsActive,
+                        User.FirstLogin
+                    };
+
+                    var userDataJson = JsonSerializer.Serialize(minimalUser);
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
+
+                    // Save JWT token (replace IsVerfied with actual JWT property if needed)
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", apiResponse.Data.IsVerfied);
                 }
 
@@ -132,6 +142,71 @@ namespace EgyMartAdminPortal.Services
                 };
             }
         }
+
+        //public async Task<ApiResponse<LoginData>> LoginAsync(string userName, string password)
+        //{
+        //    try
+        //    {
+        //        var requestBody = new { UserName = userName, Password = password };
+
+        //        var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
+
+        //        if (response == null)
+        //        {
+        //            await _jsRuntime.InvokeVoidAsync("console.error", "No response from server");
+        //            return new ApiResponse<LoginData> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
+        //        }
+
+        //        var responseContent = await response.Content.ReadAsStringAsync();
+        //        var apiResponse = JsonSerializer.Deserialize<ApiResponse<LoginData>>(responseContent, new JsonSerializerOptions
+        //        {
+        //            PropertyNameCaseInsensitive = true
+        //        });
+
+        //        if (apiResponse is not null && apiResponse.Success && apiResponse.Data is not null)
+        //        {
+        //            var user = apiResponse.Data.User;
+        //            var jwt = apiResponse.Data.Tokens.Jwt;
+
+        //            User = user;
+
+        //            // Store selected user fields
+        //            var minimalUser = new
+        //            {
+        //                user.UserID,
+        //                user.DisplayName,
+        //                user.UserName,
+        //                user.ProfileImage,
+        //                user.IsActive,
+        //                user.FirstLogin
+        //            };
+
+        //            var userDataJson = JsonSerializer.Serialize(minimalUser);
+        //            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
+
+        //            // Store JWT token
+        //            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", jwt);
+        //        }
+
+        //        return apiResponse ?? new ApiResponse<LoginData>
+        //        {
+        //            Success = false,
+        //            ResponseEngMsg = "Invalid response from server",
+        //            ResponseArMsg = "استجابة غير صالحة من الخادم"
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await _jsRuntime.InvokeVoidAsync("console.error", $"Unexpected error: {ex.Message}");
+        //        return new ApiResponse<LoginData>
+        //        {
+        //            Success = false,
+        //            ResponseEngMsg = "An unexpected error occurred",
+        //            ResponseArMsg = "حدث خطأ غير متوقع"
+        //        };
+        //    }
+        //}
+
 
         public async Task<bool> ChangePasswordAsync(long userId, string newPassword, string confirmPassword)
         {

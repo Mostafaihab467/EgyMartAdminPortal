@@ -169,3 +169,50 @@ function handleImageError(imageElement) {
             imageElement.src = "images/avatars/user.jpg"; // Fallback image on error
         });
 }
+
+window.cryptoHelper = {
+    async signRequest(userEmail, endpoint, plainText, ivBase64) {
+        function getMyKey(userEmail, endpoint) {
+            const originalKey = "NlOd2ZNXdgDdz0k?vQP@sFWOXBOGp4)1";
+            const normalize = str => str.replace(/[^a-zA-Z0-9]/g, '');
+            const getDayIndex = () => {
+                const today = new Date();
+                const day = today.getDate();
+                const month = today.getMonth() + 1;
+                return month === 1 ? day : ((month - 1) * 30) + day;
+            };
+
+            let key = normalize(userEmail) + normalize(endpoint) + getDayIndex().toString(); // no toLowerCase
+            //let key = normalize(userEmail) + normalize(endpoint.split('/').pop().toLowerCase()) + getDayIndex().toString(); // no toLowerCase
+            if (key.length < 32) {
+                key += originalKey.substring(0, 32 - key.length);
+            } else {
+                key = key.substring(0, 32);
+            }
+            return key;
+        }
+
+        const keyText = getMyKey(userEmail, endpoint);
+        const enc = new TextEncoder();
+        const keyBytes = enc.encode(keyText);
+        const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
+        const messageBytes = enc.encode(plainText);
+
+        const cryptoKey = await crypto.subtle.importKey(
+            "raw",
+            keyBytes,
+            { name: "AES-CBC" },
+            false,
+            ["encrypt"]
+        );
+
+        const encrypted = await crypto.subtle.encrypt(
+            { name: "AES-CBC", iv: iv },
+            cryptoKey,
+            messageBytes
+        );
+        console.log("Generated Key:", keyText);
+
+        return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+    }
+};
