@@ -6,7 +6,7 @@ namespace EgyMartAdminPortal.Services
     public class FooterMenuService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "cms/api/v2/WidgetsFooterLinks";
+        protected string ApiUrl = "cms/api/jpt/v2/WidgetsFooterLinks";
 
         public string GetTranslateApiUrl()
         {

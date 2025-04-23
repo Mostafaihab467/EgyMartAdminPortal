@@ -178,7 +178,7 @@ namespace EgyMartAdminPortal.Services
 
         public async Task<string?> DownloadSupplierAttachmentAsync(long OwnerID)
         {
-            var response = await _httpClient.GetAsync($"cms/api/v2/CompanyProfile/download_verficationFilePDf/{OwnerID}");
+            var response = await _httpClient.GetAsync($"cms/api/jpt/v2/CompanyProfile/download_verficationFilePDf/{OwnerID}");
 
             if (response.IsSuccessStatusCode)
             {

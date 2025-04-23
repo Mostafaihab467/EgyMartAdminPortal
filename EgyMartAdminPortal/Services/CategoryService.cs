@@ -6,7 +6,7 @@ namespace EgyMartAdminPortal.Services
     public class CategoryService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "products/api/v2/CategoryList";
+        protected string ApiUrl = "products/api/jpt/v2/CategoryList";
         public async Task<List<Category>> GetAsync()
         {
             try

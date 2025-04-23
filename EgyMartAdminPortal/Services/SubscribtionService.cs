@@ -6,7 +6,7 @@ namespace EgyMartAdminPortal.Services
     public class SubscribtionService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        private const string ApiUrl = "cms/api/v2/SubscribtionList";
+        private const string ApiUrl = "cms/api/jpt/v2/SubscribtionList";
 
         public async Task<List<Subscribtion>> GetSubscriptionsAsync(DateTime startDate, DateTime endDate)
         {

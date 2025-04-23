@@ -8,7 +8,7 @@ namespace EgyMartAdminPortal.Services
     public class SliderMenuService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "cms/api/v2/WidgetsSliders";
+        protected string ApiUrl = "cms/api/jpt/v2/WidgetsSliders";
 
         public string GetTranslateApiUrl()
         {

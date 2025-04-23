@@ -5,7 +5,7 @@ namespace EgyMartAdminPortal.Services
     public class SubscriptionService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "ads/api/v2/Ads/ManageSubscriptions";
+        protected string ApiUrl = "ads/api/jpt/v2/Ads/ManageSubscriptions";
 
         public string GetTranslateApiUrl()
         {

@@ -1,9 +1,10 @@
-﻿@if (IsVisible)
+﻿@using System.ComponentModel.DataAnnotations
+@if (IsVisible)
 {
     <div class="modal d-block position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75" style="z-index: 1050;">
-        <div class="d-flex justify-content-center align-items-center h-100">
-            <div class="modal-content p-4 shadow-lg" style="width: 100%; max-width: 600px; border-radius: 10px; background-color: white;">
-                <div class="modal-header">
+        <div class="d-flex justify-content-center align-items-center h-100 px-3">
+            <div class="modal-content p-4 shadow-lg w-50 responsive-modal">
+                <div class="modal-header border-0">
                     <h5 class="modal-title">Change Password</h5>
                     <button type="button" class="btn-close" @onclick="OnClose"></button>
                 </div>
@@ -12,19 +13,31 @@
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
-                        <div class="mb-3">
+                        <div class="mb-3 position-relative">
                             <label class="form-label">New Password</label>
-                            <InputText type="password" class="form-control" @bind-Value="Model.NewPassword" />
+                            <input type="@(ShowPassword ? "text" : "password")"
+                                   class="form-control pe-5"
+                                   @bind="Model.NewPassword"
+                                   placeholder="Enter Your Password" />
+                            <button type="button"
+                                    class="btn btn-sm position-absolute end-0 translate-middle-y me-2"
+                                    style="z-index: 2; top: 73% !important;"
+                                    @onclick="TogglePasswordVisibility">
+                                <i class="@(ShowPassword ? "bi bi-eye-slash" : "bi bi-eye")"></i>
+                            </button>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-3 position-relative">
                             <label class="form-label">Confirm Password</label>
-                            <InputText type="password" class="form-control" @bind-Value="Model.ConfirmPassword" />
+                            <input type="@(ShowPassword ? "text" : "password")"
+                                   class="form-control"
+                                   @bind="Model.ConfirmPassword"
+                                   placeholder="Confirm Password" />
                         </div>
 
-                        <div class="d-flex justify-content-end">
+                        <div class="d-flex justify-content-end flex-wrap gap-2">
                             <button type="submit" class="btn btn-primary">Change</button>
-                            <button type="button" class="btn btn-secondary ms-2" @onclick="OnClose">Cancel</button>
+                            <button type="button" class="btn btn-secondary" @onclick="OnClose">Cancel</button>
                         </div>
                     </EditForm>
                 </div>
@@ -32,6 +45,7 @@
         </div>
     </div>
 }
+
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
@@ -41,6 +55,22 @@
     [Parameter] public EventCallback OnPasswordChanged { get; set; }
 
     private ChangePasswordModel Model { get; set; } = new();
+    private bool ShowPassword { get; set; } = false;
+
+    protected override Task OnInitializedAsync()
+    {
+        if (Model.NewPassword != null)
+        {
+            Model.NewPassword = string.Empty;
+            Model.ConfirmPassword = string.Empty;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        ShowPassword = !ShowPassword;
+    }
 
     private async Task Submit()
     {
@@ -56,11 +86,14 @@
 
     public class ChangePasswordModel
     {
+        [Required(ErrorMessage = "New Password is required.")]
         public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirm Password is required.")]
+        [Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 }
-
 
 <style>
     .modal-backdrop {
