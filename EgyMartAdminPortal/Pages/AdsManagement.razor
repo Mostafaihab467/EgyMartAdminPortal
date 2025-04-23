@@ -211,6 +211,8 @@
 
     private async Task GetAdsLocationsAsync()
     {
+        if (locations != null && locations.Count > 0)
+            return;
         try
         {
             var response = await SubscriptionService.GetLocationsAsync();
@@ -297,7 +299,6 @@
 
         StateHasChanged();
     }
-
 
     private void OnLocationChange(ChangeEventArgs e)
     {

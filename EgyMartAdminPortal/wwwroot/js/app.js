@@ -182,8 +182,8 @@ window.cryptoHelper = {
                 return month === 1 ? day : ((month - 1) * 30) + day;
             };
 
-            let key = normalize(userEmail) + normalize(endpoint) + getDayIndex().toString(); // no toLowerCase
-            //let key = normalize(userEmail) + normalize(endpoint.split('/').pop().toLowerCase()) + getDayIndex().toString(); // no toLowerCase
+            //let key = normalize(userEmail) + normalize(endpoint) + getDayIndex().toString(); // no toLowerCase
+            let key = normalize(userEmail) + normalize(endpoint.split('/').pop()) + getDayIndex().toString(); // no toLowerCase
             if (key.length < 32) {
                 key += originalKey.substring(0, 32 - key.length);
             } else {
@@ -197,7 +197,6 @@ window.cryptoHelper = {
         const keyBytes = enc.encode(keyText);
         const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
         const messageBytes = enc.encode(plainText);
-
         const cryptoKey = await crypto.subtle.importKey(
             "raw",
             keyBytes,
@@ -211,8 +210,6 @@ window.cryptoHelper = {
             cryptoKey,
             messageBytes
         );
-        console.log("Generated Key:", keyText);
-
         return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
     }
 };

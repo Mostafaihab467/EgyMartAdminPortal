@@ -77,7 +77,7 @@
 
         if (allLanguages != null && allLanguages.Any())
         {
-            Languages = allLanguages.ToDictionary(k => k.Key, v => v.Value);
+            Languages = allLanguages;
 
             _selectedLangID = Languages.ContainsKey(1) ? 1 : Languages.Keys.First();
         }

@@ -6,7 +6,7 @@ namespace EgyMartAdminPortal.Services
     public class FixedPageService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "cms/api/v1/Widgets_FixedPages";
+        protected string ApiUrl = "cms/api/v2/Widgets_FixedPages";
 
         public string GetTranslateApiUrl()
         {

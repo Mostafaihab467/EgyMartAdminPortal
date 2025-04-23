@@ -8,7 +8,7 @@ namespace EgyMartAdminPortal.Services
     {
         private readonly HttpClient _httpClient = httpClient;
         private readonly AuthService authService = authService;
-        protected string ApiUrl = "products/api/Attribute";
+        protected string ApiUrl = "products/api/v2/Attribute";
         public async Task<List<Attributes>> GetAsync()
         {
             try

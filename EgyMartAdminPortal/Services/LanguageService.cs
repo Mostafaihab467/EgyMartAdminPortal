@@ -8,12 +8,12 @@ namespace EgyMartAdminPortal.Services
         private readonly HttpClient _httpClient = httpClient;
         private Dictionary<int, string>? _cachedLanguages;
 
-        protected string ApiUrl = "cms/api/v1/Lubs/LangList";
+        protected string ApiUrl = "cms/api/v2/Lubs/LangList";
 
         public async Task<List<Language>> GetAsync()
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Language>>>($"{ApiUrl}");
-            return response?.Data ?? new();
+            return response?.Data ?? [];
         }
 
         public async Task<Dictionary<int, string>> GetLanguagesAsync()

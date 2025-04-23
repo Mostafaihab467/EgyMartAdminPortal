@@ -10,7 +10,7 @@ namespace EgyMartAdminPortal.Services
     public class UserService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "auth/api/v1/";
+        protected string ApiUrl = "auth/api/v2/";
         private async Task<ApiResponse<List<T>>> FetchPendingUsersAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<T>>>($"{ApiUrl}Auth/{endpoint}");
@@ -103,16 +103,12 @@ namespace EgyMartAdminPortal.Services
                         {
                             if (person.VerificationStatus == null)
                             {
-                                person.VerificationStatus = 0; // Set default value if null
+                                person.VerificationStatus = 0;
                             }
                             if(person.ProfileImage == null)
                             {
                                 person.ProfileImage = $"images/avatars/user.jpg";
                             }
-                            //if (!person.ProfileImage!.StartsWith("https://"))
-                            //{
-                            //    person.ProfileImage = $"https://api.egyptbigmart.com:5051/Uploads/ProfileImgs/{person.ProfileImage}";
-                            //}
                         }
                     }
                     return result ?? new ApiResponse<List<Person>> { Success = false, ResponseEngMsg = "Empty response from server." };
@@ -182,7 +178,7 @@ namespace EgyMartAdminPortal.Services
 
         public async Task<string?> DownloadSupplierAttachmentAsync(long OwnerID)
         {
-            var response = await _httpClient.GetAsync($"cms/api/v1/CompanyProfile/download_verficationFilePDf/{OwnerID}");
+            var response = await _httpClient.GetAsync($"cms/api/v2/CompanyProfile/download_verficationFilePDf/{OwnerID}");
 
             if (response.IsSuccessStatusCode)
             {

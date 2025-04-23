@@ -6,7 +6,7 @@ namespace EgyMartAdminPortal.Services
     public class CategoryService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "products/api/v1/CategoryList";
+        protected string ApiUrl = "products/api/v2/CategoryList";
         public async Task<List<Category>> GetAsync()
         {
             try
@@ -21,12 +21,12 @@ namespace EgyMartAdminPortal.Services
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 Console.WriteLine("API returned 404 - Resource not found.");
-                return []; // Return an empty list instead of throwing an error
+                return [];
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred: {ex.Message}");
-                return []; // Handle other errors gracefully
+                return [];
             }
         }
         public string GetTranslateApiUrl()

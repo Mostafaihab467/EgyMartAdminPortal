@@ -8,7 +8,7 @@ namespace EgyMartAdminPortal.Services
     public class SocialMediaService(HttpClient httpClient )
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "cms/api/v1/WidgetsSocialMedia";
+        protected string ApiUrl = "cms/api/v2/WidgetsSocialMedia";
         public async Task<List<SocialMedia>> GetAsync()
         {
             try

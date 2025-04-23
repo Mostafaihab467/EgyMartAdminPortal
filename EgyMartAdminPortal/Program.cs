@@ -13,13 +13,14 @@ var apiUrl = builder.Configuration.GetValue<string>("ApiUrl");
 
 // Register signature handler
 builder.Services.AddScoped<SignatureHandler>();
+builder.Services.AddScoped<JwtAuthorizationMessageHandler>();
 
 // Register HttpClient with handler
 builder.Services.AddHttpClient("SignedClient", client =>
 {
     client.BaseAddress = new Uri(apiUrl!);
 })
-.AddHttpMessageHandler<SignatureHandler>();
+.AddHttpMessageHandler<JwtAuthorizationMessageHandler>().AddHttpMessageHandler<SignatureHandler>();
 
 // Optional: If you want the default HttpClient (used by built-in Blazor services) to also use the handler
 builder.Services.AddScoped(sp =>

@@ -11,7 +11,7 @@ namespace EgyMartAdminPortal.Services
         private readonly HttpClient _httpClient = httpClient;
         private readonly IJSRuntime _jsRuntime = jsRuntime;
         private readonly NavigationManager Navigation = navigation;
-        private const string ApiUrl = "auth/api/v1/Auth";
+        private const string ApiUrl = "auth/api/v2/Auth";
 
         public Person User { get; private set; } = new Person();
 
@@ -40,7 +40,7 @@ namespace EgyMartAdminPortal.Services
             return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", ["authToken"]);
         }
 
-        public async Task<ApiResponse<Person>> LoginAsync(string userName, string password)
+        public async Task<ApiResponse<LoginData>> LoginAsync(string userName, string password)
         {
             try
             {
@@ -51,90 +51,51 @@ namespace EgyMartAdminPortal.Services
                 if (response == null)
                 {
                     await _jsRuntime.InvokeVoidAsync("console.error", "No response from server");
-                    return new ApiResponse<Person> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
-                }
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    string errorMsg = await response.Content.ReadAsStringAsync();
-                    await _jsRuntime.InvokeVoidAsync("console.warn", $"Login failed: {response.StatusCode} - {errorMsg}");
-
-                    return new ApiResponse<Person>
-                    {
-                        Success = false,
-                        ResponseEngMsg = "Login failed, Invalid Username or Password",
-                        ResponseArMsg = "فشل التسجيل, اسم المستخدم او كلمة المرور خطأ"
-                    };
+                    return new ApiResponse<LoginData> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonSerializer.Deserialize<ApiResponse<Person>>(responseContent, new JsonSerializerOptions
+                var apiResponse = JsonSerializer.Deserialize<ApiResponse<LoginData>>(responseContent, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
                 if (apiResponse is not null && apiResponse.Success && apiResponse.Data is not null)
                 {
-                    User = apiResponse.Data;
+                    var user = apiResponse.Data.User;
+                    var jwt = apiResponse.Data.Tokens.Jwt;
 
+                    User = user;
+
+                    // Store selected user fields
                     var minimalUser = new
                     {
-                        User.UserID,
-                        User.DisplayName,
-                        User.UserName,
-                        User.ProfileImage,
-                        User.IsActive,
-                        User.FirstLogin
+                        user.UserID,
+                        user.DisplayName,
+                        user.UserName,
+                        user.ProfileImage,
+                        user.IsActive,
+                        user.FirstLogin
                     };
 
                     var userDataJson = JsonSerializer.Serialize(minimalUser);
                     await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
 
-                    // Save JWT token (replace IsVerfied with actual JWT property if needed)
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", apiResponse.Data.IsVerfied);
+                    // Store JWT token
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", jwt);
                 }
 
-                return apiResponse ?? new ApiResponse<Person>
+                return apiResponse ?? new ApiResponse<LoginData>
                 {
                     Success = false,
                     ResponseEngMsg = "Invalid response from server",
                     ResponseArMsg = "استجابة غير صالحة من الخادم"
                 };
             }
-            catch (HttpRequestException ex) when (ex.InnerException?.Message.Contains("SSL") == true)
-            {
-                await _jsRuntime.InvokeVoidAsync("console.error", "SSL Error: Invalid certificate or SSL misconfiguration.");
-                return new ApiResponse<Person>
-                {
-                    Success = false,
-                    ResponseEngMsg = "SSL error: Invalid certificate",
-                    ResponseArMsg = "خطأ في شهادة الأمان SSL"
-                };
-            }
-            catch (HttpRequestException ex)
-            {
-                await _jsRuntime.InvokeVoidAsync("console.error", $"HTTP Request Error: {ex.Message}");
-                return new ApiResponse<Person>
-                {
-                    Success = false,
-                    ResponseEngMsg = "Network error, please try again",
-                    ResponseArMsg = "خطأ في الشبكة، الرجاء المحاولة مرة أخرى"
-                };
-            }
-            catch (TaskCanceledException)
-            {
-                await _jsRuntime.InvokeVoidAsync("console.warn", "Request timed out.");
-                return new ApiResponse<Person>
-                {
-                    Success = false,
-                    ResponseEngMsg = "Request timed out",
-                    ResponseArMsg = "انتهت مهلة الطلب"
-                };
-            }
             catch (Exception ex)
             {
                 await _jsRuntime.InvokeVoidAsync("console.error", $"Unexpected error: {ex.Message}");
-                return new ApiResponse<Person>
+                return new ApiResponse<LoginData>
                 {
                     Success = false,
                     ResponseEngMsg = "An unexpected error occurred",
@@ -142,70 +103,6 @@ namespace EgyMartAdminPortal.Services
                 };
             }
         }
-
-        //public async Task<ApiResponse<LoginData>> LoginAsync(string userName, string password)
-        //{
-        //    try
-        //    {
-        //        var requestBody = new { UserName = userName, Password = password };
-
-        //        var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
-
-        //        if (response == null)
-        //        {
-        //            await _jsRuntime.InvokeVoidAsync("console.error", "No response from server");
-        //            return new ApiResponse<LoginData> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
-        //        }
-
-        //        var responseContent = await response.Content.ReadAsStringAsync();
-        //        var apiResponse = JsonSerializer.Deserialize<ApiResponse<LoginData>>(responseContent, new JsonSerializerOptions
-        //        {
-        //            PropertyNameCaseInsensitive = true
-        //        });
-
-        //        if (apiResponse is not null && apiResponse.Success && apiResponse.Data is not null)
-        //        {
-        //            var user = apiResponse.Data.User;
-        //            var jwt = apiResponse.Data.Tokens.Jwt;
-
-        //            User = user;
-
-        //            // Store selected user fields
-        //            var minimalUser = new
-        //            {
-        //                user.UserID,
-        //                user.DisplayName,
-        //                user.UserName,
-        //                user.ProfileImage,
-        //                user.IsActive,
-        //                user.FirstLogin
-        //            };
-
-        //            var userDataJson = JsonSerializer.Serialize(minimalUser);
-        //            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
-
-        //            // Store JWT token
-        //            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", jwt);
-        //        }
-
-        //        return apiResponse ?? new ApiResponse<LoginData>
-        //        {
-        //            Success = false,
-        //            ResponseEngMsg = "Invalid response from server",
-        //            ResponseArMsg = "استجابة غير صالحة من الخادم"
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        await _jsRuntime.InvokeVoidAsync("console.error", $"Unexpected error: {ex.Message}");
-        //        return new ApiResponse<LoginData>
-        //        {
-        //            Success = false,
-        //            ResponseEngMsg = "An unexpected error occurred",
-        //            ResponseArMsg = "حدث خطأ غير متوقع"
-        //        };
-        //    }
-        //}
 
         public async Task<bool> ChangePasswordAsync(long userId, string newPassword, string confirmPassword)
         {

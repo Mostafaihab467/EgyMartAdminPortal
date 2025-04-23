@@ -8,7 +8,7 @@ namespace EgyMartAdminPortal.Services
     public class DashboardService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "reporting/api/v1/Reporting/AdminDashboard";
+        protected string ApiUrl = "reporting/api/v2/Reporting/AdminDashboard";
         //01
         public async Task<List<AgeData>> ViewCountByAge()
         {

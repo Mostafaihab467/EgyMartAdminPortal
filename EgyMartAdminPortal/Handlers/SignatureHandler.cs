@@ -18,6 +18,7 @@ namespace EgyMartAdminPortal.Handlers
         {
             var userJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "userData");
             string email = "";
+            string userID = "";
 
             if (string.IsNullOrEmpty(userJson) && request.Content != null)
             {
@@ -27,6 +28,10 @@ namespace EgyMartAdminPortal.Handlers
                 {
                     email = emailElement.GetString() ?? "";
                 }
+                if (doc.RootElement.TryGetProperty("userID", out var userIDElement))
+                {
+                    userID = userIDElement.GetString() ?? "";
+                }
             }
             else if (!string.IsNullOrEmpty(userJson))
             {
@@ -34,6 +39,7 @@ namespace EgyMartAdminPortal.Handlers
                 {
                     var user = JsonSerializer.Deserialize<Person>(userJson);
                     email = user?.UserName ?? "";
+                    userID = user?.UserID.ToString() ?? "";
                 }
                 catch
                 {
@@ -42,7 +48,7 @@ namespace EgyMartAdminPortal.Handlers
             }
 
             var endpoint = request.RequestUri?.AbsolutePath ?? "/";
-            var body = "test";
+            var body = $"{userID}@{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")}";
             var signature = await _jsRuntime.InvokeAsync<string>(
                 "cryptoHelper.signRequest",
                 email,
