@@ -6,7 +6,7 @@
 @code {
     protected override async Task OnInitializedAsync()
     {
-        var token = await AuthService.GetToken();
+        var token = await AuthService.GetAuthTokenAsync();
 
         if (string.IsNullOrEmpty(token))
         {
@@ -14,7 +14,7 @@
         }
         else
         {
-            await AuthService.GetUser();
+            await AuthService.GetUserAsync();
         }
     }
 }

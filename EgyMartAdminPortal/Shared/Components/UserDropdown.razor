@@ -31,7 +31,7 @@
 @code {
     [Parameter] public Person? User { get; set; }
 
-    private string CurrentImageUrl => string.IsNullOrEmpty(User.ProfileImage) ? "images/avatars/user.jpg" : User.ProfileImage;
+    private string CurrentImageUrl => string.IsNullOrEmpty(User?.ProfileImage) ? "images/avatars/user.jpg" : User.ProfileImage;
 
     private bool IsPasswordPopupVisible = false;
 
@@ -58,6 +58,6 @@
 
     private void LoadFallbackImage()
     {
-        User.ProfileImage = "images/avatars/user.jpg";
+        User!.ProfileImage = "images/avatars/user.jpg";
     }
 }

@@ -1,141 +1,164 @@
 ﻿using EgyMartAdminPortal.Models;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class AuthService(HttpClient httpClient, IJSRuntime jsRuntime, NavigationManager navigation)
+    public class AuthService
     {
-        private readonly HttpClient _httpClient = httpClient;
-        private readonly IJSRuntime _jsRuntime = jsRuntime;
-        private readonly NavigationManager Navigation = navigation;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly LocalStorageService _localStorage;
+        private readonly NavigationManager _navigation;
+
         private const string ApiUrl = "auth/api/v2/Auth";
+        private const string TokenKey = "authToken";
+        private const string UserKey = "userData";
 
         public Person User { get; private set; } = new Person();
 
-        public void SetUser(Person user)
+        public AuthService(IHttpClientFactory httpClientFactory, LocalStorageService localStorageService, NavigationManager navigation)
         {
-            User = user;
+            _httpClientFactory = httpClientFactory;
+            _localStorage = localStorageService;
+            _navigation = navigation;
         }
 
-        public async Task<Person> GetUser()
+        public void SetUser(Person user) => User = user;
+
+        public async Task<Person> GetUserAsync()
         {
-            var userDataJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "userData");
-            if (!string.IsNullOrEmpty(userDataJson))
-            {
-                User = JsonSerializer.Deserialize<Person>(userDataJson) ?? new Person();
-            }
-            if (User.DisplayName == null)
-            {
-                // Redirect to login page
-                Navigation.NavigateTo("/login");
-            }
+            var user = await _localStorage.GetItemAsync<Person>(UserKey);
+            User = user ?? new Person();
+
+            if (string.IsNullOrEmpty(User.DisplayName))
+                _navigation.NavigateTo("/login");
+
             return User;
         }
 
-        public async Task<string> GetToken()
+        public async Task<string?> GetAuthTokenAsync()
         {
-            return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", ["authToken"]);
+            var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
+            return tokens?.Jwt;
         }
 
         public async Task<ApiResponse<LoginData>> LoginAsync(string userName, string password)
         {
             try
             {
-                var requestBody = new { UserName = userName, Password = password };
+                var client = _httpClientFactory.CreateClient("PlainClient");
 
-                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
+                var requestBody = new { UserName = userName, Password = password };
+                var response = await client.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
 
                 if (response == null)
+                    return FailureResponse<LoginData>("No response from server", "لم يتم استلام رد من الخادم");
+
+                var content = await response.Content.ReadAsStringAsync();
+                var apiResponse = JsonSerializer.Deserialize<ApiResponse<LoginData>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (apiResponse?.Success == true && apiResponse.Data != null)
                 {
-                    await _jsRuntime.InvokeVoidAsync("console.error", "No response from server");
-                    return new ApiResponse<LoginData> { Success = false, ResponseEngMsg = "No response from server", ResponseArMsg = "لم يتم استلام رد من الخادم" };
+                    await SaveLoginDataAsync(apiResponse.Data);
                 }
 
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonSerializer.Deserialize<ApiResponse<LoginData>>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                if (apiResponse is not null && apiResponse.Success && apiResponse.Data is not null)
-                {
-                    var user = apiResponse.Data.User;
-                    var jwt = apiResponse.Data.Tokens.Jwt;
-
-                    User = user;
-
-                    // Store selected user fields
-                    var minimalUser = new
-                    {
-                        user.UserID,
-                        user.DisplayName,
-                        user.UserName,
-                        user.ProfileImage,
-                        user.IsActive,
-                        user.FirstLogin
-                    };
-
-                    var userDataJson = JsonSerializer.Serialize(minimalUser);
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "userData", userDataJson);
-
-                    // Store JWT token
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", jwt);
-                }
-
-                return apiResponse ?? new ApiResponse<LoginData>
-                {
-                    Success = false,
-                    ResponseEngMsg = "Invalid response from server",
-                    ResponseArMsg = "استجابة غير صالحة من الخادم"
-                };
+                return apiResponse ?? FailureResponse<LoginData>("Invalid response from server", "استجابة غير صالحة من الخادم");
             }
-            catch (Exception ex)
+            catch
             {
-                await _jsRuntime.InvokeVoidAsync("console.error", $"Unexpected error: {ex.Message}");
-                return new ApiResponse<LoginData>
-                {
-                    Success = false,
-                    ResponseEngMsg = "An unexpected error occurred",
-                    ResponseArMsg = "حدث خطأ غير متوقع"
-                };
+                return FailureResponse<LoginData>("An unexpected error occurred", "حدث خطأ غير متوقع");
             }
         }
 
         public async Task<bool> ChangePasswordAsync(long userId, string newPassword, string confirmPassword)
         {
-            var url = $"{ApiUrl}/AdminPassword/ChangePassword?UserID={userId}";
-
-            var changePasswordRequest = new
+            try
             {
-                newPassword = newPassword,
-                confirmPassword = confirmPassword
-            };
+                var client = _httpClientFactory.CreateClient("PlainClient");
+                var url = $"{ApiUrl}/AdminPassword/ChangePassword?UserID={userId}";
+                var request = new { newPassword, confirmPassword };
 
-            var response = await _httpClient.PutAsJsonAsync(url, changePasswordRequest);
-
-            if (response.IsSuccessStatusCode)
+                var response = await client.PutAsJsonAsync(url, request);
+                return response.IsSuccessStatusCode;
+            }
+            catch
             {
+                return false;
+            }
+        }
+
+        public async Task<bool> TryRefreshTokenAsync()
+        {
+            var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
+            if (tokens == null || string.IsNullOrEmpty(tokens.Jwt) || string.IsNullOrEmpty(tokens.RefreshToken))
+                return false;
+
+            var refreshUri = $"{ApiUrl}/RefreshToken?ExpiredToken={Uri.EscapeDataString(tokens.Jwt)}&RefreshToken={Uri.EscapeDataString(tokens.RefreshToken)}";
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient("PlainClient");
+                var response = await client.PostAsync(refreshUri, null);
+                if (!response.IsSuccessStatusCode)
+                    return false;
+
+                var content = await response.Content.ReadAsStringAsync();
+                var newTokens = JsonSerializer.Deserialize<Tokens>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (newTokens == null || string.IsNullOrEmpty(newTokens.Jwt))
+                    return false;
+
+                await _localStorage.SetItemAsync(TokenKey, newTokens);
                 return true;
             }
-            else
+            catch
             {
-                // Handle error response or return false
                 return false;
             }
         }
 
         public async Task LogoutAsync()
         {
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "userData");
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
-
+            await _localStorage.ClearAsync();
             User = new Person();
+            _navigation.NavigateTo("/login");
+        }
 
-            // Redirect to login page
-            Navigation.NavigateTo("/login");
+        private async Task SaveLoginDataAsync(LoginData data)
+        {
+            var user = data.User;
+            User = user;
+
+            var minimalUser = new Person
+            {
+                UserID = user.UserID,
+                DisplayName = user.DisplayName,
+                UserName = user.UserName,
+                ProfileImage = user.ProfileImage,
+                IsActive = user.IsActive,
+                FirstLogin = user.FirstLogin
+            };
+
+            await _localStorage.SetItemAsync(UserKey, minimalUser);
+
+            var tokens = new Tokens
+            {
+                Jwt = data.Tokens.Jwt,
+                RefreshToken = data.Tokens.RefreshToken
+            };
+
+            await _localStorage.SetItemAsync(TokenKey, tokens);
+        }
+
+        private static ApiResponse<T> FailureResponse<T>(string engMessage, string arMessage) where T : class
+        {
+            return new ApiResponse<T>
+            {
+                Success = false,
+                ResponseEngMsg = engMessage,
+                ResponseArMsg = arMessage
+            };
         }
     }
 }

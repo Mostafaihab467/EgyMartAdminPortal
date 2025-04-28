@@ -92,7 +92,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await AuthService.GetUser();
+        await AuthService.GetUserAsync();
         if (AuthService.User is not null && !string.IsNullOrEmpty(AuthService.User.DisplayName))
         {
             userName = AuthService.User.DisplayName;

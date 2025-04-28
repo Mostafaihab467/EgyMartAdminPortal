@@ -226,3 +226,20 @@ window.cryptoHelper = {
         return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
     }
 };
+
+window.sessionTimeout = {
+    registerActivity: function (dotNetHelper) {
+        const events = ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+
+        events.forEach(eventName => {
+            window.addEventListener(eventName, () => {
+                dotNetHelper.invokeMethodAsync('ResetInactivityTimer');
+            });
+        });
+
+        // Also detect page visibility change (tab switch, minimize)
+        document.addEventListener('visibilitychange', () => {
+            dotNetHelper.invokeMethodAsync('OnVisibilityChange', document.visibilityState);
+        });
+    }
+};

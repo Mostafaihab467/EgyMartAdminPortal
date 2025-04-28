@@ -15,14 +15,19 @@ var apiUrl = builder.Configuration.GetValue<string>("ApiUrl");
 builder.Services.AddScoped<SignatureHandler>();
 builder.Services.AddScoped<JwtAuthorizationMessageHandler>();
 
+builder.Services.AddHttpClient("PlainClient", client =>
+{
+    client.BaseAddress = new Uri(apiUrl!);
+});
+
 // Register HttpClient with handler
 builder.Services.AddHttpClient("SignedClient", client =>
 {
     client.BaseAddress = new Uri(apiUrl!);
 })
-.AddHttpMessageHandler<JwtAuthorizationMessageHandler>().AddHttpMessageHandler<SignatureHandler>();
+.AddHttpMessageHandler<JwtAuthorizationMessageHandler>()
+.AddHttpMessageHandler<SignatureHandler>();
 
-// Optional: If you want the default HttpClient (used by built-in Blazor services) to also use the handler
 builder.Services.AddScoped(sp =>
 {
     var factory = sp.GetRequiredService<IHttpClientFactory>();
@@ -30,12 +35,15 @@ builder.Services.AddScoped(sp =>
 });
 
 // Services
+builder.Services.AddScoped<SessionTimeoutService>();
+builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<LanguageService>();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddScoped<ToastrService>();
 builder.Services.AddScoped<ImageService>();
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<Func<AuthService>>(sp => () => sp.GetRequiredService<AuthService>());
 builder.Services.AddScoped<DashboardService>();
 
 builder.Services.AddScoped<HeaderMenuService>();

@@ -39,7 +39,7 @@ namespace EgyMartAdminPortal.Services
         
         public async Task<ApiResponse<int>> CreateAsync(Attributes newAttribute)
         {
-            var user = await authService.GetUser();
+            var user = await authService.GetUserAsync();
             newAttribute.RcBy = user.UserID;
 
             var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/Create", newAttribute);

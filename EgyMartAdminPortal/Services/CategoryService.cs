@@ -11,7 +11,7 @@ namespace EgyMartAdminPortal.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=1");
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=0");
 
                 if (response == null || response.Data == null)
                     return [];

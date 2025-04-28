@@ -18,9 +18,10 @@
         <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
     </div>
     <div class="form-group">
-        <label for="categoryImageURL">Category Image URL</label>
+        <label for="categoryImageURL">Category Image Class</label>
         <input type="text" class="form-control" id="categoryImageURL" @bind="newCategory.CategoryImageURL" />
         <ValidationMessage For="@(() => newCategory.CategoryImageURL)" />
+        <small class="form-text text-muted">Example: "fa-user" or "fas fa-user"</small>
     </div>
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
