@@ -15,10 +15,6 @@ namespace EgyMartAdminPortal.Models
 
         [Range(1, int.MaxValue, ErrorMessage = "Display Order is required.")]
         public int DisplayOrder { get; set; }
-
-        [Required(ErrorMessage = "Category Icon is required.")]
-        [RegularExpression(@"^fa([sbdrl])? fa-[a-z-]+$",
-        ErrorMessage = "Must be a valid Font Awesome class (e.g., 'far fa-house' or 'fas fa-user')")]
         public string CategoryImageURL { get; set; }
         public bool IsActive { get; set; }
     }

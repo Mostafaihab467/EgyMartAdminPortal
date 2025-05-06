@@ -17,7 +17,7 @@
     </div>
     <div class="form-group">
         <label for="qAnswer">Answer</label>
-        <CKEditor @bind-Value="@newItem.QAnswer" />
+        <HtmlEditor @bind-Value="@newItem.QAnswer" />
         <ValidationMessage For="@(() => newItem.QAnswer)" />
     </div>
     <div class="form-group">
@@ -71,12 +71,12 @@
                             </Badge>
                         </td>
                         <td>
-                            <TranslatePopup Item="@newItem" Class="m-model" Service="FAQService" BaseID="item.Qid" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Class="tr-model" Service="FAQService" IsHtmlEditor="true" BaseID="item.Qid" OnTranslationSuccess="Refresh">
                                 <label for="qTitle">Question Title</label>
                                 <input id="qTitle" class="form-control" @bind="@newItem.QTitle" />
                                 <ValidationMessage For="@(() => newItem.QTitle)" />
                                 <label for="qAnswer" class="mt-2">Answer</label>
-                                <CKEditor @bind-Value="@newItem.QAnswer" />
+                                <HtmlEditor @bind-Value="@newItem.QAnswer" />
                                 <ValidationMessage For="@(() => newItem.QAnswer)" />
                             </TranslatePopup>
                         </td>
@@ -144,7 +144,32 @@
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
-        if (currentValue?.ToString() == newValue?.ToString()) return;
+        
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+        if (fieldName == nameof(FAQ.QTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Question Title is empty", "Validation Error");
+            return;
+        }
+
+        if (fieldName == nameof(FAQ.QAnswer) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Question Answer is empty", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

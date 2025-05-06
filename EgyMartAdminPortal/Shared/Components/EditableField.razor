@@ -1,13 +1,13 @@
 ﻿@using System.Text.RegularExpressions
 @typeparam T
-@inject IJSRuntime JSRuntime
 
 @if (IsEditing)
 {
     @if (InputType == "textarea" && Frame)
     {
         <div>
-            <textarea id="@Id" style="width: 50rem; max-width: 50rem; height: 75vh; display: block;" @bind="EditingValue"></textarea>
+            <RadzenHtmlEditor @bind-Value="EditingValue"
+                              style="width: 50rem; max-width: 50rem; height: 75vh; display: block;" />
             <div class="mt-2">
                 <button class="btn btn-primary me-2" @onclick="SaveEdit">Save</button>
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
@@ -18,7 +18,7 @@
     {
         <InputPositiveNumber @ref="InputNumberComponent"
                              Value="@NumericValue"
-                             ValueChanged="@(NumericValue => {EditingValue = NumericValue.ToString();})"
+                             ValueChanged="@(val => { NumericValue = val; EditingValue = val.ToString(); StateHasChanged(); })"
                              OnKeyPress="HandleKeyPress"
                              OnBlur="SaveEdit" />
     }
@@ -38,26 +38,15 @@ else
     <div class="cursor-pointer d-inline-block" style="width:@(Width)%;" @onclick="StartEditing">
         @if (Frame)
         {
-            @* <div class="html-preview" @onclick="StartEditing"> *@
-            @*     <iframe id="@($"{Id}_iframe")" *@
-            @*             srcdoc="@ConvertToHtml(Value?.ToString() ?? "")" *@
-            @*             class="img-thumbnail" *@
-            @*             style="width: 100%; height: 300px; border: none; overflow-y:auto; font-size:10px;" *@
-            @*             sandbox="allow-scripts allow-same-origin" *@
-            @*             @onload="EnableIframeClick"></iframe> *@
-            @* </div> *@
-
             <Button class="btn btn-primary">
                 <i class="fa-solid fa-file-lines"></i><span class="ms-2">Show Content Of Page</span>
             </Button>
-
         }
         else
         {
             <span class="cursor-pointer w-100">@Value</span>
         }
     </div>
-
 }
 
 <style>
@@ -67,7 +56,6 @@ else
         cursor: pointer;
     }
 
-        /* Create an overlay that captures pointer events */
         .html-preview::after {
             content: "";
             position: absolute;
@@ -79,121 +67,78 @@ else
             cursor: pointer;
         }
 
-    .ck-editor__editable {
-        min-height: 75vh !important; /* Force height to 75% */
-        max-width: 50rem !important;
-        min-width: 40rem !important;
+    .rz-html-editor {
+        min-height: 55vh !important;
+        max-width: 55rem !important;
     }
 
-    .ck.ck-sticky-panel__content.ck-sticky-panel__content_sticky{
-        max-width: 50rem !important;
+    .rz-html-editor-content{
+        min-height: inherit !important;
     }
-
-    .ck.ck-toolbar.ck-toolbar_grouping {
-        max-width: 50rem !important;
-    }
-
 </style>
 
-
 @code {
-    private string? _id;
-    private readonly string _uid = Guid.NewGuid().ToString("N");
-
-    [Parameter] public string Id { get => _id ?? $"CKEditor_{_uid}"; set => _id = value; }
+    [Parameter] public string Id { get => _id ?? $"Editor_{_uid}"; set => _id = value; }
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
-    [Parameter] public string InputType { get; set; } = "text"; // Supports "text", "textarea", "ionIcon", "faIcon"
+    [Parameter] public string InputType { get; set; } = "text"; // text | textarea | number
     [Parameter] public bool Frame { get; set; } = false;
     [Parameter] public int Width { get; set; } = 100;
 
+    private string? _id;
+    private readonly string _uid = Guid.NewGuid().ToString("N");
     private bool IsEditing { get; set; } = false;
-    private string EditingValue { get; set; } = "1";
+    private string EditingValue { get; set; } = string.Empty;
     private int NumericValue { get; set; } = 1;
-    private string HtmlPreview { get; set; } = "";
+
     private ElementReference InputElement { get; set; }
-    private DotNetObjectReference<EditableField<T>>? _dotNetRef;
-
     private InputPositiveNumber? InputNumberComponent;
+    private bool ShouldFocus { get; set; } = false;
 
-
-    private string ConvertToHtml(string text)
+    protected override async Task OnParametersSetAsync()
     {
-        if (string.IsNullOrWhiteSpace(text))
-            return "<p></p>"; // Avoid empty frames
-
-        // Replace new lines with <br> for better formatting
-        string htmlContent = Regex.Replace(text, @"\r?\n", "<br>");
-
-        // Additional formatting if needed
-        return $"<div style='padding: 10px; font-family: Arial, sans-serif;'>{htmlContent}</div>";
-    }
-
-    private async Task EnableIframeClick()
-    {
-        _dotNetRef = DotNetObjectReference.Create(this);
-        await JSRuntime.InvokeVoidAsync("enableIframeClick", $"{Id}_iframe", _dotNetRef);
-    }
-
-    static bool IsNumericLetter(string letter, string text)
-    {
-        if (letter == "Backspace" || letter == "ArrowLeft" || letter == "ArrowRight" || letter == "Delete" || letter == "Enter")
+        if (!IsEditing)
         {
-            return true;
+            EditingValue = Value?.ToString() ?? "";
+            if (InputType == "number" && Value is int intVal)
+                NumericValue = intVal;
         }
-        // validate key pressed
-        char keyChar = letter.ToCharArray()[0];
 
-        if (char.IsDigit(keyChar))
-        {
-            return true;
-        }
-        if (keyChar == '-' && text.Contains('-') == false && text.Length == 0 /* only first char */)
-        {
-            return true;
-        }
-        if (keyChar == '.' && text.Contains('.') == false)
-        {
-            return true;
-        }
-        return false;
+        await base.OnParametersSetAsync();
     }
 
     private async Task StartEditing()
     {
         IsEditing = true;
+        EditingValue = Value?.ToString() ?? "";
 
-        if (InputType == "number" && Value is int intValue)
-        {
-            NumericValue = intValue;
-        }
-        else
-        {
-            EditingValue = Value?.ToString() ?? "";
-        }
-        StateHasChanged();
+        if (InputType == "number" && Value is int intVal)
+            NumericValue = intVal;
 
-        await Task.Delay(50);
+        ShouldFocus = true;
+    }
 
-        if (InputType == "textarea" && Frame)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine($"[OnAfterRender] firstRender: {firstRender}, ShouldFocus: {ShouldFocus}");
+        if (ShouldFocus)
         {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("CKEditorInterop.init", Id, _dotNetRef);
-            await Task.Delay(200);
-        }
-        else if (InputType == "number" && InputNumberComponent is not null)
-        {
-            await InputNumberComponent.FocusAsync();
-        }
-        else
-        {
+            ShouldFocus = false;
+
             try
             {
-                await InputElement.FocusAsync();
+                if (InputType == "number" && InputNumberComponent is not null)
+                {
+                    await InputNumberComponent.FocusAsync();
+                }
+                else if (InputType != "textarea")
+                {
+                    await InputElement.FocusAsync();
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error focusing input: {ex.Message}");
+                Console.WriteLine($"[Focus] Could not set focus: {ex.Message}");
             }
         }
     }
@@ -205,9 +150,7 @@ else
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        var isCKEditor = InputType == "textarea" && await JSRuntime.InvokeAsync<bool>("isInsideCKEditor");
-
-        if (e.Key == "Enter" && !isCKEditor)
+        if (e.Key == "Enter")
         {
             await SaveEdit();
         }
@@ -219,47 +162,33 @@ else
 
     private async Task SaveEdit()
     {
-        if (InputType == "textarea" && Frame)
+        try
         {
-            try
-            {
-                EditingValue = await JSRuntime.InvokeAsync<string>("CKEditorInterop.getData", Id);
-            }
-            catch (Exception) { }
-        }
+            T? finalValue;
 
-        if (InputType == "number")
-        {
-            await ValueChanged.InvokeAsync((T)(object)NumericValue);
-        }
-
-        if (typeof(T) == typeof(int) && int.TryParse(EditingValue, out int intValue))
-        {
-            await ValueChanged.InvokeAsync((T)(object)intValue);
-        }
-        else if (typeof(T) == typeof(string))
-        {
-            await ValueChanged.InvokeAsync((T)(object)EditingValue);
-        }
-        else
-        {
-            try
+            if (InputType == "number" && typeof(T) == typeof(int) && int.TryParse(EditingValue, out int intVal))
             {
-                T? convertedValue = (T)Convert.ChangeType(EditingValue, typeof(T));
-                await ValueChanged.InvokeAsync(convertedValue);
+                NumericValue = intVal;
+                finalValue = (T)(object)intVal;
             }
-            catch { }
+            else if (typeof(T) == typeof(string))
+            {
+                finalValue = (T)(object)EditingValue;
+            }
+            else
+            {
+                finalValue = (T)Convert.ChangeType(EditingValue, typeof(T));
+            }
+
+            await ValueChanged.InvokeAsync(finalValue!);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SaveEdit] Conversion error: {ex.Message}");
         }
 
         IsEditing = false;
         StateHasChanged();
-        await CleanupEditor();
-    }
-
-    private async Task OnNumericValueChanged(int newValue)
-    {
-        NumericValue = newValue;
-        await SaveEdit();
     }
 
     private async Task CancelEdit()
@@ -267,44 +196,5 @@ else
         IsEditing = false;
         EditingValue = Value?.ToString() ?? "";
         StateHasChanged();
-        await CleanupEditor();
-    }
-
-    private async Task CleanupEditor()
-    {
-        if (InputType == "textarea" && Frame)
-        {
-            await JSRuntime.InvokeVoidAsync("CKEditorInterop.destroy", Id);
-        }
-    }
-
-    [JSInvokable]
-    public Task EditorDataChanged(string data)
-    {
-        try
-        {
-            EditingValue = data;
-        }
-        catch
-        {
-            Console.WriteLine($"Failed to convert {data} to {typeof(T)}");
-        }
-        return Task.CompletedTask;
-    }
-
-    [JSInvokable]
-    public async Task OnIframeClick()
-    {
-        await StartEditing();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_dotNetRef != null)
-        {
-            await CleanupEditor();
-            _dotNetRef.Dispose();
-            _dotNetRef = null;
-        }
     }
 }

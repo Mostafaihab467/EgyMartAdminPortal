@@ -53,19 +53,31 @@
 
     private async Task OnInput(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int newValue) && newValue >= 0)
+        var input = e.Value?.ToString() ?? "";
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            Value = 0;
+            await ValueChanged.InvokeAsync(Value);
+        }
+        else if (int.TryParse(input, out int newValue) && newValue >= 0)
         {
             Value = newValue;
-            await ValueChanged.InvokeAsync(newValue);
+            await ValueChanged.InvokeAsync(Value);
         }
     }
 
+
     public async Task FocusAsync()
     {
-        if (_isRendered)
+        await Task.Yield(); // Ensures proper timing
+        try
         {
-            await Task.Delay(50); // Ensure DOM is ready
             await InputElement.FocusAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FocusAsync] Failed to focus: {ex.Message}");
         }
     }
 }

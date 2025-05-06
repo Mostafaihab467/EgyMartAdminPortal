@@ -49,7 +49,7 @@ namespace EgyMartAdminPortal.Services
             {
                 var client = _httpClientFactory.CreateClient("PlainClient");
 
-                var requestBody = new { UserName = userName, Password = password };
+                var requestBody = new { UserName = userName, Password = password, PortalType = 3 };
                 var response = await client.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
 
                 if (response == null)
@@ -120,7 +120,10 @@ namespace EgyMartAdminPortal.Services
 
         public async Task LogoutAsync()
         {
-            await _localStorage.ClearAsync();
+            //await _localStorage.ClearAsync();
+            await _localStorage.RemoveItemAsync(TokenKey);
+            await _localStorage.RemoveItemAsync(UserKey);
+            await _localStorage.RemoveItemAsync("cachedLanguages");
             User = new Person();
             _navigation.NavigateTo("/login");
         }
@@ -130,14 +133,14 @@ namespace EgyMartAdminPortal.Services
             var user = data.User;
             User = user;
 
-            var minimalUser = new Person
+            var minimalUser = new
             {
-                UserID = user.UserID,
-                DisplayName = user.DisplayName,
-                UserName = user.UserName,
-                ProfileImage = user.ProfileImage,
-                IsActive = user.IsActive,
-                FirstLogin = user.FirstLogin
+                user.UserID,
+                user.DisplayName,
+                user.UserName,
+                user.ProfileImage,
+                user.IsActive,
+                user.FirstLogin
             };
 
             await _localStorage.SetItemAsync(UserKey, minimalUser);

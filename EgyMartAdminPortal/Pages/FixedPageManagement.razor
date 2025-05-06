@@ -17,7 +17,7 @@
     </div>
     <div class="form-group h-100">
         <label for="pageBody">Page Body</label>
-        <CKEditor @bind-Value="@newItem.PageBody"/>
+        <HtmlEditor @bind-Value="@newItem.PageBody"/>
         <ValidationMessage For="@(() => newItem.PageBody)" />
     </div>
 </Popup>
@@ -38,6 +38,7 @@
         <table class="table table-striped">
             <thead>
                 <tr>
+                    <th>Page ID</th>
                     <th>Page Title</th>
                     <th>Page Body</th>
                     <th>Status</th>
@@ -48,10 +49,13 @@
                 @foreach (var item in pagedItems)
                 {
                     <tr>
+                        <td>
+                            <span>@item.PageID</span>
+                        </td>
                         <td class="cursor-pointer">
                             <EditableField T="string" Value="@item.PageTitle" ValueChanged="value => SaveEdit(item, nameof(item.PageTitle), value)" />
                         </td>
-                        <td class="cursor-pointer">
+                        <td>
                             <EditableField T="string" InputType="textarea" Frame="true" Width="100" Value="@item.PageBody" ValueChanged="value => SaveEdit(item, nameof(item.PageBody), value)" />
                         </td>
                         <td class="cursor-pointer" style="width: 10%;" @onclick="() => ToggleStatus(item.PageID, item.IsActive)">
@@ -61,12 +65,12 @@
                             </Badge>
                         </td>
                         <td>
-                            <TranslatePopup Item="@newItem" Class="m-model" Service="FixedPageService" BaseID="@item.PageID" OnTranslationSuccess="Refresh">
+                            <TranslatePopup Item="@newItem" Class="tr-model" Service="FixedPageService" IsHtmlEditor="true" BaseID="@item.PageID" OnTranslationSuccess="Refresh">
                                 <label for="pageTitle">Page Title</label>
                                 <input id="pageTitle" class="form-control" @bind="@newItem.PageTitle" />
                                 <ValidationMessage For="@(() => newItem.PageTitle)" />
                                 <label for="pageBody" class="mt-2">Page Body</label>
-                                <CKEditor @bind-Value="@newItem.PageBody" />
+                                <HtmlEditor @bind-Value="@newItem.PageBody" />
                                 <ValidationMessage For="@(() => newItem.PageBody)" />
                             </TranslatePopup>
 
@@ -134,7 +138,32 @@
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
-        if (currentValue?.ToString() == newValue?.ToString()) return;
+        
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+        if (fieldName == nameof(FixedPage.PageTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Page Title is empty", "Validation Error");
+            return;
+        }
+
+        if (fieldName == nameof(FixedPage.PageBody) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Page Body is empty", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

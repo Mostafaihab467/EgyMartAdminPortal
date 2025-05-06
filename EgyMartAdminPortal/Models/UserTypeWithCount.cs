@@ -4,6 +4,6 @@
     {
         public short UserTypeID { get; set; }
         public string UserTypeTitle { get; set; } = string.Empty;
-        public int UsersCount { get; set; }
+        public int UsersCount { get; set; } = 0;
     }
 }

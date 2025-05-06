@@ -2,6 +2,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthService AccountService
 @inject ToastrService ToastService
+@inject LocalStorageService LocalStorage
 
 <div class="app-content content p-0 m-0">
     <div class="content-overlay"></div>
@@ -98,7 +99,17 @@
             var response = await AccountService.LoginAsync(loginModel.Email, loginModel.Password);
             if (response.Success)
             {
-                NavigationManager.NavigateTo("/");
+                var lastVisitedUrl = await LocalStorage.GetItemAsync<string>("lastVisitedUrl");
+                await LocalStorage.RemoveItemAsync("lastVisitedUrl");
+
+                if (!string.IsNullOrEmpty(lastVisitedUrl))
+                {
+                    NavigationManager.NavigateTo(lastVisitedUrl);
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("/"); // Fallback to home page
+                }
             }
             else
             {

@@ -1,0 +1,46 @@
+﻿@inherits InputBase<string>
+
+<RadzenHtmlEditor @bind-Value="CurrentValue"
+                  style="width: 100%; max-width: 85rem !important; height: 55vh;"
+                  Change="HandleChange"
+                  Input="HandleInput"
+                  Paste="HandlePaste"
+                  Execute="HandleExecute"
+                  UploadComplete="HandleUploadComplete"
+                  UploadUrl="https://192.168.1.163/api/upload/image" />
+
+@code {
+    private void HandleChange(string html)
+    {
+        // Fires when content changes
+        CurrentValue = html;
+    }
+
+    private void HandleInput(string html)
+    {
+        // Fires on input
+        CurrentValue = html;
+    }
+
+    private void HandlePaste(HtmlEditorPasteEventArgs args)
+    {
+        // Optional logging or sanitization
+    }
+
+    private void HandleExecute(HtmlEditorExecuteEventArgs args)
+    {
+        // Optional logging of editor commands
+    }
+
+    private void HandleUploadComplete(UploadCompleteEventArgs args)
+    {
+        // Optional logging or processing
+    }
+
+    protected override bool TryParseValueFromString(string? value, out string result, out string validationErrorMessage)
+    {
+        result = value ?? string.Empty;
+        validationErrorMessage = string.Empty;
+        return true;
+    }
+}

@@ -6,6 +6,7 @@ namespace EgyMartAdminPortal.Models
     {
         public long UserID { get; set; }
         public short UserTypeID { get; set; }
+        public string UserTypeTitle { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please Enter Display Name")]
         public string DisplayName { get; set; } = string.Empty;

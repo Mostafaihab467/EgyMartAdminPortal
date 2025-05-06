@@ -1,5 +1,6 @@
-﻿<h3>ContactUS</h3>
-
+﻿@* @page "/contact-us" *@
+<h3>ContactUS</h3>
+<HtmlEditor @bind-Value="@content" />
 @code {
-
+    string content = "<h1>Hello, world!</h1>";
 }

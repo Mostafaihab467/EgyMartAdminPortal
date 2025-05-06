@@ -12,6 +12,7 @@ namespace EgyMartAdminPortal.Handlers
         private readonly AuthService _authService;
         private readonly NavigationManager _navigation;
         private const string TokenKey = "authToken";
+        private const string LastVisitedUrlKey = "lastVisitedUrl"; // Key to store last visited URL
 
         public JwtAuthorizationMessageHandler(LocalStorageService localStorageService, AuthService authService, NavigationManager navigationManager)
         {
@@ -134,8 +135,17 @@ namespace EgyMartAdminPortal.Handlers
 
         private async Task HandleUnauthorizedAsync()
         {
-            await _localStorage.ClearAsync();
+            // Save the current URL before redirecting to the login page
+            var currentUrl = _navigation.Uri;
+            if (!currentUrl.Contains("login"))
+            {
+                await _localStorage.SetItemAsync(LastVisitedUrlKey, currentUrl);
+            }
+
+            // Clear tokens and logout
             await _authService.LogoutAsync();
+
+            // Redirect to login page
             _navigation.NavigateTo("/login", true);
         }
     }

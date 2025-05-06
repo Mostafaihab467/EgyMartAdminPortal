@@ -17,16 +17,16 @@
         <input type="text" class="form-control" id="categoryTitle" @bind="@newCategory.CategoryTitle" @ref="@itemRef" />
         <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
     </div>
-    <div class="form-group">
-        <label for="categoryImageURL">Category Image Class</label>
-        <input type="text" class="form-control" id="categoryImageURL" @bind="newCategory.CategoryImageURL" />
-        <ValidationMessage For="@(() => newCategory.CategoryImageURL)" />
-        <small class="form-text text-muted">Example: "fa-user" or "fas fa-user"</small>
-    </div>
+    @* <div class="form-group"> *@
+    @*     <label for="categoryImageURL">Category Image Class</label> *@
+    @*     <input type="text" class="form-control" id="categoryImageURL" @bind="newCategory.CategoryImageURL" /> *@
+    @*     <ValidationMessage For="@(() => newCategory.CategoryImageURL)" /> *@
+    @*     <small class="form-text text-muted">Example: "fas fa-user"</small> *@
+    @* </div> *@
     <div class="form-group">
         <label for="displayOrder">Display Order</label>
         <InputPositiveNumber Value="@newCategory.DisplayOrder"
-                             ValueChanged="@(value => { newCategory.DisplayOrder = value; StateHasChanged(); })" />
+        ValueChanged="@(value => { newCategory.DisplayOrder = value; StateHasChanged(); })" />
         <ValidationMessage For="@(() => newCategory.DisplayOrder)" />
     </div>
 </Popup>
@@ -73,7 +73,7 @@
                         </td>
                         <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">
                             <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
-                                   IndicatorType="BadgeIndicatorType.RoundedPill">
+                            IndicatorType="BadgeIndicatorType.RoundedPill">
                                 @(item.IsActive ? "Active" : "Not Active")
                             </Badge>
                         </td>
@@ -83,7 +83,7 @@
                             </Button>
 
                             <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="item.CategoryID"
-                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
                              {
                                  { "CategoryImageURL", item.CategoryImageURL }
                              })">
@@ -124,15 +124,15 @@
                                                 </td>
                                                 <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">
                                                     <Badge Class="@($"p-2 {(child.IsActive ? "btn-success" : "btn-danger")}")"
-                                                           IndicatorType="BadgeIndicatorType.RoundedPill">
+                                                    IndicatorType="BadgeIndicatorType.RoundedPill">
                                                         @(child.IsActive ? "Active" : "Not Active")
                                                     </Badge>
                                                 </td>
                                                 <td>
                                                     <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID"
-                                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
                                                  {
-                                                     { "CategoryImageURL", item.CategoryImageURL }
+                                                     { "CategoryImageURL", child.CategoryImageURL }
                                                  })">
                                                         <label for="pageTitle">Category Title</label>
                                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
@@ -158,10 +158,10 @@
 
 <!-- Pagination Component -->
 <MPagination TItem="Category"
-             Items="allItems"
-             CurrentPage="@CurrentPage"
-             PageSize="@PageSize"
-             OnPageChanged="HandlePageChanged" />
+Items="allItems"
+CurrentPage="@CurrentPage"
+PageSize="@PageSize"
+OnPageChanged="HandlePageChanged" />
 
 @code {
     private List<Category> allItems = new();
@@ -213,6 +213,7 @@
     private async Task CreateCategory()
     {
         newCategory.LangID = 1;
+        newCategory.CategoryImageURL = "-";
         var response = await CategoryService.CreateAsync(newCategory);
         if (response.IsSuccessStatusCode)
         {
@@ -318,15 +319,35 @@
     private async Task SaveEdit(Category item, string fieldName, object newValue)
     {
         showPopup = false;
+
         var property = typeof(Category).GetProperty(fieldName);
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
-        if (currentValue?.ToString() == newValue?.ToString()) return;
 
-        if ((fieldName == nameof(Category.CategoryTitle) && string.IsNullOrWhiteSpace(newValue?.ToString())) || (fieldName == nameof(Category.CategoryImageURL) && string.IsNullOrWhiteSpace(newValue?.ToString())))
+        if (property.PropertyType == typeof(int))
         {
-            await ToastService.ShowErrorAsync("Category Title or Category Icon is required", "Validation Error");
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+
+        if (fieldName == nameof(Category.CategoryTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Category Title is empty", "Validation Error");
+            return;
+        }
+        if (fieldName == nameof(Category.CategoryImageURL) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Category Icon is empty", "Validation Error");
             return;
         }
 

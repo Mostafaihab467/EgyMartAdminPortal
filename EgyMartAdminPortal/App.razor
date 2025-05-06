@@ -26,18 +26,13 @@
         var token = await AuthService.GetAuthTokenAsync();
 
         _isAuthenticated = !string.IsNullOrWhiteSpace(token) && AuthService.User is { DisplayName: not null and not "" };
-
+        if (_isAuthenticated)
+        {
+            await SessionTimeoutService.InitializeAsync();
+        }
         if (!_isAuthenticated && !Navigation.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
         {
             Navigation.NavigateTo("/login", forceLoad: true);
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && _isAuthenticated)
-        {
-            await SessionTimeoutService.InitializeAsync();
         }
     }
 }

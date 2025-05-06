@@ -1,5 +1,6 @@
 ﻿@page "/supplier"
 @inject UserService UserService
+@inject LocalStorageService LocalStorage
 @inject ToastrService ToastService
 @inject IJSRuntime JSRuntime
 
@@ -40,8 +41,8 @@
                         <td>@user.RegisterdSince</td>
                         <td>
                             <UserVerification UserID="@user.SupplierID" IsSupplier="true" VerificationStatus="@user.VerificationStatus"
-                                              VerifyUser="(status) => VerifyUserAsync(user.SupplierID, status)"
-                                              OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.UserID))" />
+                            VerifyUser="(status) => VerifyUserAsync(user.SupplierID, status)"
+                            OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.UserID))" />
                         </td>
                     </tr>
                 }
@@ -50,10 +51,10 @@
 
         <!-- Pagination Component -->
         <MPagination TItem="Supplier"
-                     Items="allItems"
-                     CurrentPage="@CurrentPage"
-                     PageSize="@PageSize"
-                     OnPageChanged="HandlePageChanged" />
+        Items="allItems"
+        CurrentPage="@CurrentPage"
+        PageSize="@PageSize"
+        OnPageChanged="HandlePageChanged" />
     }
 }
 
@@ -97,6 +98,7 @@
 
     private async Task<bool> VerifyUserAsync(long userId, short status)
     {
+        var verifiedID = (await LocalStorage.GetItemAsync<Person>("userData"))!.UserID;
         var user = allItems.FirstOrDefault(u => u.SupplierID == userId);
         if (user == null)
         {
@@ -104,10 +106,12 @@
             return false;
         }
 
-        var success = await UserService.VerifySupplierAsync(userId, status);
+        var verified = status == 1 ? true : false;
+
+        var success = await UserService.VerifySupplierAsync(userId, verifiedID, verified);
         if (success)
         {
-            user.VerificationStatus = status; // Update locally
+            user.VerificationStatus = status;
         }
         return success;
     }

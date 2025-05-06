@@ -480,6 +480,10 @@ code {
     max-width: 50rem !important;
 }
 
+.tr-model {
+    max-width: 85rem !important;
+}
+
 /* wwwroot/css/app.css */
 .dropdown-user {
     display: flex;
@@ -537,4 +541,15 @@ code {
 
 .border-primary {
     border-color: var(--primary-color) !important
+}
+
+.user-type-badge {
+    display: inline-block;
+    overflow-wrap: break-word;
+    text-align: center;
+}
+
+.m-c {
+    margin-left: 68% !important;
+    min-width: fit-content;
 }

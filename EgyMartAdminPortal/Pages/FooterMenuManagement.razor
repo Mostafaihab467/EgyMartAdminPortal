@@ -84,12 +84,14 @@
                          <td>
                             <TranslatePopup Item="@newItem" Service="FooterMenuService" BaseID="item.FooterItemID" OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
                  {
-                     { "TargetUrl", item.TargetUrl },
                      { "ColumnIndex", item.ColumnIndex }
                  })">
                                   <label for="pageTitle">Page Title</label>
                                   <input id="pageTitle" class="form-control" @bind="@newItem.FooterItemTitle" />
                                 <ValidationMessage For="@(() => newItem.FooterItemTitle)" />
+                                    <label for="pageTitle">Page Url</label>
+                                  <input id="pageTitle" class="form-control" @bind="@newItem.TargetUrl" />
+                                <ValidationMessage For="@(() => newItem.TargetUrl)" />
                              </TranslatePopup>
                          </td>
                     </tr>
@@ -199,7 +201,32 @@
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
-        if (currentValue?.ToString() == newValue?.ToString()) return;
+        
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+        if (fieldName == nameof(FooterMenu.FooterItemTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Menu Title is empty", "Validation Error");
+            return;
+        }
+
+        if (fieldName == nameof(FooterMenu.TargetUrl) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Menu Url is empty", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

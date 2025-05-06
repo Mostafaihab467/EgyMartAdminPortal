@@ -54,7 +54,13 @@
     </div>
     <div class="form-group">
         <label for="userType">Type</label>
-        <input type="text" class="form-control" id="userType" @bind="newItem.UserTypeID" />
+        <select class="form-control" id="userType" @bind="newItem.UserTypeID">
+            <option value="">-- Select User Type --</option>
+            @foreach (var type in AdminTypes)
+            {
+                <option value="@type.UserTypeID">@type.UserTypeTitle</option>
+            }
+        </select>
         <ValidationMessage For="@(() => newItem.UserTypeID)" />
     </div>
 </Popup>
@@ -162,7 +168,9 @@
     private List<Person> pagedItems = new();
     private List<Person> People = new();
     private Person newItem = new();
+    private List<UserTypeWithCount> AdminTypes = new();
     private TabItem SelectedTab { get; set; } = default!;
+    private Dictionary<short, string> UserTypeTitles = new();
     public ElementReference itemRef;
 
     private string popupTitle = "Add New Admin";
@@ -188,8 +196,8 @@
         if (result.Success && result.Data is not null)
         {
             var groupedTabs = new List<TabItem>();
+            UserTypeTitles = result.Data.ToDictionary(t => (short)t.UserTypeID, t => t.UserTypeTitle);
 
-            // Admins: 3, 4, 5
             var adminTypes = result.Data.Where(t => new[] { 3, 4, 5 }.Contains(t.UserTypeID)).ToList();
             groupedTabs.Add(new TabItem
                 {
@@ -198,7 +206,6 @@
                     UserTypeIDs = adminTypes.Select(a => (short)a.UserTypeID).ToList()
                 });
 
-            // Customers
             var customerType = result.Data.FirstOrDefault(t => t.UserTypeID == 1);
             if (customerType != null)
             {
@@ -210,7 +217,6 @@
                     });
             }
 
-            // Suppliers
             var supplierType = result.Data.FirstOrDefault(t => t.UserTypeID == 2);
             if (supplierType != null)
             {
@@ -226,6 +232,7 @@
             StateHasChanged();
         }
     }
+
 
     private async Task GetUsersByTypeAsync()
     {
@@ -293,7 +300,11 @@
                 var result = await UserService.GetListByTypeAsync(userType, CurrentPage, PageSize);
                 if (result.Success && result.Data != null)
                 {
-                    people.AddRange(result.Data);
+                    foreach (var user in result.Data)
+                    {
+                        user.UserTypeTitle = UserTypeTitles.TryGetValue(userType, out var title) ? title : "Unknown";
+                        people.Add(user);
+                    }
                 }
             }
 
@@ -308,9 +319,10 @@
         StateHasChanged();
     }
 
-    private void AddUser()
+    private async Task AddUser()
     {
         showPopup = true;
+        AdminTypes = await UserService.GetAdminTypesAsync();
         newItem = new Person();
     }
 
@@ -319,23 +331,19 @@
         try
         {
             isLoading = true;
-            newItem.UserTypeID = 5;
             newItem.FirstLogin = true;
+
             var response = await UserService.CreateUserAsync(newItem);
 
             if (response.Success)
             {
                 newItem.UserID = response.Data.UserId;
 
-                FilteredPeople.Add(newItem);
-
-                UpdatePagedItems();
-
                 var adminTab = Tabs.FirstOrDefault(t => t.Name == "Admins");
                 if (adminTab != null)
                 {
+                    adminTab.IsDataLoaded = false; // Force reload on next tab selection
                     adminTab.Count++;
-                    adminTab.IsDataLoaded = true;
                 }
 
                 await ToastService.ShowSuccessAsync("User Created Successfully", "Success");
@@ -390,7 +398,11 @@
                 var result = await UserService.GetListByTypeAsync(userType, CurrentPage, PageSize);
                 if (result.Success && result.Data != null)
                 {
-                    people.AddRange(result.Data);
+                    foreach (var user in result.Data)
+                    {
+                        user.UserTypeTitle = UserTypeTitles.TryGetValue(userType, out var title) ? title : "Unknown";
+                        people.Add(user);
+                    }
                 }
             }
 

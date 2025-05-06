@@ -93,10 +93,10 @@
                                 @(item.IsActive ? "Active" : "Not Active")
                             </Badge>
                         </td>
-                        <td>
+                        <td style="width: 8%;">
                             <Button class="btn btn-primary" TooltipTitle="Edit" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Edit" @onclick="() => ShowPopup(true, item.AdsPlanID)"><i class="fas fa-edit"></i></Button>
                             <TranslatePopup Item="@newItem" Service="SubscriptionService" BaseID="item.AdsPlanID"
-                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>{{ "AdsLocationTitle", item.AdsLocationTitle }})">
+                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> { { "AdsLocationTitle", item.AdsLocationTitle } })">
                                 <label for="planTitle">Plan Title</label>
                                 <input id="planTitle" class="form-control" @bind="@newItem.PlanTitle" />
                                 <ValidationMessage For="@(() => newItem.PlanTitle)" />
@@ -142,7 +142,24 @@
         isEdit = editMode;
         showPopup = true;
         popupTitle = editMode ? "Edit Plan" : "Add New Plan";
-        newItem = editMode ? allItems.FirstOrDefault(a => a.AdsPlanID == ID) ?? new Subscription() : new Subscription();
+        var item = allItems.FirstOrDefault(a => a.AdsPlanID == ID);
+        newItem = editMode
+    ? new Subscription
+        {
+            AdsPlanID = item?.AdsPlanID ?? 0,
+            PlanTitle = item?.PlanTitle,
+            AdsLocationTitle = item?.AdsLocationTitle,
+            PlanDescription = item?.PlanDescription,
+            CostBefore = item?.CostBefore ?? 0,
+            Cost = item?.Cost ?? 0,
+            DurationDays = item?.DurationDays ?? 0,
+            LocationID = item?.LocationID ?? 0,
+            IsActive = item?.IsActive ?? false,
+            LangID = item?.LangID ?? 1,
+            BaseID = item?.BaseID ?? 0
+        }
+    : new Subscription();
+
         StateHasChanged();
         await Task.Delay(100);
         await itemRef.FocusAsync();
@@ -178,7 +195,7 @@
         {
             if (string.IsNullOrEmpty(newItem.PlanTitle))
             {
-                await ToastService.ShowErrorAsync("Plan Title is required.");
+                await ToastService.ShowErrorAsync("Plan Title is empty.");
             }
             var response = await SubscriptionService.CreateAsync(newItem);
 
@@ -198,9 +215,22 @@
             var response = await SubscriptionService.EditAsync(newItem);
             if (response.IsSuccessStatusCode)
             {
+                // Find and update the existing item only after success
+                var existing = allItems.FirstOrDefault(a => a.AdsPlanID == newItem.AdsPlanID);
+                if (existing is not null)
+                {
+                    existing.PlanTitle = newItem.PlanTitle;
+                    existing.PlanDescription = newItem.PlanDescription;
+                    existing.DurationDays = newItem.DurationDays;
+                    existing.CostBefore = newItem.CostBefore;
+                    existing.Cost = newItem.Cost;
+                    existing.LocationID = newItem.LocationID;
+                    existing.AdsLocationTitle = locations.FirstOrDefault(x => x.AdsLocationID == newItem.LocationID)?.AdsLocationTitle ?? "";
+                }
+
                 await ToastService.ShowSuccessAsync("Plan Updated Successfully", "Success");
                 showPopup = false;
-                await GetSubscriptionsAsync();
+                UpdatePagedItems(); // To reflect changes in the paged view
             }
             else
             {
@@ -239,6 +269,8 @@
                 allItems = response.Data;
                 isLoading = false;
                 UpdatePagedItems();
+                showPopup = false;
+                StateHasChanged();
             }
             else
             {

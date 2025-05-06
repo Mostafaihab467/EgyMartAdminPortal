@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using EgyMartAdminPortal.Services;
 using EgyMartAdminPortal.Handlers;
+using Radzen;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -58,6 +59,9 @@ builder.Services.AddScoped<SubscriptionService>();
 builder.Services.AddScoped<SocialMediaService>();
 builder.Services.AddScoped<SubscribtionService>();
 builder.Services.AddScoped<UserService>();
+
+builder.Services.AddRadzenComponents();
+
 
 // Suppress HTTP client logging by setting LogLevel to Warning or higher in code
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);

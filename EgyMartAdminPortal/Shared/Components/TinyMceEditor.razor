@@ -10,18 +10,23 @@
     [Parameter]
     public string Id
     {
-        get => _id ?? $"CKEditor_{_uid}";
+        get => _id ?? $"TinyMce_{_uid}";
         set => _id = value;
     }
 
-    private DotNetObjectReference<CKEditor>? _dotNetRef;
+    private DotNetObjectReference<TinyMceEditor>? _dotNetRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             _dotNetRef = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("CKEditorInterop.init", Id, _dotNetRef);
+            await JSRuntime.InvokeVoidAsync("tinyMceInterop.init", Id, _dotNetRef);
+
+            if (!string.IsNullOrEmpty(CurrentValue))
+            {
+                await JSRuntime.InvokeVoidAsync("tinyMceInterop.setContent", Id, CurrentValue);
+            }
         }
     }
 
@@ -46,7 +51,7 @@
     {
         if (_dotNetRef != null)
         {
-            await JSRuntime.InvokeVoidAsync("CKEditorInterop.destroy", Id);
+            await JSRuntime.InvokeVoidAsync("tinyMceInterop.destroy", Id);
             _dotNetRef.Dispose();
         }
     }

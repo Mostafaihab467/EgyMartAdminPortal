@@ -37,50 +37,6 @@ window.focusElement = (element) => {
     }
 };
 
-
-window.CKEditorInterop = {
-    init: (editorId, dotNetRef) => {
-        ClassicEditor
-            .create(document.querySelector(`#${editorId}`), {
-                extraPlugins: [MyCustomUploadAdapterPlugin],
-                toolbar: [
-                    'undo', 'redo', '|',
-                    'bold', 'italic', '|',
-                    'heading', '|',
-                    'link', 'blockQuote', '|',
-                    'bulletedList', 'numberedList', '|',
-                    'indent', 'outdent', '|',
-                    'insertTable'
-                ],
-            })
-            .then(editor => {
-                window[editorId] = editor;
-                editor.editing.view.focus();
-                let editableElement = editor.ui.view.editable.element;
-
-                // Ensure correct width on initialization
-                editableElement.style.width = '100%';
-                editableElement.style.maxWidth = '50rem';
-
-                editor.model.document.on('change:data', () => {
-                    dotNetRef.invokeMethodAsync('EditorDataChanged', editor.getData());
-                });
-            })
-            .catch(error => {
-                console.error('CKEditor error:', error);
-            });
-    },
-    getData: function (id) {
-        return window[id] ? window[id].getData() : '';
-    },
-    destroy: function (id) {
-        if (window[id]) {
-            window[id].destroy().then(() => delete window[id]);
-        }
-    }
-};
-
-
 window.getActiveElementTag = () => {
     return document.activeElement.tagName.toLowerCase();
 };
@@ -229,17 +185,26 @@ window.cryptoHelper = {
 
 window.sessionTimeout = {
     registerActivity: function (dotNetHelper) {
-        const events = ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+        const events = ['mousemove', 'keydown', 'click', 'touchstart'];
 
-        events.forEach(eventName => {
-            window.addEventListener(eventName, () => {
-                dotNetHelper.invokeMethodAsync('ResetInactivityTimer');
-            });
-        });
+        const resetInactivity = () => {
+            dotNetHelper.invokeMethodAsync('ResetInactivityTimer');
+        };
 
-        // Also detect page visibility change (tab switch, minimize)
-        document.addEventListener('visibilitychange', () => {
+        const onVisibilityChange = () => {
             dotNetHelper.invokeMethodAsync('OnVisibilityChange', document.visibilityState);
-        });
+        };
+
+        events.forEach(event =>
+            document.addEventListener(event, resetInactivity)
+        );
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+    },
+
+    getCurrentUrl: function () {
+        return window.location.href;
     }
 };
+
+
