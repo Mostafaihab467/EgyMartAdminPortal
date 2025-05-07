@@ -135,7 +135,6 @@ namespace EgyMartAdminPortal.Handlers
 
         private async Task HandleUnauthorizedAsync()
         {
-            // Save the current URL before redirecting to the login page
             var currentUrl = _navigation.Uri;
             if (!currentUrl.Contains("login"))
             {
@@ -144,9 +143,6 @@ namespace EgyMartAdminPortal.Handlers
 
             // Clear tokens and logout
             await _authService.LogoutAsync();
-
-            // Redirect to login page
-            _navigation.NavigateTo("/login", true);
         }
     }
 }

@@ -207,4 +207,22 @@ window.sessionTimeout = {
     }
 };
 
+window.initializeMap = (lat, lng, dotNetHelper) => {
+    const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: lat, lng: lng },
+        zoom: 12,
+    });
+
+    const marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        draggable: true,
+    });
+
+    marker.addListener("dragend", function (event) {
+        const newLat = event.latLng.lat();
+        const newLng = event.latLng.lng();
+        dotNetHelper.invokeMethodAsync("UpdateCoordinates", newLat, newLng);
+    });
+};
 

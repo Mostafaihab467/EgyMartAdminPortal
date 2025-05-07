@@ -100,8 +100,10 @@ namespace EgyMartAdminPortal.Services
         private async Task LogoutUserAsync()
         {
             var currentUrl = await _jsRuntime.InvokeAsync<string>("sessionTimeout.getCurrentUrl");
-            await _localStorageService.SetItemAsync(LastUrlKey, currentUrl);
-
+            if (!currentUrl.Contains("login"))
+            {
+                await _localStorageService.SetItemAsync(LastUrlKey, currentUrl);
+            }
             await _authService.LogoutAsync();
         }
 

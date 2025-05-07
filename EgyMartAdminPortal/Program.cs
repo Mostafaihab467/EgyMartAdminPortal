@@ -53,6 +53,7 @@ builder.Services.AddScoped<FooterMenuService>();
 
 builder.Services.AddScoped<AttributeService>();
 builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<ContactUsService>();
 builder.Services.AddScoped<FAQService>();
 builder.Services.AddScoped<FixedPageService>();
 builder.Services.AddScoped<SubscriptionService>();

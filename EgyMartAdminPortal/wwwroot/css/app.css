@@ -553,3 +553,24 @@ code {
     margin-left: 68% !important;
     min-width: fit-content;
 }
+
+.contact-us-banner {
+    background-image: url('/images/contact-us.png');
+    background-size: cover;
+    background-position: center;
+    height: 350px;
+    border-radius: 8px;
+}
+
+.icon-box {
+    display: inline-block;
+    padding: 10px 12px;
+    background-color: var(--primary-color); /* Bootstrap primary color or any you prefer */
+    border-radius: 6px;
+}
+
+    .icon-box i {
+        color: white;
+        font-size: 1.2rem;
+    }
+

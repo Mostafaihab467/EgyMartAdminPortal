@@ -35,7 +35,7 @@ namespace EgyMartAdminPortal.Services
         }
         public async Task<ApiResponse<List<Category>>> GetChildAsync(long categoryID)
         {
-            var response = await _httpClient.GetAsync($"{ApiUrl}/GetChild/{categoryID}/0");
+            var response = await _httpClient.GetAsync($"{ApiUrl}/GetChild/{categoryID}/0/1");
 
             if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
             {
