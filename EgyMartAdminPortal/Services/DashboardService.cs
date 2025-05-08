@@ -12,11 +12,7 @@ namespace EgyMartAdminPortal.Services
         //01
         public async Task<List<AgeData>> ViewCountByAge()
         {
-            Console.WriteLine($"Requesting: {ApiUrl}/ViewCountByAge");
-
             var response = await _httpClient.GetFromJsonAsync<ApiAgeResponse>($"{ApiUrl}/ViewCountByAge");
-
-            Console.WriteLine($"Response: {JsonSerializer.Serialize(response)}");
 
             return response?.Data ?? [];
         }

@@ -32,7 +32,14 @@ namespace EgyMartAdminPortal.Services
             User = user ?? new Person();
 
             if (string.IsNullOrEmpty(User.DisplayName))
-                _navigation.NavigateTo("/login");
+            {
+                var token = await GetAuthTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                {
+                    _navigation.NavigateTo("/login");
+                }
+            }
+
 
             return User;
         }
@@ -120,7 +127,11 @@ namespace EgyMartAdminPortal.Services
 
         public async Task LogoutAsync()
         {
-            //await _localStorage.ClearAsync();
+            var currentUrl = _navigation.Uri;
+            if (!currentUrl.Contains("login"))
+            {
+                await _localStorage.SetItemAsync("lastVisitedUrl", currentUrl);
+            }
             await _localStorage.RemoveItemAsync(TokenKey);
             await _localStorage.RemoveItemAsync(UserKey);
             await _localStorage.RemoveItemAsync("cachedLanguages");

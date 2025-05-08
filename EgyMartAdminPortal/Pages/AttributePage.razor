@@ -173,8 +173,6 @@ OnPageChanged="HandlePageChanged" />
             property.SetValue(item, boolValue);
         }
 
-        Console.WriteLine($"SaveEdit called for {property?.Name} = {newValue}");
-
         var response = await AttributeService.EditAsync(item);
 
         if (response.Success)

@@ -314,7 +314,6 @@
     {
         newItem.AdsLocationTitle = item.AdsLocationTitle;
 
-        Console.WriteLine($"Setting newItem.AdsLocationTitle: {newItem.AdsLocationTitle}");
 
         newItem = new Subscription
             {
@@ -339,10 +338,6 @@
             newItem.LocationID = locationId;
 
             var selectedLocation = locations.FirstOrDefault(loc => loc.AdsLocationID == locationId);
-            if (selectedLocation != null)
-            {
-                Console.WriteLine($"Selected Location: {selectedLocation.AdsLocationID}");
-            }
         }
     }
 

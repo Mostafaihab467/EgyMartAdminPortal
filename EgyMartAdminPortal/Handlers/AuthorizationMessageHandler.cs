@@ -10,15 +10,12 @@ namespace EgyMartAdminPortal.Handlers
     {
         private readonly LocalStorageService _localStorage;
         private readonly AuthService _authService;
-        private readonly NavigationManager _navigation;
         private const string TokenKey = "authToken";
-        private const string LastVisitedUrlKey = "lastVisitedUrl"; // Key to store last visited URL
 
-        public JwtAuthorizationMessageHandler(LocalStorageService localStorageService, AuthService authService, NavigationManager navigationManager)
+        public JwtAuthorizationMessageHandler(LocalStorageService localStorageService, AuthService authService)
         {
             _localStorage = localStorageService;
             _authService = authService;
-            _navigation = navigationManager;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -30,7 +27,7 @@ namespace EgyMartAdminPortal.Handlers
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 // 401 detected
-                await HandleUnauthorizedAsync();
+                await _authService.LogoutAsync();
                 return response; // or throw exception if you want
             }
 
@@ -45,7 +42,7 @@ namespace EgyMartAdminPortal.Handlers
                 }
                 else
                 {
-                    await HandleUnauthorizedAsync();
+                    await _authService.LogoutAsync();
                 }
             }
 
@@ -131,18 +128,6 @@ namespace EgyMartAdminPortal.Handlers
             }
 
             return clone;
-        }
-
-        private async Task HandleUnauthorizedAsync()
-        {
-            var currentUrl = _navigation.Uri;
-            if (!currentUrl.Contains("login"))
-            {
-                await _localStorage.SetItemAsync(LastVisitedUrlKey, currentUrl);
-            }
-
-            // Clear tokens and logout
-            await _authService.LogoutAsync();
         }
     }
 }

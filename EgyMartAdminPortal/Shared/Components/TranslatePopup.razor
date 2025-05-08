@@ -318,10 +318,6 @@
                 Console.WriteLine($"Error setting {propertyName}: {ex.Message}");
             }
         }
-        else
-        {
-            Console.WriteLine($"Property {propertyName} not found or not writable on {obj.GetType().Name}");
-        }
 
         return false;
     }

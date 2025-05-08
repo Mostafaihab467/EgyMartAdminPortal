@@ -120,7 +120,6 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine($"[OnAfterRender] firstRender: {firstRender}, ShouldFocus: {ShouldFocus}");
         if (ShouldFocus)
         {
             ShouldFocus = false;

@@ -36,10 +36,5 @@ namespace EgyMartAdminPortal.Services
         {
             await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", key);
         }
-
-        public async Task ClearAsync()
-        {
-            await _jsRuntime.InvokeVoidAsync("localStorage.clear");
-        }
     }
 }

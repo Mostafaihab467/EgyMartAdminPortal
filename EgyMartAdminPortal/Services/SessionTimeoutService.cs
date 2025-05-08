@@ -15,27 +15,24 @@ namespace EgyMartAdminPortal.Services
 
         private DateTime? _tabHiddenTime;
 
-        private const int InactivityLimitMinutes = 15;
-        private const int HeartbeatIntervalMinutes = 10;
+        private const int InactivityLimitMinutes = 20;
+        private const int HeartbeatIntervalMinutes = 3;
 
         private const string HeartbeatKey = "heartbeatTimestamp";
-        private const string LastUrlKey = "lastVisitedUrl";
 
         public async Task InitializeAsync()
         {
             _dotNetRef = DotNetObjectReference.Create(this);
 
-            // Register JS events for user activity and visibility
             await _jsRuntime.InvokeVoidAsync("sessionTimeout.registerActivity", _dotNetRef);
 
-            // Check last heartbeat (optional)
             var lastHeartbeatStr = await _localStorageService.GetItemAsync<string>(HeartbeatKey);
             if (DateTime.TryParse(lastHeartbeatStr, out var lastHeartbeat))
             {
-                var diff = DateTime.UtcNow - lastHeartbeat;
-                if (diff.TotalMinutes > InactivityLimitMinutes)
+                var diff = DateTime.UtcNow.Minute - lastHeartbeat.Minute;
+                if (diff > InactivityLimitMinutes)
                 {
-                    await LogoutUserAsync();
+                    await _authService.LogoutAsync();
                     return;
                 }
             }
@@ -55,7 +52,7 @@ namespace EgyMartAdminPortal.Services
         private void StartInactivityTimer()
         {
             _inactivityTimer = new Timer(InactivityLimitMinutes * 60 * 1000);
-            _inactivityTimer.Elapsed += async (s, e) => await LogoutUserAsync();
+            _inactivityTimer.Elapsed += async (s, e) => await _authService.LogoutAsync();
             _inactivityTimer.AutoReset = false;
             _inactivityTimer.Start();
         }
@@ -83,7 +80,7 @@ namespace EgyMartAdminPortal.Services
 
                     if (hiddenDuration.TotalMinutes >= InactivityLimitMinutes)
                     {
-                        await LogoutUserAsync();
+                        await _authService.LogoutAsync();
                         return;
                     }
                 }
@@ -95,16 +92,6 @@ namespace EgyMartAdminPortal.Services
         private async Task UpdateHeartbeatAsync()
         {
             await _localStorageService.SetItemAsync(HeartbeatKey, DateTime.UtcNow);
-        }
-
-        private async Task LogoutUserAsync()
-        {
-            var currentUrl = await _jsRuntime.InvokeAsync<string>("sessionTimeout.getCurrentUrl");
-            if (!currentUrl.Contains("login"))
-            {
-                await _localStorageService.SetItemAsync(LastUrlKey, currentUrl);
-            }
-            await _authService.LogoutAsync();
         }
 
         public void Dispose()

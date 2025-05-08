@@ -60,7 +60,6 @@ namespace EgyMartAdminPortal.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<ApiResponse<CreateUserResult>>();
-                    Console.WriteLine(result!.Data.UserId);
                     return result ?? new ApiResponse<CreateUserResult> { Success = false, ResponseEngMsg = "Empty response from server." };
                 }
                 else
