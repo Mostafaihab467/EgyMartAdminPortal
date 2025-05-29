@@ -1,4 +1,6 @@
-﻿@if (!InputFile)
+﻿@inject IJSRuntime JSRuntime
+
+@if (!InputFile)
 {
     <div class="mt-0" @onclick="ToggleInputFile">
         <img src="@Image" alt="Uploaded Image" class="img-thumbnail" width="150" />
@@ -7,29 +9,40 @@
 else
 {
     <div class="container text-center my-2 position-relative" tabindex="0">
-        @if(CloseIcon){
-        <!-- Close Button -->
-        <Button class="position-absolute top-0 end-0 m-2 me-4" Color="ButtonColor.Primary" TooltipTitle="Close" Outline="true" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Closw" @onclick="CloseInput">
-            <i class="fa-solid fa-xmark"></i>
-        </Button>
-        }
-        
-        @if (!string.IsNullOrEmpty(Image))
+        @if (CloseIcon)
         {
-            <div class="mt-3">
-                <img src="@Image" alt="Uploaded Image" class="img-thumbnail" width="150" />
-            </div>
+            <Button class="position-absolute top-0 end-0 m-2 me-4"
+                    Color="ButtonColor.Primary"
+                    TooltipTitle="Close"
+                    Outline="true"
+                    TooltipPlacement="TooltipPlacement.Top"
+                    @onclick="CloseInput">
+                <i class="fa-solid fa-xmark"></i>
+            </Button>
         }
 
         <div class="border border-primary border-2 rounded-3 p-4 bg-light"
              style="max-width: 400px; margin: auto; cursor: pointer;"
-             onclick="document.getElementById('fileUpload').click();">
-            <InputFile id="fileUpload" OnChange="OnInputFileChange" class="d-none" accept=".png, .jpg, .jpeg" />
-            <div class="d-flex flex-column align-items-center">
-                <i class="bi bi-cloud-upload display-4 text-dark"></i>
-                <p class="mb-1">Click to upload or drag and drop</p>
-                <span class="text-muted small">@fileName</span>
-            </div>
+             @onclick="TriggerFileInput">
+            <InputFile id="fileUpload"
+                       OnChange="OnInputFileChange"
+                       class="d-none"
+                       accept=".png, .jpg, .jpeg" />
+
+            @if (!string.IsNullOrEmpty(Image))
+            {
+                <!-- Show uploaded image instead of icon -->
+                <img src="@Image" alt="Uploaded Image" class="img-thumbnail mb-2" width="150" />
+            }
+            else
+            {
+                <div class="d-flex flex-column align-items-center">
+                    <i class="bi bi-cloud-upload display-4 text-dark"></i>
+                    <p class="mb-1">Click to upload or drag and drop</p>
+                </div>
+            }
+
+            <span class="text-muted small">@fileName</span>
         </div>
 
         @if (!string.IsNullOrEmpty(errorMessage))
@@ -94,15 +107,20 @@ else
             bytesRead += read;
             uploadProgress = (int)((double)bytesRead / totalBytes * 100);
             StateHasChanged();
-            await Task.Delay(50);
+            await Task.Delay(30); // Smoother animation
         }
 
         string base64String = Convert.ToBase64String(buffer);
         Image = $"data:{file.ContentType};base64,{base64String}";
         isUploading = false;
 
-        // Emit ImageUrl to parent
         await OnImageUploaded.InvokeAsync(Image);
+        StateHasChanged();
+    }
+
+    private async Task TriggerFileInput()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('fileUpload').click()");
     }
 
     private void ToggleInputFile()

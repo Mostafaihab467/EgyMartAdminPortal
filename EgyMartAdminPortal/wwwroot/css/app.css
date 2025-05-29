@@ -574,3 +574,8 @@ code {
         font-size: 1.2rem;
     }
 
+.rz-html-editor {
+    height:auto;
+    min-height: 70vh !important;
+    max-width: 55rem !important;
+}

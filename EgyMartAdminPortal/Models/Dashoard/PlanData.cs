@@ -3,6 +3,7 @@
     public class PlanData
     {
         public int PlanId { get; set; }
-        public long ViewCount { get; set; }
+        public string? PlanName { get; set; }
+        public long PlansCount { get; set; }
     }
 }

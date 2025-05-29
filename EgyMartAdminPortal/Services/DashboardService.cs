@@ -1,7 +1,6 @@
 ﻿using EgyMartAdminPortal.Models;
 using EgyMartAdminPortal.Models.Dashoard;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace EgyMartAdminPortal.Services
 {
@@ -21,12 +20,42 @@ namespace EgyMartAdminPortal.Services
         {
             var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<UserSub>>>($"{ApiUrl}/UsersSubscriptionWillFinish?WillFinishDays={WillFinishDays}"))!;
             return response.Data;
+            //return [
+            //    new() { PlanID = 1, UserID = 1001, DisplayName = "User A", EndDate = DateTime.Now.AddDays(30) },
+            //    new() { PlanID = 2, UserID = 1002, DisplayName = "User B", EndDate = DateTime.Now.AddDays(10) },
+            //    new() { PlanID = 3, UserID = 1003, DisplayName = "User C", EndDate = DateTime.Now.AddDays(15) },
+            //    new() { PlanID = 4, UserID = 1004, DisplayName = "User D", EndDate = DateTime.Now.AddDays(20) },
+            //    new() { PlanID = 5, UserID = 1005, DisplayName = "User E", EndDate = DateTime.Now.AddDays(25) },
+            //    new() { PlanID = 6, UserID = 1006, DisplayName = "User F", EndDate = DateTime.Now.AddDays(25) },
+            //    new() { PlanID = 3, UserID = 1007, DisplayName = "User G", EndDate = DateTime.Now.AddDays(13) },
+            //    new() { PlanID = 4, UserID = 1008, DisplayName = "User H", EndDate = DateTime.Now.AddDays(20) },
+            //    new() { PlanID = 2, UserID = 1009, DisplayName = "User I", EndDate = DateTime.Now.AddDays(12) },
+            //    new() { PlanID = 5, UserID = 1010, DisplayName = "User J", EndDate = DateTime.Now.AddDays(15) },
+            //    new() { PlanID = 1, UserID = 1011, DisplayName = "User B", EndDate = DateTime.Now.AddDays(5) },
+            //    new() { PlanID = 1, UserID = 1012, DisplayName = "User C", EndDate = DateTime.Now.AddDays(3) },
+            //    new() { PlanID = 1, UserID = 1013, DisplayName = "User D", EndDate = DateTime.Now.AddDays(10) },
+            //    new() { PlanID = 1, UserID = 1014, DisplayName = "User E", EndDate = DateTime.Now.AddDays(7) },
+            //    new() { PlanID = 1, UserID = 1015, DisplayName = "User F", EndDate = DateTime.Now.AddDays(25) },
+            //    new() { PlanID = 1, UserID = 1016, DisplayName = "User G", EndDate = DateTime.Now.AddDays(13) },
+            //    new() { PlanID = 1, UserID = 1017, DisplayName = "User H", EndDate = DateTime.Now.AddDays(20) },
+            //    new() { PlanID = 1, UserID = 1018, DisplayName = "User I", EndDate = DateTime.Now.AddDays(12) },
+            //    new() { PlanID = 1, UserID = 1019, DisplayName = "User J", EndDate = DateTime.Now.AddDays(15) },
+            //    new() { PlanID = 1, UserID = 1020, DisplayName = "User J", EndDate = DateTime.Now.AddDays(15) },
+            //];
         }
         //03
         public async Task<List<PlanData>> UserSubscriptionCountByPlan()
         {
             var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<PlanData>>>($"{ApiUrl}/UserSubscriptionCountByPlan"))!;
             return response.Data;
+            //return [
+            //    new() { PlanId = 1, PlanName="Free Ads for 30 Days", PlansCount = 1000 },
+            //    new() { PlanId = 2, PlanName="Store Front Pop-up Again", PlansCount = 750 },
+            //    new() { PlanId = 3, PlanName="Store Front Location 1", PlansCount = 3000 },
+            //    new() { PlanId = 4, PlanName="Store Front Location 2", PlansCount = 500 },
+            //    new() { PlanId = 5, PlanName="Store Front Location 3", PlansCount = 250 },
+            //    new() { PlanId = 6, PlanName="Store Front Location 4", PlansCount = 1200 }
+            //    ];
         }
         //04
         public async Task<List<SubscriptionData>> TrendingUserSubscriptionsCount(int topSelect)
@@ -69,6 +98,14 @@ namespace EgyMartAdminPortal.Services
         {
             var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<CostPlanData>>>($"{ApiUrl}/TotalCostByPlan"))!;
             return response.Data;
+            //return [
+            //    new() { PlanID = 1, TotalCost = 100000 },
+            //    new() { PlanID = 2, TotalCost = 75000 },
+            //    new() { PlanID = 3, TotalCost = 300000 },
+            //    new() { PlanID = 4, TotalCost = 50000 },
+            //    new() { PlanID = 5, TotalCost = 25000 },
+            //    new() { PlanID = 6, TotalCost = 1200 }
+            //];
         }
         //11
         public async Task<List<UsersData>> TopUsersViewProducts(int days, int top)

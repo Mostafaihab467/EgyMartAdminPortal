@@ -20,6 +20,16 @@
     else
     {
         <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <!-- Search Input -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search by Display Name or User Name"
+                           @bind="searchTerm" @bind:event="oninput" @onkeyup="FilterCustomers" />
+                    <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">Clear</button>
+                </div>
+            </div>
+        </div>
         <table class="table">
             <thead>
                 <tr>
@@ -59,10 +69,11 @@
 
 @code {
     private List<Customer> allItems = new();
+    private List<Customer> filteredItems = new();
     private List<Customer> pagedItems = new();
     private string notFound = "No Pending Customers Found";
     private bool isLoading = true;
-
+    private string searchTerm = "";
     private int CurrentPage = 1;
     private int PageSize = 25;
 
@@ -79,6 +90,7 @@
             if (response.Success)
             {
                 allItems = response.Data;
+                filteredItems = allItems;
                 isLoading = false;
                 UpdatePagedItems();
             }
@@ -119,14 +131,39 @@
         Task.Delay(500).ContinueWith(_ =>
         {
             allItems.Remove(user);
+            FilterCustomers();
             UpdatePagedItems();
             StateHasChanged();
         });
     }
 
+    private void FilterCustomers()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredItems = allItems;
+        }
+        else
+        {
+            var search = searchTerm.ToLower();
+            filteredItems = allItems
+                .Where(u => u.DisplayName?.ToLower().Contains(search) == true ||
+                           u.UserName?.ToLower().Contains(search) == true)
+                .ToList();
+        }
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task ClearSearch()
+    {
+        searchTerm = "";
+        await Task.Run(() => FilterCustomers());
+    }
+
     private void UpdatePagedItems()
     {
-        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+        pagedItems = filteredItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
     }
 
     private void HandlePageChanged(int newPage)

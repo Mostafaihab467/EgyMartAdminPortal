@@ -8,7 +8,8 @@
 <PageTitle>Pending Supplier</PageTitle>
 <h3>Pending Supplier</h3>
 
-<div class="mt-3 text-center">
+
+<div class="text-center">
     <LoadingSpinner IsLoading="isLoading" />
 </div>
 
@@ -21,6 +22,16 @@
     else
     {
         <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <!-- Search Input -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search by Display Name or User Name"
+                           @bind="searchTerm" @bind:event="oninput" @onkeyup="FilterSuppliers" />
+                    <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">Clear</button>
+                </div>
+            </div>
+        </div>
         <table class="table">
             <thead>
                 <tr>
@@ -41,8 +52,8 @@
                         <td>@user.RegisterdSince</td>
                         <td>
                             <UserVerification UserID="@user.SupplierID" IsSupplier="true" VerificationStatus="@user.VerificationStatus"
-                            VerifyUser="(status) => VerifyUserAsync(user.SupplierID, status)"
-                            OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.UserID))" />
+                                              VerifyUser="(status) => VerifyUserAsync(user.SupplierID, status)"
+                                              OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.UserID))" />
                         </td>
                     </tr>
                 }
@@ -51,19 +62,20 @@
 
         <!-- Pagination Component -->
         <MPagination TItem="Supplier"
-        Items="allItems"
-        CurrentPage="@CurrentPage"
-        PageSize="@PageSize"
-        OnPageChanged="HandlePageChanged" />
+                     Items="allItems"
+                     CurrentPage="@CurrentPage"
+                     PageSize="@PageSize"
+                     OnPageChanged="HandlePageChanged" />
     }
 }
 
 @code {
     private List<Supplier> allItems = new();
+    private List<Supplier> filteredItems = new();
     private List<Supplier> pagedItems = new();
     private string notFound = "No Pending Suppliers Found";
     private bool isLoading = true;
-
+    private string searchTerm = "";
     private int CurrentPage = 1;
     private int PageSize = 25;
 
@@ -80,6 +92,7 @@
             if (response.Success)
             {
                 allItems = response.Data;
+                filteredItems = allItems;
                 isLoading = false;
                 UpdatePagedItems();
             }
@@ -88,7 +101,6 @@
                 isLoading = false;
                 await ToastService.ShowErrorAsync(response.ResponseEngMsg);
             }
-
         }
         catch (Exception ex)
         {
@@ -123,6 +135,7 @@
         Task.Delay(500).ContinueWith(_ =>
         {
             allItems.Remove(user);
+            FilterSuppliers();
             UpdatePagedItems();
             StateHasChanged();
         });
@@ -150,10 +163,33 @@
         }
     }
 
+    private void FilterSuppliers()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredItems = allItems;
+        }
+        else
+        {
+            var search = searchTerm.ToLower();
+            filteredItems = allItems
+                .Where(u => u.DisplayName?.ToLower().Contains(search) == true ||
+                           u.UserName?.ToLower().Contains(search) == true)
+                .ToList();
+        }
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task ClearSearch()
+    {
+        searchTerm = "";
+        await Task.Run(() => FilterSuppliers());
+    }
 
     private void UpdatePagedItems()
     {
-        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+        pagedItems = filteredItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
     }
 
     private void HandlePageChanged(int newPage)
@@ -167,6 +203,5 @@
         PageSize = newSize;
         CurrentPage = 1;
         UpdatePagedItems();
-
     }
 }

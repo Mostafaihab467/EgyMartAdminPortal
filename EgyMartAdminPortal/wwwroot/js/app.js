@@ -77,6 +77,23 @@ function MyCustomUploadAdapterPlugin(editor) {
     };
 }
 
+window.scrollContent = {
+    scrollVertical: function (elementSelector, direction) {
+        const element = document.querySelector(elementSelector);
+        if (element) {
+            const scrollAmount = direction === 'up' ? -100 : 100; // Adjust scroll amount as needed
+            element.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        }
+    },
+    scrollHorizontal: function (elementSelector, direction) {
+        const element = document.querySelector(elementSelector);
+        if (element) {
+            const scrollAmount = direction === 'left' ? -150 : 150; // Adjust for user card width
+            element.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
+};
+
 class MyUploadAdapter {
     constructor(loader) {
         this.loader = loader;
@@ -225,4 +242,3 @@ window.initializeMap = (lat, lng, dotNetHelper) => {
         dotNetHelper.invokeMethodAsync("UpdateCoordinates", newLat, newLng);
     });
 };
-

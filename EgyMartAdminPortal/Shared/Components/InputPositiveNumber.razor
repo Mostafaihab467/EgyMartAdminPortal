@@ -11,18 +11,16 @@
 @code {
     [Parameter] public int Value { get; set; }
     [Parameter] public EventCallback<int> ValueChanged { get; set; }
-    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyPress { get; set; } // New event parameter
-    [Parameter] public EventCallback OnBlur { get; set; } // New event parameter
+    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyPress { get; set; }
+    [Parameter] public EventCallback OnBlur { get; set; }
 
     private ElementReference InputElement;
     private bool PreventDefault = false;
-    private bool _isRendered = false; // Ensure ElementReference is valid after render
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _isRendered = true;
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -47,7 +45,7 @@
         return key switch
         {
             "Backspace" or "ArrowLeft" or "ArrowRight" or "Delete" or "Enter" or "Tab" => true,
-            _ => key.Length == 1 && char.IsDigit(key[0]) // Only allow digits (0-9)
+            _ => key.Length == 1 && char.IsDigit(key[0])
         };
     }
 
@@ -70,7 +68,7 @@
 
     public async Task FocusAsync()
     {
-        await Task.Yield(); // Ensures proper timing
+        await Task.Yield();
         try
         {
             await InputElement.FocusAsync();

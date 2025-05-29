@@ -136,7 +136,7 @@ namespace EgyMartAdminPortal.Services
             await _localStorage.RemoveItemAsync(UserKey);
             await _localStorage.RemoveItemAsync("cachedLanguages");
             User = new Person();
-            _navigation.NavigateTo("/login");
+            _navigation.NavigateTo("/login", forceLoad: true);
         }
 
         private async Task SaveLoginDataAsync(LoginData data)

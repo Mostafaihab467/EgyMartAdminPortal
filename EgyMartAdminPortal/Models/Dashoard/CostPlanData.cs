@@ -2,7 +2,8 @@
 {
     public class CostPlanData
     {
-        public long PlanID { get; set; }
-        public long TotaCost { get; set; }
+        public int PlanID { get; set; }
+        public long TotalCost { get; set; }
+        public long SubscriptionsCount { get; set; }
     }
 }
