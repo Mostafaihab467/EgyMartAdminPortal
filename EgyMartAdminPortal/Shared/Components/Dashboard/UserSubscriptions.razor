@@ -4,7 +4,7 @@
 
 <style>
     .scrolling-card {
-        max-height: 316px;
+        max-height: 33.75rem;
         overflow-y: auto;
         border: 1px solid #dee2e6;
         border-radius: 0.25rem;
@@ -116,16 +116,16 @@
                 {
                     <div class="plan-section">
                         <div class="d-flex justify-content-between">
-                            <h6>Plan @plan.PlanID</h6>
+                            <h6>Plan @plan.PlanTitle</h6>
                             <div>
-                                <p class="fs-6"><strong>Subscriptions:</strong> @expiringUsers.Where(u => u.PlanID == plan.PlanID).Count()</p>
-                                <p class="fs-6"><strong>Total Cost:</strong> @plan.TotalCost.ToString("N2") EGP</p>
+                                <p class="fs-6"><strong>Subscribers:</strong> @expiringUsers.Where(u => u.PlanID == plan.PlanId).Count()</p>
+                                <p class="fs-6"><strong>Total Income:</strong> @plan.TotalCost.ToString("N2") EGP</p>
                             </div>
                         </div>
-                        @if (expiringUsers.Any(u => u.PlanID == plan.PlanID))
+                        @if (expiringUsers.Any(u => u.PlanID == plan.PlanId))
                         {
                             <div class="horizontal-users">
-                                @foreach (var user in expiringUsers.Where(u => u.PlanID == plan.PlanID).OrderBy(u => u.EndDate))
+                                @foreach (var user in expiringUsers.Where(u => u.PlanID == plan.PlanId).OrderBy(u => u.EndDate))
                                 {
                                     <div class="user-card @(user.EndDate <= DateTime.Today.AddDays(10) ? "urgent" : "")">
                                         <strong>@user.DisplayName</strong><br />
@@ -144,7 +144,7 @@
 @code {
     [Parameter] public int daysRange { get; set; } = 480;
     private bool isLoading = true;
-    private List<CostPlanData> plans = new();
+    private List<PlanData> plans = new();
     private List<UserSub> expiringUsers = new();
 
     protected override async Task OnInitializedAsync()
@@ -186,24 +186,26 @@
             expiringUsers = expiringUsersResponse;
 
             // Map to PlanData
-            plans = planCosts.Select(cost => new CostPlanData
+            plans = planSubscriptions.Select(sub => new PlanData
                 {
-                    PlanID = cost.PlanID,
-                    TotalCost = cost.TotalCost,
-                    SubscriptionsCount = planSubscriptions.FirstOrDefault(s => s.PlanId == cost.PlanID)?.PlansCount ?? 0
-                }).OrderBy(p => p.PlanID).ToList();
+                    PlanId = sub.PlanId,
+                    PlanTitle = sub.PlanTitle,
+                    PlansCount = sub.PlansCount,
+                    TotalCost = planCosts.FirstOrDefault(c => c.PlanID == sub.PlanId)?.TotalCost ?? 0
+                }).ToList();
 
             // Add plans with subscriptions but no cost
-            var missingPlans = planSubscriptions.Where(s => !planCosts.Any(c => c.PlanID == s.PlanId))
-                .Select(s => new CostPlanData
+            var missingPlans = planCosts.Where(c => !planSubscriptions.Any(s => s.PlanId == c.PlanID))
+                .Select(c => new PlanData
                     {
-                        PlanID = s.PlanId,
-                        TotalCost = 0,
-                        SubscriptionsCount = s.PlansCount
+                        PlanId = c.PlanID,
+                        PlanTitle = $"Plan {c.PlanID}", // Default title if no subscription data
+                        PlansCount = 0,
+                        TotalCost = c.TotalCost
                     });
             plans.AddRange(missingPlans);
 
-            plans = plans.OrderBy(p => p.PlanID).ToList();
+            plans = plans.OrderBy(p => p.PlanId).ToList();
             isLoading = false;
         }
         catch (Exception)
