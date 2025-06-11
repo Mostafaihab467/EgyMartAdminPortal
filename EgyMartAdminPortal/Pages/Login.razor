@@ -40,12 +40,12 @@
                                     <PasswordInput id="login-password" class="form-control input" @bind-Value="@loginModel.Password" placeholder="Enter Your Password" />
                                     <ValidationMessage For="@(() => loginModel.Password)" />
                                 </div>
-                                @* <div class="mb-1"> *@
-                                @*     <div class="form-check"> *@
-                                @*         <InputCheckbox id="remember-me" @bind-Value="@loginModel.RememberMe" /> *@
-                                @*         <label for="remember-me" class="form-check-label">Remember Me</label> *@
-                                @*     </div> *@
-                                @* </div> *@
+                                <div class="mb-1">
+                                    <div class="form-check">
+                                        <InputCheckbox id="remember-me" @bind-Value="@loginModel.RememberMe" />
+                                        <label for="remember-me" class="form-check-label">Remember Me</label>
+                                    </div>
+                                </div>
                                 <button class="btn btn-primary w-100" type="submit">
                                     @if (isLoading)
                                     {
