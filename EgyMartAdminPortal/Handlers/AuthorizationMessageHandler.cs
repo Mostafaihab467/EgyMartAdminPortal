@@ -1,6 +1,5 @@
 ﻿using EgyMartAdminPortal.Models;
 using EgyMartAdminPortal.Services;
-using Microsoft.AspNetCore.Components;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -26,9 +25,35 @@ namespace EgyMartAdminPortal.Handlers
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                // 401 detected
-                await _authService.LogoutAsync();
-                return response; // or throw exception if you want
+                // 401 detected, try to refresh token
+                if (await _authService.TryRefreshTokenAsync())
+                {
+                    var clonedRequest = await CloneHttpRequestMessageAsync(request);
+                    await AttachAccessTokenAsync(clonedRequest);
+                    return await base.SendAsync(clonedRequest, cancellationToken);
+                }
+                else
+                {
+                    // Refresh failed, proceed with logout
+                    await _authService.LogoutAsync();
+                    return response;
+                }
+            }
+
+            if (response.Headers.TryGetValues("Token-Expired", out var tokenExpiredValues) &&
+                tokenExpiredValues.Any(value => value.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (await _authService.TryRefreshTokenAsync())
+                {
+                    var clonedRequest = await CloneHttpRequestMessageAsync(request);
+                    await AttachAccessTokenAsync(clonedRequest);
+                    return await base.SendAsync(clonedRequest, cancellationToken);
+                }
+                else
+                {
+                    await _authService.LogoutAsync();
+                    return response;
+                }
             }
 
             if (await IsJwtExpiredAsync())
@@ -37,8 +62,7 @@ namespace EgyMartAdminPortal.Handlers
                 {
                     var clonedRequest = await CloneHttpRequestMessageAsync(request);
                     await AttachAccessTokenAsync(clonedRequest);
-
-                    response = await base.SendAsync(clonedRequest, cancellationToken);
+                    return await base.SendAsync(clonedRequest, cancellationToken);
                 }
                 else
                 {
@@ -90,7 +114,6 @@ namespace EgyMartAdminPortal.Handlers
             }
             catch
             {
-                // any error => consider expired
                 return true;
             }
         }
