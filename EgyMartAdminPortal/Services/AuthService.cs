@@ -101,7 +101,7 @@ namespace EgyMartAdminPortal.Services
             if (tokens == null || string.IsNullOrEmpty(tokens.Jwt) || string.IsNullOrEmpty(tokens.RefreshToken))
                 return false;
 
-            var refreshUri = $"{ApiUrl}/RefreshToken?ExpiredToken={Uri.EscapeDataString(tokens.Jwt)}&RefreshToken={Uri.EscapeDataString(tokens.RefreshToken)}";
+            var refreshUri = $"{ApiUrl}/RefreshToken?ExpiredToken={tokens.Jwt}&RefreshToken={tokens.RefreshToken}";
 
             try
             {
@@ -109,13 +109,14 @@ namespace EgyMartAdminPortal.Services
                 var response = await client.PostAsync(refreshUri, null);
                 if (!response.IsSuccessStatusCode)
                     return false;
-
+                Console.WriteLine($"Response Status Code: {response.StatusCode}");
                 var content = await response.Content.ReadAsStringAsync();
                 var newTokens = JsonSerializer.Deserialize<Tokens>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (newTokens == null || string.IsNullOrEmpty(newTokens.Jwt))
                     return false;
 
+                Console.WriteLine($"New JWT: {newTokens.Jwt}");
                 await _localStorage.SetItemAsync(TokenKey, newTokens);
                 return true;
             }

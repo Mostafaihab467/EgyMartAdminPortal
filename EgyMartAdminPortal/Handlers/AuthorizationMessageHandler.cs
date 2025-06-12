@@ -35,38 +35,9 @@ namespace EgyMartAdminPortal.Handlers
                 else
                 {
                     // Refresh failed, proceed with logout
+                    Console.WriteLine("Refresh token failed,m proceeding with logout.", request);
                     await _authService.LogoutAsync();
                     return response;
-                }
-            }
-
-            if (response.Headers.TryGetValues("Token-Expired", out var tokenExpiredValues) &&
-                tokenExpiredValues.Any(value => value.Equals("true", StringComparison.OrdinalIgnoreCase)))
-            {
-                if (await _authService.TryRefreshTokenAsync())
-                {
-                    var clonedRequest = await CloneHttpRequestMessageAsync(request);
-                    await AttachAccessTokenAsync(clonedRequest);
-                    return await base.SendAsync(clonedRequest, cancellationToken);
-                }
-                else
-                {
-                    await _authService.LogoutAsync();
-                    return response;
-                }
-            }
-
-            if (await IsJwtExpiredAsync())
-            {
-                if (await _authService.TryRefreshTokenAsync())
-                {
-                    var clonedRequest = await CloneHttpRequestMessageAsync(request);
-                    await AttachAccessTokenAsync(clonedRequest);
-                    return await base.SendAsync(clonedRequest, cancellationToken);
-                }
-                else
-                {
-                    await _authService.LogoutAsync();
                 }
             }
 
@@ -80,53 +51,6 @@ namespace EgyMartAdminPortal.Handlers
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokens.Jwt);
             }
-        }
-
-        private async Task<bool> IsJwtExpiredAsync()
-        {
-            var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
-            return tokens == null || string.IsNullOrEmpty(tokens.Jwt) || IsJwtExpired(tokens.Jwt);
-        }
-
-        private bool IsJwtExpired(string jwt)
-        {
-            if (string.IsNullOrEmpty(jwt))
-                return true;
-
-            var parts = jwt.Split('.');
-            if (parts.Length != 3)
-                return true;
-
-            try
-            {
-                var payload = parts[1];
-                var jsonBytes = ParseBase64WithoutPadding(payload);
-                var json = System.Text.Encoding.UTF8.GetString(jsonBytes);
-
-                using var doc = JsonDocument.Parse(json);
-                if (!doc.RootElement.TryGetProperty("exp", out var expProperty))
-                    return true;
-
-                var expSeconds = expProperty.GetInt64();
-                var expDateTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
-
-                return expDateTime <= DateTime.UtcNow;
-            }
-            catch
-            {
-                return true;
-            }
-        }
-
-        private byte[] ParseBase64WithoutPadding(string base64)
-        {
-            base64 = base64.Replace('-', '+').Replace('_', '/');
-            switch (base64.Length % 4)
-            {
-                case 2: base64 += "=="; break;
-                case 3: base64 += "="; break;
-            }
-            return Convert.FromBase64String(base64);
         }
 
         private static async Task<HttpRequestMessage> CloneHttpRequestMessageAsync(HttpRequestMessage request)

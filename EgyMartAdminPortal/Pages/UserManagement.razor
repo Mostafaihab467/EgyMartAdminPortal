@@ -20,14 +20,14 @@
         <label for="password">Password</label>
         <div class="input-group">
             <input type="@(showPassword ? "text" : "password")"
-            class="form-control"
-            id="password"
-            @bind="newItem.Password" />
+                   class="form-control"
+                   id="password"
+                   @bind="newItem.Password" />
             <span class="input-group-text bg-white border-start-0 border">
                 <button type="button"
-                class="btn btn-link p-0 m-pass"
-                @onclick="TogglePasswordVisibility"
-                tabindex="-1">
+                        class="btn btn-link p-0 m-pass"
+                        @onclick="TogglePasswordVisibility"
+                        tabindex="-1">
                     <i class="@GetEyeIcon()"></i>
                 </button>
             </span>
@@ -38,14 +38,14 @@
         <label for="confirmPassword">Repeat Password</label>
         <div class="input-group">
             <input type="@(showPassword ? "text" : "password")"
-            class="form-control"
-            id="confirmPassword"
-            @bind="newItem.ConfirmPassword" />
+                   class="form-control"
+                   id="confirmPassword"
+                   @bind="newItem.ConfirmPassword" />
             <span class="input-group-text bg-white border-start-0 border">
                 <button type="button"
-                class="btn btn-link p-0 m-pass"
-                @onclick="TogglePasswordVisibility"
-                tabindex="-1">
+                        class="btn btn-link p-0 m-pass"
+                        @onclick="TogglePasswordVisibility"
+                        tabindex="-1">
                     <i class="@GetEyeIcon()"></i>
                 </button>
             </span>
@@ -69,18 +69,44 @@
     <LoadingSpinner IsLoading="isLoading" />
 </div>
 
-<div class="d-flex align-items-center">
+<div class="d-flex align-items-start justify-content-between">
     <ul class="nav nav-tabs border-0">
         @foreach (var tab in Tabs)
         {
             <li class="nav-item">
                 <button class="nav-link @(tab.IsActive ? "active text-primary border-bottom border-primary" : "text-muted")"
-                @onclick="() => SelectTab(tab)">
+                        @onclick="() => SelectTab(tab)">
                     @tab.Name <span class="badge bg-light text-dark ms-1">@tab.Count</span>
                 </button>
             </li>
         }
     </ul>
+    @if (SelectedTab != null)
+    {
+        <div class="px-2">
+            @if (!showSearch)
+            {
+                <button class="btn btn-outline-secondary" type="button" @onclick="ToggleSearch">
+                    <i class="fa-solid fa-filter"></i>
+                </button>
+            }
+            @if (showSearch)
+            {
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search by Name or Email" @bind="searchTerm" @bind:event="oninput" @ref="searchInputRef" @onkeyup="UpdatePagedItems" @onblur="HideSearchIfEmpty" />
+                    @if (!string.IsNullOrEmpty(searchTerm))
+                    {
+                        <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
 </div>
 
 <div class="tab-content mt-3">
@@ -114,39 +140,39 @@
 
 <style>
     .row {
-    display: flex;
-    flex-wrap: wrap;
+        display: flex;
+        flex-wrap: wrap;
     }
 
     .col-md-3 {
-    display: flex;
-    justify-content: stretch;
+        display: flex;
+        justify-content: stretch;
     }
 
     .card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        width: 100%;
     }
 
     .add-admin-card {
-    height: 100%;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .add-admin-card:hover {
-    transform: scale(0.9);
-    box-shadow: 0px 5px 15px rgba(0, 0, 255, 0.2);
-    }
+        .add-admin-card:hover {
+            transform: scale(0.9);
+            box-shadow: 0px 5px 15px rgba(0, 0, 255, 0.2);
+        }
 
     .m-pass:focus {
-    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.1rem white !important;
+        box-shadow: 0 0 0 0.1rem white, 0 0 0 0.1rem white !important;
     }
 
     .btn-link:hover {
-    color: var(--primary-color) !important;
+        color: var(--primary-color) !important;
     }
 </style>
 
@@ -172,11 +198,14 @@
     private TabItem SelectedTab { get; set; } = default!;
     private Dictionary<short, string> UserTypeTitles = new();
     public ElementReference itemRef;
+    public ElementReference searchInputRef;
 
     private string popupTitle = "Add New Admin";
     private bool showPopup = false;
     private bool isLoading = false;
     private bool showPassword = false;
+    private bool showSearch = false;
+    private string searchTerm = string.Empty;
 
     private int CurrentPage = 1;
     private int PageSize = 50;
@@ -200,39 +229,38 @@
 
             var adminTypes = result.Data.Where(t => new[] { 3, 4, 5 }.Contains(t.UserTypeID)).ToList();
             groupedTabs.Add(new TabItem
-                {
-                    Name = "Admins",
-                    Count = adminTypes.Sum(a => a.UsersCount),
-                    UserTypeIDs = adminTypes.Select(a => (short)a.UserTypeID).ToList()
-                });
+            {
+                Name = "Admins",
+                Count = adminTypes.Sum(a => a.UsersCount),
+                UserTypeIDs = adminTypes.Select(a => (short)a.UserTypeID).ToList()
+            });
 
             var customerType = result.Data.FirstOrDefault(t => t.UserTypeID == 1);
             if (customerType != null)
             {
                 groupedTabs.Add(new TabItem
-                    {
-                        Name = "Customers",
-                        Count = customerType.UsersCount,
-                        UserTypeIDs = new() { 1 }
-                    });
+                {
+                    Name = "Customers",
+                    Count = customerType.UsersCount,
+                    UserTypeIDs = new() { 1 }
+                });
             }
 
             var supplierType = result.Data.FirstOrDefault(t => t.UserTypeID == 2);
             if (supplierType != null)
             {
                 groupedTabs.Add(new TabItem
-                    {
-                        Name = "Suppliers",
-                        Count = supplierType.UsersCount,
-                        UserTypeIDs = new() { 2 }
-                    });
+                {
+                    Name = "Suppliers",
+                    Count = supplierType.UsersCount,
+                    UserTypeIDs = new() { 2 }
+                });
             }
 
             Tabs = groupedTabs;
             StateHasChanged();
         }
     }
-
 
     private async Task GetUsersByTypeAsync()
     {
@@ -260,12 +288,12 @@
                     };
 
                     Tabs.Add(new TabItem
-                        {
-                            Name = displayName,
-                            Count = userType.UsersCount,
-                            UserTypeIDs = new List<short> { userType.UserTypeID },
-                            IsActive = false
-                        });
+                    {
+                        Name = displayName,
+                        Count = userType.UsersCount,
+                        UserTypeIDs = new List<short> { userType.UserTypeID },
+                        IsActive = false
+                    });
 
                 }
             }
@@ -280,7 +308,7 @@
     private async Task SelectTab(TabItem selectedTab)
     {
         showPopup = false;
-
+        showSearch = false;
         isLoading = true;
         StateHasChanged();
 
@@ -291,7 +319,7 @@
 
         SelectedTab = selectedTab;
         CurrentPage = 1;
-
+        searchTerm = string.Empty;
         if (!selectedTab.IsDataLoaded)
         {
             var people = new List<Person>();
@@ -375,6 +403,15 @@
     private void UpdatePagedItems()
     {
         showPopup = false;
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.ToLower();
+            FilteredPeople = People
+                .Where(u => u.DisplayName?.ToLower().Contains(search) == true ||
+                           u.UserName?.ToLower().Contains(search) == true)
+                .ToList();
+            SelectedTab.Count = FilteredPeople.Count;
+        }
         pagedItems = FilteredPeople;
         StateHasChanged();
     }
@@ -413,7 +450,6 @@
         StateHasChanged();
     }
 
-
     private void TogglePasswordVisibility()
     {
         showPassword = !showPassword;
@@ -422,6 +458,35 @@
     private string GetEyeIcon()
     {
         return showPassword ? "fas fa-eye-slash" : "fas fa-eye";
+    }
+
+    private async Task ToggleSearch()
+    {
+        showSearch = true;
+        await Task.Delay(100);
+        await searchInputRef.FocusAsync();
+        StateHasChanged();
+    }
+
+    private void HideSearchIfEmpty()
+    {
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            ClearSearch();
+        }
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        showSearch = false;
+        if (SelectedTab != null)
+        {
+            UpdateFilteredPeople(SelectedTab.UserTypeIDs);
+            CurrentPage = 1;
+            UpdatePagedItems();
+        }
     }
 
     // private async Task HandleImageUploaded(string base64Image)
