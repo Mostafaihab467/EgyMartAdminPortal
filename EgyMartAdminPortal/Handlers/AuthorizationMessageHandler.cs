@@ -23,9 +23,11 @@ namespace EgyMartAdminPortal.Handlers
 
             var response = await base.SendAsync(request, cancellationToken);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized &&
+    response.Headers.TryGetValues("Token-Expired", out var tokenExpiredValues) &&
+    tokenExpiredValues.Contains("true", StringComparer.OrdinalIgnoreCase))
             {
-                // 401 detected, try to refresh token
+                // 401 + Token-Expired = true → try to refresh token
                 if (await _authService.TryRefreshTokenAsync())
                 {
                     var clonedRequest = await CloneHttpRequestMessageAsync(request);
@@ -34,12 +36,11 @@ namespace EgyMartAdminPortal.Handlers
                 }
                 else
                 {
-                    // Refresh failed, proceed with logout
-                    Console.WriteLine("Refresh token failed,m proceeding with logout.", request);
                     await _authService.LogoutAsync();
                     return response;
                 }
             }
+
 
             return response;
         }

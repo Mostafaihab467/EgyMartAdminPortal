@@ -23,4 +23,9 @@ namespace EgyMartAdminPortal.Models
         public string Jwt { get; set; } = "";
         public string RefreshToken { get; set; } = "";
     }
+
+    public class NewToken
+    {
+        public string NewJWT { get; set; } = string.Empty;
+    }
 }

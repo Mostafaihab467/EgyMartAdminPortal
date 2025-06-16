@@ -109,15 +109,20 @@ namespace EgyMartAdminPortal.Services
                 var response = await client.PostAsync(refreshUri, null);
                 if (!response.IsSuccessStatusCode)
                     return false;
-                Console.WriteLine($"Response Status Code: {response.StatusCode}");
                 var content = await response.Content.ReadAsStringAsync();
-                var newTokens = JsonSerializer.Deserialize<Tokens>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var result = JsonSerializer.Deserialize<ApiResponse<NewToken>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                if (newTokens == null || string.IsNullOrEmpty(newTokens.Jwt))
+                if (result == null || result.Data == null)
                     return false;
 
-                Console.WriteLine($"New JWT: {newTokens.Jwt}");
-                await _localStorage.SetItemAsync(TokenKey, newTokens);
+                Console.WriteLine($"New JWT: {result.Data.NewJWT}");
+                var updatedTokens = new Tokens
+                {
+                    Jwt = result.Data.NewJWT,
+                    RefreshToken = tokens.RefreshToken
+                };
+
+                await _localStorage.SetItemAsync(TokenKey, updatedTokens);
                 return true;
             }
             catch

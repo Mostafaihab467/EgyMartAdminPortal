@@ -107,7 +107,7 @@ else
         await base.OnParametersSetAsync();
     }
 
-    private async Task StartEditing()
+    private void StartEditing()
     {
         IsEditing = true;
         EditingValue = Value?.ToString() ?? "";
@@ -155,7 +155,7 @@ else
         }
         else if (e.Key == "Escape")
         {
-            await CancelEdit();
+            CancelEdit();
         }
     }
 
@@ -190,7 +190,7 @@ else
         StateHasChanged();
     }
 
-    private async Task CancelEdit()
+    private void CancelEdit()
     {
         IsEditing = false;
         EditingValue = Value?.ToString() ?? "";

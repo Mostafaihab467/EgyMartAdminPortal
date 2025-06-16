@@ -1,8 +1,17 @@
-﻿window.triggerClick = (element) => {
+﻿window.triggerFileInput = (elementId) => {
+    const element = document.getElementById(elementId);
     if (element) {
         element.click();
-    } else {
-        console.error("Invalid element reference passed to triggerClick:", element);
+    }
+};
+
+window.blazorDragDrop = {
+    preventDefault: function (elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.addEventListener('dragover', function (e) {
+            e.preventDefault();
+        }, false);
     }
 };
 

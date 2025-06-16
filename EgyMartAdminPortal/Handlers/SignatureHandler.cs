@@ -16,6 +16,7 @@ namespace EgyMartAdminPortal.Handlers
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            request.Headers.Remove("sign");
             var userJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "userData");
             string email = "";
             string userID = "";
@@ -57,6 +58,7 @@ namespace EgyMartAdminPortal.Handlers
                 _ivBase64
             );
 
+            //Console.WriteLine($"endpoint:{endpoint}, email:{email}, body:{body}, sign: {signature}");
             request.Headers.Add("sign", signature);
 
             return await base.SendAsync(request, cancellationToken);

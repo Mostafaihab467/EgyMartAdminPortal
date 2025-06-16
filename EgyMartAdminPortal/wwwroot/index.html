@@ -62,6 +62,16 @@
             XLSX.writeFile(wb, fileName);
         };
     </script>
+    <script>
+        window.triggerFileInput = function (elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.click();
+            } else {
+                console.warn("Element not found:", elementId);
+            }
+        };
+    </script>
 
 </body>
 

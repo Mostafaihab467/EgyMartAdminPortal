@@ -143,7 +143,6 @@
 
 @code {
     [Parameter] public int daysRange { get; set; } = 480;
-    private bool isLoading = true;
     private List<PlanData> plans = new();
     private List<UserSub> expiringUsers = new();
 
@@ -206,11 +205,11 @@
             plans.AddRange(missingPlans);
 
             plans = plans.OrderBy(p => p.PlanId).ToList();
-            isLoading = false;
+            // isLoading = false;
         }
         catch (Exception)
         {
-            isLoading = false;
+            // isLoading = false;
         }
     }
 }
