@@ -1,0 +1,35 @@
+﻿.header-navbar {
+    right: 0;
+    padding: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
+    min-height: 4rem;
+    font-family: "Montserrat", Helvetica, Arial, serif;
+    transition: 300ms ease all, background 0s;
+}
+
+.top-row {
+    background-color: white;
+    border-bottom: 0px solid #d6d5d5;
+    justify-content: flex-end;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+}
+
+.header-navbar.navbar-shadow {
+    box-shadow: 4px 4px 2px 0px rgba(34, 41, 47, 0.05)
+}
+
+.selected-language {
+    margin-left: 0.4rem;
+}
+
+.nav-link:focus, .nav-link:hover {
+    color: #7367f0;
+}
+
+.nav-link {
+    color: #6e6b7b;
+}
+

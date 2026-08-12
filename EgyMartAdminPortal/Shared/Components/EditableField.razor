@@ -1,0 +1,199 @@
+﻿@using System.Text.RegularExpressions
+@typeparam T
+
+@if (IsEditing)
+{
+    @if (InputType == "textarea" && Frame)
+    {
+        <div>
+            <RadzenHtmlEditor @bind-Value="EditingValue"
+                              style="width: 50rem; max-width: 50rem; height: 75vh; display: block;" />
+            <div class="mt-2">
+                <button class="btn btn-primary me-2" @onclick="SaveEdit">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </div>
+    }
+    else if (InputType == "number")
+    {
+        <InputPositiveNumber @ref="InputNumberComponent"
+                             Value="@NumericValue"
+                             ValueChanged="@(val => { NumericValue = val; EditingValue = val.ToString(); StateHasChanged(); })"
+                             OnKeyPress="HandleKeyPress"
+                             OnBlur="SaveEdit" />
+    }
+    else
+    {
+        <input type="text"
+               class="form-control w-75"
+               value="@EditingValue"
+               @ref="InputElement"
+               @oninput="HandleInputChange"
+               @onkeyup="HandleKeyPress"
+               @onblur="SaveEdit" />
+    }
+}
+else
+{
+    <div class="cursor-pointer d-inline-block" style="width:@(Width)%;" @onclick="StartEditing">
+        @if (Frame)
+        {
+            <Button class="btn btn-primary">
+                <i class="fa-solid fa-file-lines"></i><span class="ms-2">Show Content Of Page</span>
+            </Button>
+        }
+        else
+        {
+            <span class="cursor-pointer w-100">@Value</span>
+        }
+    </div>
+}
+
+<style>
+    .html-preview {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+        .html-preview::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: pointer;
+        }
+
+    .rz-html-editor {
+        min-height: 55vh !important;
+        max-width: 55rem !important;
+    }
+
+    .rz-html-editor-content{
+        min-height: inherit !important;
+    }
+</style>
+
+@code {
+    [Parameter] public string Id { get => _id ?? $"Editor_{_uid}"; set => _id = value; }
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+    [Parameter] public string InputType { get; set; } = "text"; // text | textarea | number
+    [Parameter] public bool Frame { get; set; } = false;
+    [Parameter] public int Width { get; set; } = 100;
+
+    private string? _id;
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+    private bool IsEditing { get; set; } = false;
+    private string EditingValue { get; set; } = string.Empty;
+    private int NumericValue { get; set; } = 1;
+
+    private ElementReference InputElement { get; set; }
+    private InputPositiveNumber? InputNumberComponent;
+    private bool ShouldFocus { get; set; } = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsEditing)
+        {
+            EditingValue = Value?.ToString() ?? "";
+            if (InputType == "number" && Value is int intVal)
+                NumericValue = intVal;
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
+    private void StartEditing()
+    {
+        IsEditing = true;
+        EditingValue = Value?.ToString() ?? "";
+
+        if (InputType == "number" && Value is int intVal)
+            NumericValue = intVal;
+
+        ShouldFocus = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (ShouldFocus)
+        {
+            ShouldFocus = false;
+
+            try
+            {
+                if (InputType == "number" && InputNumberComponent is not null)
+                {
+                    await InputNumberComponent.FocusAsync();
+                }
+                else if (InputType != "textarea")
+                {
+                    await InputElement.FocusAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Focus] Could not set focus: {ex.Message}");
+            }
+        }
+    }
+
+    private void HandleInputChange(ChangeEventArgs e)
+    {
+        EditingValue = e.Value?.ToString() ?? "";
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveEdit();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelEdit();
+        }
+    }
+
+    private async Task SaveEdit()
+    {
+        try
+        {
+            T? finalValue;
+
+            if (InputType == "number" && typeof(T) == typeof(int) && int.TryParse(EditingValue, out int intVal))
+            {
+                NumericValue = intVal;
+                finalValue = (T)(object)intVal;
+            }
+            else if (typeof(T) == typeof(string))
+            {
+                finalValue = (T)(object)EditingValue;
+            }
+            else
+            {
+                finalValue = (T)Convert.ChangeType(EditingValue, typeof(T));
+            }
+
+            await ValueChanged.InvokeAsync(finalValue!);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SaveEdit] Conversion error: {ex.Message}");
+        }
+
+        IsEditing = false;
+        StateHasChanged();
+    }
+
+    private void CancelEdit()
+    {
+        IsEditing = false;
+        EditingValue = Value?.ToString() ?? "";
+        StateHasChanged();
+    }
+}

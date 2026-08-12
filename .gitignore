@@ -1,0 +1,12 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+bin/*
+/EgyMartAdminPortal/bin
+/.vs/EgypMartAdminPortal/CopilotIndices/17.12.38.29086
+/EgyMartAdminPortal/node_modules/.bin
+/EgyMartAdminPortal/node_modules/autoprefixer/bin
+/EgyMartAdminPortal/obj
+/.vs
+bin/
+obj/

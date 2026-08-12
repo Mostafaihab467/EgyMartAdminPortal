@@ -1,0 +1,38 @@
+﻿@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject SessionTimeoutService SessionTimeoutService
+
+<CascadingValue Value="AuthService.User">
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@(routeData.PageType == typeof(Login) ? null : typeof(MainLayout))" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingValue>
+
+@code {
+    private bool _isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.GetUserAsync();
+        var token = await AuthService.GetAuthTokenAsync();
+
+        _isAuthenticated = !string.IsNullOrWhiteSpace(token) && AuthService.User is { DisplayName: not null and not "" };
+        if (_isAuthenticated)
+        {
+            await SessionTimeoutService.InitializeAsync();
+        }
+        if (!_isAuthenticated && !Navigation.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}

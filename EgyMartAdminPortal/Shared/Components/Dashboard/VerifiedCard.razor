@@ -1,0 +1,117 @@
+﻿@typeparam TItem
+<div class="card shadow-sm p-4">
+    <div class="bg-white d-flex fs-6 fw-bold justify-content-between align-items-center mb-0 p-0 border-bottom-0">
+        <span>@Title</span>
+        <div class="d-flex align-items-center gap-2">
+            @if (SeeAllbtn)
+            {
+                <a href="" class="text-muted mb-1 fs-15 text-decoration-none" @onclick="ToggleView" @onclick:preventDefault>
+                    @(ShowAll ? "See Less" : "See All")
+                </a>
+            }
+            <DashboardExportMenu FileName="@($"{GetSafeFileName(Title)}.xlsx")"
+                                 SheetName="@Title"
+                                 Rows="@ExportRows" />
+        </div>
+    </div>
+    <div class="card-content">
+        @if (FilteredItems is not null && FilteredItems.Any())
+        {
+            int index = 0;
+            string[] colors = new[] { "#FF9D23", "#990202", "#1E90FF", "#32CD32", "#FFD700", "#FF4500", "#8A2BE2", "#20B2AA", "#DC143C", "#FF69B4" };
+            @foreach (var item in FilteredItems)
+            {
+                string color = index < colors.Length ? colors[index] : "#aaa";
+                <div class="user-type mt-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">@GetLabel(item)</span>
+                        <span class="badge text-black">@GetCount(item)</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar"
+                             style="width: @(GetProgress(GetCount(item)))%; background-color: @(color);">
+                        </div>
+                    </div>
+                </div>
+                index++;
+            }
+        }
+        else if (Items is null)
+        {
+            <p class="text-muted">Loading...</p>
+        }
+        else
+        {
+            <p class="text-danger fw-bold">No Data Available</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public bool SeeAllbtn { get; set; } = true;
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public Func<TItem, string> GetLabel { get; set; } = default!;
+    [Parameter] public Func<TItem, long> GetCount { get; set; } = default!;
+
+    private bool ShowAll = false;
+    private IEnumerable<TItem>? FilteredItems;
+    private IEnumerable<object> ExportRows => (Items ?? Enumerable.Empty<TItem>()).Select(item => new
+    {
+        Label = GetLabel(item),
+        Count = GetCount(item)
+    });
+
+    protected override void OnParametersSet()
+    {
+        UpdateFilteredItems();
+    }
+
+    private void ToggleView()
+    {
+        ShowAll = !ShowAll;
+        UpdateFilteredItems();
+    }
+
+    private void UpdateFilteredItems()
+    {
+        if (Items is not null)
+        {
+            FilteredItems = ShowAll ? Items : Items.Take(5);
+        }
+        else
+        {
+            FilteredItems = null;
+        }
+    }
+
+    private string GetProgress(long count) => Math.Min(count, 100).ToString();
+
+    private string GetColor(string? type) =>
+        type switch
+        {
+            "Supplier" => "#FF9D23",
+            "Customer" => "#990202",
+            _ => "#aaa"
+        };
+
+    private static string GetSafeFileName(string value)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var safeName = new string(value.Select(c => invalidChars.Contains(c) ? '-' : c).ToArray());
+        return string.IsNullOrWhiteSpace(safeName) ? "Dashboard-Statistic" : safeName;
+    }
+}
+
+<style>
+    a:hover {
+        color: #990202 !important;
+    }
+
+    .progress-bar {
+        height: 8px;
+        border-radius: 5px;
+        transition: width 0.3s ease-in-out;
+    }
+
+</style>

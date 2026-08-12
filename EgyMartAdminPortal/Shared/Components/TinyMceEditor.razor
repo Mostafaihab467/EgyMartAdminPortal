@@ -1,0 +1,58 @@
+﻿@inherits InputBase<string>
+@inject IJSRuntime JSRuntime
+
+<textarea id="@Id" style="width: 100%; max-width: 50rem; height: 75vh; display: block;"></textarea>
+
+@code {
+    private string? _id;
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+
+    [Parameter]
+    public string Id
+    {
+        get => _id ?? $"TinyMce_{_uid}";
+        set => _id = value;
+    }
+
+    private DotNetObjectReference<TinyMceEditor>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("tinyMceInterop.init", Id, _dotNetRef);
+
+            if (!string.IsNullOrEmpty(CurrentValue))
+            {
+                await JSRuntime.InvokeVoidAsync("tinyMceInterop.setContent", Id, CurrentValue);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task EditorDataChanged(string data)
+    {
+        if (CurrentValue != data)
+        {
+            CurrentValue = data;
+            await ValueChanged.InvokeAsync(data);
+        }
+    }
+
+    protected override bool TryParseValueFromString(string? value, out string result, out string validationErrorMessage)
+    {
+        result = value ?? string.Empty;
+        validationErrorMessage = string.Empty;
+        return true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef != null)
+        {
+            await JSRuntime.InvokeVoidAsync("tinyMceInterop.destroy", Id);
+            _dotNetRef.Dispose();
+        }
+    }
+}

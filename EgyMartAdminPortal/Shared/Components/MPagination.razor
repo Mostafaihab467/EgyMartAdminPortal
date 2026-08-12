@@ -1,0 +1,62 @@
+﻿@typeparam TItem
+
+<div class="d-flex justify-content-between align-items-center mt-2">
+    <span>Page @CurrentPage of @TotalPages</span>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0);" @onclick="PreviousPage">&laquo;</a>
+            </li>
+
+            @for (int i = 1; i <= TotalPages; i++)
+            {
+                int pageIndex = i;
+                <li class="page-item @(CurrentPage == pageIndex ? "active" : "")">
+                    <a class="page-link" href="javascript:void(0);" @onclick="() => GoToPage(pageIndex)">@pageIndex</a>
+                </li>
+            }
+
+            <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0);" @onclick="NextPage">&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+@code {
+    [Parameter] public required List<TItem> Items { get; set; }
+    [Parameter] public int ItemsCount { get; set; }
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private int TotalPages => (int)Math.Ceiling((double)(Items?.Count ?? 0) / PageSize);
+
+    private async Task GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            CurrentPage = page;
+            await OnPageChanged.InvokeAsync(CurrentPage);
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+            await OnPageChanged.InvokeAsync(CurrentPage);
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await OnPageChanged.InvokeAsync(CurrentPage);
+        }
+    }
+}

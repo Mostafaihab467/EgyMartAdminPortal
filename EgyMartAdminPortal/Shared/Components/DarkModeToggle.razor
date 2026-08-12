@@ -1,0 +1,53 @@
+﻿@inject IJSRuntime JS
+
+<li class="nav-item d-none d-lg-block">
+    <a class="nav-link nav-link-style cursor-default">
+        <i class="far fa-@Icon"></i>
+    </a>
+</li>
+
+@code {
+    private string Icon = "sun"; // Default icon
+    private bool IsDarkMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsDarkMode = await GetDarkModePreference();
+        SetTheme();
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await SaveDarkModePreference(IsDarkMode);
+        SetTheme();
+    }
+
+    private void SetTheme()
+    {
+        Icon = IsDarkMode ? "moon" : "sun"; // Change icon based on theme
+        StateHasChanged(); // Refresh UI
+    }
+
+    private async Task<bool> GetDarkModePreference()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<string>("localStorage.getItem", "darkMode");
+            return result == "true";
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task SaveDarkModePreference(bool isDarkMode)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "darkMode", isDarkMode.ToString().ToLower());
+        }
+        catch { }
+    }
+}

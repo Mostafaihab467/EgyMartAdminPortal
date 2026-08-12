@@ -1,0 +1,194 @@
+﻿@page "/"
+@layout MainLayout;
+@inject AuthService AuthService;
+@inject DashboardService DashboardService;
+
+<PageTitle>Admin Dashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row ">
+        <!-- Stats Row -->
+        <div class="row">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <InfoCard Icon="cart-flatbed-suitcase" Value="@productCount" Label="Products Verified" IconColor="#990202" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <InfoCard Icon="video" Value="@adsCount" Label="Ads Verified" IconColor="#FF9D23" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <InfoCard Icon="ticket" Value="@subscriptionCount" Label="Subscriptions" IconColor="#990202" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <InfoCard Icon="users-viewfinder" Value="@joinedCount" Label="User Joined" IconColor="#FF9D23" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="row">
+                    <!-- Gender Card -->
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-6">
+                        <GenderCard />
+                    </div>
+
+                    <!-- View Count Chart -->
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-6">
+                        <MBarChart Title="Views Count" ViewData="viewsCountList" />
+                    </div>
+                </div>
+                <div class="row">
+                    <!-- Trending Card -->
+                    <div class="col-12 col-sm-6 col-md-6 col-lg-12 h-100">
+                        <TrendingCard Categories="@categories" RefreshData="@LoadCategoriesData" />
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <!-- Top Selling Card -->
+                    <div class="col-12 col-sm-6 col-md-6 col-lg-12 h-100">
+                        <TopSellingCard />
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-6">
+                        <!-- Product View Card -->
+                        <VerifiedCard Title="Top Products Views" Items="productViewsList"
+                                      GetLabel="p => ((ProductViewData)p).ProductTitle"
+                                      GetCount="p => ((ProductViewData)p).TotalViews" />
+                        
+                        <!-- OS View Card -->
+                        <VerifiedCard Title="OS Views" Items="osViewsList"
+                                      GetLabel="o => ((OSData)o).OS"
+                                      GetCount="o => ((OSData)o).ViewsCount" />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-6">
+                        <!-- Calendar Card -->
+                        <CalendarCard FromDate="@FromDate" ToDate="@ToDate" OnDateRangeChanged="@LoadDashboardData" />
+
+                        <!-- User Verified Card -->
+                        <VerifiedCard Title="User Verification" SeeAllbtn="false" Items="userTypesList"
+                                      GetLabel="user => ((UserTypeData)user).UserType"
+                                      GetCount="user => ((UserTypeData)user).PendingCount" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <UserSubscriptions daysRange="480"></UserSubscriptions>
+    </div>
+</div>
+
+@code {
+    private string userName = "Admin";
+    private string subscriptionCount = "0";
+    private string productCount = "0";
+    private string adsCount = "0";
+
+    private DateTime FromDate = DateTime.Today.AddMonths(-2);
+    private DateTime ToDate = DateTime.Today;
+    private int dayRange => (ToDate - FromDate).Days;
+
+    private string joinedCount = "0";
+
+    private List<CategoryData>? categories;
+    private List<UserTypeData>? userTypesList;
+    private List<ViewDayData>? viewsCountList;
+    private List<ProductViewData>? productViewsList;
+    private List<OSData>? osViewsList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.GetUserAsync();
+        if (AuthService.User is not null && !string.IsNullOrEmpty(AuthService.User.DisplayName))
+        {
+            userName = AuthService.User.DisplayName;
+        }
+
+        subscriptionCount = (await DashboardService.SubscriptionCount()).ToString();
+        productCount = (await DashboardService.ProductsVerifiedCount()).ToString();
+        adsCount = (await DashboardService.AdsVerifiedCount()).ToString();
+        await LoadUserTypesData();
+        await LoadViewsCountData();
+        await LoadDashboardData((FromDate, ToDate));
+    }
+
+    private async Task LoadViewsCountData()
+    {
+        viewsCountList = await DashboardService.TotalViewsByWeekdays();
+        StateHasChanged();
+    }
+
+    private async Task LoadUserTypesData()
+    {
+        userTypesList = await DashboardService.UsersVerifiedCount();
+        if (userTypesList is null)
+        {
+            userTypesList = new List<UserTypeData>();
+        }
+        StateHasChanged();
+    }
+
+    // Based on Range of Date
+    private async Task LoadDashboardData((DateTime From, DateTime To) range)
+    {
+        FromDate = range.From;
+        ToDate = range.To;
+        int dayRange = (ToDate - FromDate).Days;
+        await LoadJoinedData();
+        await LoadCategoriesData();
+        await LoadProductViewsData();
+        await LoadOSViewsData();
+
+    }
+
+    private async Task LoadJoinedData()
+    {
+        joinedCount = dayRange > 0 ? (await DashboardService.LastDaysUserJoined(dayRange)).ToString() : "0";
+        StateHasChanged();
+    }
+
+    private async Task LoadCategoriesData()
+    {
+        categories = await DashboardService.TrendingCategory(dayRange, 30);
+        StateHasChanged();
+    }
+
+    private async Task LoadProductViewsData()
+    {
+        productViewsList = await DashboardService.AllProductsViewCount(dayRange);
+        if (productViewsList is null)
+        {
+            productViewsList = new List<ProductViewData>();
+        }
+        StateHasChanged();
+    }
+    
+    private async Task LoadOSViewsData()
+    {
+        osViewsList = await DashboardService.OSViewsCount(dayRange);
+        if (osViewsList is null)
+        {
+            osViewsList = new List<OSData>();
+        }
+        StateHasChanged();
+    }
+    // Console.WriteLine($"ViewCountByAge - {await DashboardService.ViewCountByAge()}");
+    // Console.WriteLine($"UserSubscriptionWillFinish - {await DashboardService.UserSubscriptionWillFinish(120)}");
+    // Console.WriteLine($"UserSubscriptionCountByPlan - {await DashboardService.UserSubscriptionCountByPlan()}");
+    // Console.WriteLine($"TrendingUserSubscriptionsCount - {await DashboardService.TrendingUserSubscriptionsCount(20)}");
+    // Console.WriteLine($"TrendingProductHistoryGetTop10 - {await DashboardService.TrendingProductHistoryGetTop10(20)}");
+    // Console.WriteLine($"TotalViewsByWeekdays - {await DashboardService.TotalViewsByWeekdays()}");
+    // Console.WriteLine($"TotaViewByRegister - {await DashboardService.TotaViewByRegister(50)}");
+    // Console.WriteLine($"TotalCostByPlan - {await DashboardService.TotalCostByPlan()}");
+    // Console.WriteLine($"TopUsersViewProducts - {await DashboardService.TopUsersViewProducts(20,10)}");
+    // Console.WriteLine($"TopRateProducts - {await DashboardService.TopRateProducts(10)}");
+    // Console.WriteLine($"ProductTotalView - {await DashboardService.ProductTotalView(3,20)}");
+    // Console.WriteLine($"ProductViewCountEveryDay - {await DashboardService.ProductViewCountEveryDay(20)}");
+    // Console.WriteLine($"PlatformsViewCount - {await DashboardService.PlatformsViewCount(60)}");
+    // Console.WriteLine($"OSViewsCount - {await DashboardService.OSViewsCount(60)}");
+    // Console.WriteLine($"LocationViewCount - {await DashboardService.LocationViewCount(120)}");
+    // Console.WriteLine($"LastMonthTotalViewByRegister - {await DashboardService.LastMonthTotalViewByRegister(3)}");
+    // Console.WriteLine($"IpAdressViewCount - {await DashboardService.IpAdressViewCount(120)}");
+    // Console.WriteLine($"CategoryViewSumByDays - {await DashboardService.CategoryViewSumByDays(120)}");
+    // Console.WriteLine($"BrowserViewsCount - {await DashboardService.BrowserViewsCount(120)}");
+}

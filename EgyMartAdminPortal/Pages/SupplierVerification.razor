@@ -1,0 +1,207 @@
+﻿@page "/supplier"
+@inject UserService UserService
+@inject LocalStorageService LocalStorage
+@inject ToastrService ToastService
+@inject IJSRuntime JSRuntime
+
+
+<PageTitle>Pending Supplier</PageTitle>
+<h3>Pending Supplier</h3>
+
+
+<div class="text-center">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+@if (!isLoading)
+{
+    @if (allItems.Count == 0)
+    {
+        <p class="text-center">@notFound</p>
+    }
+    else
+    {
+        <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <!-- Search Input -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control text-field" placeholder="Search by Display Name or User Name"
+                           @bind="searchTerm" @bind:event="oninput" @onkeyup="FilterSuppliers" />
+                    <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">Clear</button>
+                </div>
+            </div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>UserID</th>
+                    <th>Display Name</th>
+                    <th>User Name</th>
+                    <th>Registered Since</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in pagedItems)
+                {
+                    <tr id="user-@user.SupplierID" class="@(user.IsDeleted ? "slide-out" : "")">
+                        <td>@user.SupplierID</td>
+                        <td>@user.DisplayName</td>
+                        <td>@user.UserName</td>
+                        <td>@user.RegisterdSince</td>
+                        <td>
+                            <UserVerification UserID="@user.SupplierID" IsSupplier="true" VerificationStatus="@user.VerificationStatus"
+                                              VerifyUser="(status) => VerifyUserAsync(user.SupplierID, status)"
+                                              OnUserUpdated="@(() => HandleUserUpdate(user))" OnShowAttachment="@(() => ShowAttachement(user.UserID))" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination Component -->
+        <MPagination TItem="Supplier"
+                     Items="allItems"
+                     CurrentPage="@CurrentPage"
+                     PageSize="@PageSize"
+                     OnPageChanged="HandlePageChanged" />
+    }
+}
+
+@code {
+    private List<Supplier> allItems = new();
+    private List<Supplier> filteredItems = new();
+    private List<Supplier> pagedItems = new();
+    private string notFound = "No Pending Suppliers Found";
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private int CurrentPage = 1;
+    private int PageSize = 25;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetPendingVerifySuppliersAsync();
+    }
+
+    private async Task GetPendingVerifySuppliersAsync()
+    {
+        try
+        {
+            var response = await UserService.GetPendingVerifySuppliersAsync();
+            if (response.Success)
+            {
+                allItems = response.Data;
+                filteredItems = allItems;
+                isLoading = false;
+                UpdatePagedItems();
+            }
+            else
+            {
+                isLoading = false;
+                await ToastService.ShowErrorAsync(response.ResponseEngMsg);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private async Task<bool> VerifyUserAsync(long userId, short status)
+    {
+        var verifiedID = (await LocalStorage.GetItemAsync<Person>("userData"))!.UserID;
+        var user = allItems.FirstOrDefault(u => u.SupplierID == userId);
+        if (user == null)
+        {
+            await ToastService.ShowErrorAsync("User not found.");
+            return false;
+        }
+
+        var verified = status == 1 ? true : false;
+
+        var success = await UserService.VerifySupplierAsync(userId, verifiedID, verified);
+        if (success)
+        {
+            user.VerificationStatus = status;
+        }
+        return success;
+    }
+
+    private void HandleUserUpdate(Supplier user)
+    {
+        user.IsDeleted = true;
+        StateHasChanged();
+        Task.Delay(500).ContinueWith(_ =>
+        {
+            allItems.Remove(user);
+            FilterSuppliers();
+            UpdatePagedItems();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ShowAttachement(long supplierID)
+    {
+        try
+        {
+            var base64 = await UserService.DownloadSupplierAttachmentAsync(supplierID);
+
+            if (!string.IsNullOrEmpty(base64))
+            {
+                var dataUrl = $"data:application/pdf;base64,{base64}";
+                await JSRuntime.InvokeVoidAsync("open", dataUrl, "_blank");
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("No attachment found.", "Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync($"Error: {ex.Message}", "Exception");
+        }
+    }
+
+    private void FilterSuppliers()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredItems = allItems;
+        }
+        else
+        {
+            var search = searchTerm.ToLower();
+            filteredItems = allItems
+                .Where(u => u.DisplayName?.ToLower().Contains(search) == true ||
+                           u.UserName?.ToLower().Contains(search) == true)
+                .ToList();
+        }
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task ClearSearch()
+    {
+        searchTerm = "";
+        await Task.Run(() => FilterSuppliers());
+    }
+
+    private void UpdatePagedItems()
+    {
+        pagedItems = filteredItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+}

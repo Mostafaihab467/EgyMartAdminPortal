@@ -1,0 +1,99 @@
+@inject DashboardService DashboardService
+
+<div class="card shadow-sm p-4 h-100">
+    <div class="bg-white d-flex fs-6 fw-bold justify-content-between align-items-center mb-0 p-0 border-bottom-0">
+        <h6 class="mb-0 fw-bold">Top Selling Products</h6>
+        <div class="d-flex align-items-center gap-2">
+            <input type="number" class="form-control form-control-sm w-auto" min="1" max="120"
+                   @bind="PeriodMonths" @bind:event="onchange" title="Period (months)" aria-label="Period (months)" />
+            <DashboardExportMenu FileName="Top-Selling-Products.xlsx"
+                                 SheetName="Top Selling Products"
+                                 Rows="@ExportRows" />
+        </div>
+    </div>
+
+    <div class="card-body">
+        @if (products == null)
+        {
+            <p class="text-muted text-center">Loading...</p>
+        }
+        else if (!filteredProducts.Any())
+        {
+            <p class="text-muted text-center">No sales data available</p>
+        }
+        else
+        {
+            int index = 0;
+            string[] colors = new[] { "#FF9D23", "#990202", "#1E90FF", "#32CD32", "#FFD700", "#FF4500", "#8A2BE2", "#20B2AA", "#DC143C", "#FF69B4" };
+            @foreach (var product in filteredProducts)
+            {
+                string color = index < colors.Length ? colors[index] : "#aaa";
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold text-truncate me-2" title="@product.ProductName">@product.ProductName</span>
+                        <div class="text-end text-nowrap">
+                            <small class="text-muted">@product.Quantity sold</small>
+                            <strong class="ms-2">@product.Total.ToString("N2") EGP</strong>
+                        </div>
+                    </div>
+                    <div class="progress mt-1" style="height: 8px;">
+                        <div class="progress-bar"
+                             style="width: @(GetProgress(product.Total))%; background-color: @(color);">
+                        </div>
+                    </div>
+                </div>
+                index++;
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private int periodMonths = 3;
+
+    private int PeriodMonths
+    {
+        get => periodMonths;
+        set
+        {
+            if (periodMonths != value)
+            {
+                periodMonths = Math.Max(1, value);
+                _ = ReloadData();
+            }
+        }
+    }
+
+    private List<TopSellingProductData>? products;
+
+    private IEnumerable<TopSellingProductData> filteredProducts =>
+        (products ?? []).OrderByDescending(p => p.Total);
+
+    private IEnumerable<object> ExportRows => filteredProducts.Select(p => new
+    {
+        ProductId = p.ProductId,
+        ProductName = p.ProductName,
+        Price = p.Price,
+        Quantity = p.Quantity,
+        Total = p.Total
+    });
+
+    private decimal MaxTotal => filteredProducts.Any() ? filteredProducts.Max(p => p.Total) : 1;
+
+    private int GetProgress(decimal total) => MaxTotal > 0 ? (int)((total * 100) / MaxTotal) : 0;
+
+    protected override async Task OnInitializedAsync() => await ReloadData();
+
+    private async Task ReloadData()
+    {
+        try
+        {
+            products = await DashboardService.TopSellingProducts(periodMonths: periodMonths);
+        }
+        catch (Exception)
+        {
+            products = [];
+        }
+        StateHasChanged();
+    }
+}

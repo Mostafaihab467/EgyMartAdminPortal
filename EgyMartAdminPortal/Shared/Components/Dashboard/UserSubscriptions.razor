@@ -1,0 +1,225 @@
+﻿@inject HttpClient HttpClient
+@inject ToastrService ToastService
+@inject DashboardService DashboardService
+
+<style>
+    .scrolling-card {
+        max-height: 33.75rem;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .scrolling-card {
+        scrollbar-width: thin;
+        scrollbar-color: #990202 #f1f1f1;
+    }
+
+        .scrolling-card::-webkit-scrollbar {
+            width: var(--scrollbar-width, 10px);
+        }
+
+        .scrolling-card::-webkit-scrollbar-track {
+            background: var(--scrollbar-track-bg, #f1f1f1);
+            border-radius: 10px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .scrolling-card::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb-bg, #990202);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+
+            .scrolling-card::-webkit-scrollbar-thumb:hover {
+                background: var(--scrollbar-thumb-hover-bg, #990202);
+            }
+
+    .plan-section {
+        border: 1px solid #e9ecef;
+        padding: 1rem;
+        margin: 1rem auto;
+        background-color: #fff3f3;
+        border-radius: 0.5rem;
+    }
+
+        .plan-section:first-child {
+            margin-top: 0;
+        }
+
+        .plan-section:last-child {
+            border-bottom: none;
+        }
+
+    .horizontal-users {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .horizontal-users {
+        scrollbar-width: thin;
+        scrollbar-color: #990202 #f1f1f1;
+        
+    }
+
+        .horizontal-users::-webkit-scrollbar {
+            height: var(--scrollbar-height, 8px);
+        }
+
+        .horizontal-users::-webkit-scrollbar-track {
+            background: var(--scrollbar-track-bg, #dee2e6);
+            border-radius: 10px;
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .horizontal-users::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb-bg, #990202);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+
+            .horizontal-users::-webkit-scrollbar-thumb:hover {
+                background: var(--scrollbar-thumb-hover-bg, #990202);
+            }
+
+    .user-card {
+        flex: 0 0 auto;
+        max-width: 15%;
+        min-width: 120px; /* Ensure readability */
+        margin-right: 1rem;
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        background-color: #fff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+        .user-card:last-child {
+            margin-right: 0;
+        }
+
+    .urgent {
+        border: 2px solid #dc3545; /* Red border for end dates within 10 days */
+    }
+</style>
+
+<div class="row">
+    <div class="col-12 col-sm-6 col-md-6 col-lg-12 h-100">
+        <div class="card shadow-sm p-4">
+            <div class="bg-white d-flex fs-6 fw-bold justify-content-between align-items-center mb-0 p-0 border-bottom-0">
+                <h6 class="mb-2 fw-bold">Subscription Plans Overview</h6>
+                <DashboardExportMenu FileName="Subscription-Plans-Overview.xlsx"
+                                     SheetName="Subscription Plans"
+                                     Rows="@ExportRows" />
+            </div>
+            <div class="card-body scrolling-card">
+                @foreach (var plan in plans)
+                {
+                    <div class="plan-section">
+                        <div class="d-flex justify-content-between">
+                            <h6>Plan @plan.PlanTitle</h6>
+                            <div>
+                                <p class="fs-6"><strong>Subscribers:</strong> @expiringUsers.Where(u => u.PlanID == plan.PlanId).Count()</p>
+                                <p class="fs-6"><strong>Total Income:</strong> @plan.TotalCost.ToString("N2") EGP</p>
+                            </div>
+                        </div>
+                        @if (expiringUsers.Any(u => u.PlanID == plan.PlanId))
+                        {
+                            <div class="horizontal-users">
+                                @foreach (var user in expiringUsers.Where(u => u.PlanID == plan.PlanId).OrderBy(u => u.EndDate))
+                                {
+                                    <div class="user-card @(user.EndDate <= DateTime.Today.AddDays(10) ? "urgent" : "")">
+                                        <strong>@user.DisplayName</strong><br />
+                                        <small>Ends: @user.EndDate.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int daysRange { get; set; } = 480;
+    private List<PlanData> plans = new();
+    private List<UserSub> expiringUsers = new();
+    private IEnumerable<object> ExportRows => plans.Select(plan => new
+    {
+        PlanId = plan.PlanId,
+        PlanTitle = plan.PlanTitle,
+        Subscribers = expiringUsers.Count(user => user.PlanID == plan.PlanId),
+        TotalIncome = plan.TotalCost
+    });
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Fetch TotalCostByPlan
+            var totalCostResponse = await DashboardService.TotalCostByPlan();
+            if (totalCostResponse.Count == 0)
+            {
+                await ToastService.ShowErrorAsync("Failed to load total cost data.");
+                return;
+            }
+
+            // Fetch UserSubscriptionCountByPlan
+            var subscriptionCountResponse = await DashboardService.UserSubscriptionCountByPlan();
+            if (subscriptionCountResponse.Count == 0)
+            {
+                await ToastService.ShowErrorAsync("Failed to load subscription count data.");
+                return;
+            }
+
+            // Fetch UsersSubscriptionWillFinish
+            var expiringUsersResponse = await DashboardService.UserSubscriptionWillFinish(daysRange);
+            if (expiringUsersResponse.Count == 0)
+            {
+                await ToastService.ShowErrorAsync("Failed to load expiring users data.");
+                return;
+            }
+
+            // Combine data
+            var planCosts = totalCostResponse;
+            var planSubscriptions = subscriptionCountResponse;
+            expiringUsers = expiringUsersResponse;
+
+            // Map to PlanData
+            plans = planSubscriptions.Select(sub => new PlanData
+                {
+                    PlanId = sub.PlanId,
+                    PlanTitle = sub.PlanTitle,
+                    PlansCount = sub.PlansCount,
+                    TotalCost = planCosts.FirstOrDefault(c => c.PlanID == sub.PlanId)?.TotalCost ?? 0
+                }).ToList();
+
+            // Add plans with subscriptions but no cost
+            var missingPlans = planCosts.Where(c => !planSubscriptions.Any(s => s.PlanId == c.PlanID))
+                .Select(c => new PlanData
+                    {
+                        PlanId = c.PlanID,
+                        PlanTitle = $"Plan {c.PlanID}", // Default title if no subscription data
+                        PlansCount = 0,
+                        TotalCost = c.TotalCost
+                    });
+            plans.AddRange(missingPlans);
+
+            plans = plans.OrderBy(p => p.PlanId).ToList();
+            // isLoading = false;
+        }
+        catch (Exception)
+        {
+            // isLoading = false;
+        }
+    }
+}

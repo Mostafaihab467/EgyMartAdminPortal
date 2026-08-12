@@ -1,0 +1,128 @@
+﻿<div class="card shadow-sm p-4">
+    <div class="bg-white d-flex fs-6 fw-bold justify-content-between align-items-center mb-0 p-0 border-bottom-0">
+        <h6 class="mb-0 fw-bold">Trending Categories</h6>
+        <div class="d-flex">
+            @* <!-- Select Time Range --> *@
+            @* <select class="form-select form-select-sm w-auto" @bind="SelectedDays" @bind:event="onchange"> *@
+            @*     <option value="7">Week</option> *@
+            @*     <option value="30">Month</option> *@
+            @* </select> *@
+
+            <!-- Select Top N Categories -->
+            <select class="form-select form-select-sm w-auto" @bind="SelectedTop">
+                <option value="5">Top 5</option>
+                <option value="10">Top 10</option>
+            </select>
+            <DashboardExportMenu FileName="Trending-Categories.xlsx"
+                                 SheetName="Trending Categories"
+                                 Rows="@ExportRows" />
+        </div>
+    </div>
+
+    <div class="card-body">
+        @if (Categories == null)
+        {
+            <p class="text-muted text-center">Loading...</p>
+        }
+        else if (!filteredCategories.Any())
+        {
+            <p class="text-muted text-center">No trending categories available</p>
+        }
+        else
+        {
+            int index = 0;
+            string[] colors = new[] { "#FF9D23", "#990202", "#1E90FF", "#32CD32", "#FFD700", "#FF4500", "#8A2BE2", "#20B2AA", "#DC143C", "#FF69B4" };
+            @foreach (var category in filteredCategories)
+            {
+                string color = index < colors.Length ? colors[index] : "#aaa";
+                <div class="mb-3">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <!-- Category Title -->
+                        <span class="fw-semibold text-truncate me-2" style="width: 30%;">@category.CategoryTitle</span>
+
+                        <!-- Progress Bar Container -->
+                        <div class="progress flex-grow-1" style="height: 8px; max-width: 53%" role="progressbar"
+                        aria-label="Animated striped example" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated mt-0"
+                            style="width:@(category.CategoryViewCount.HasValue && MaxViewCount > 0
+            ? Math.Min((category.CategoryViewCount.Value * 100) / MaxViewCount, 300)
+            : 0)%;
+            background-color:@(color);">
+                            </div>
+                        </div>
+
+                        <!-- View Count -->
+                        <small class="text-muted ms-2 text-nowrap">@((category.CategoryViewCount ?? 0)) views</small>
+                    </div>
+                </div>
+                index++;
+            }
+        }
+    </div>
+</div>
+
+<style>
+    .card {
+    max-width: 100% !important;
+    }
+</style>
+
+@code {
+    [Parameter] public List<CategoryData>? Categories { get; set; }
+    [Parameter] public EventCallback<int> RefreshData { get; set; }
+
+    private int MaxViewCount => Categories?.Max(c => c.CategoryViewCount) ?? 1;
+
+    private int selectedDays = 30; 
+
+    private int SelectedDays
+    {
+        get => selectedDays;
+        set
+        {
+            if (selectedDays != value)
+            {
+                selectedDays = value;
+                _ = RefreshData.InvokeAsync(selectedDays);
+            }
+        }
+    }
+
+    private int selectedTop = 5; // Default to Top 5
+
+    private int SelectedTop
+    {
+        get => selectedTop;
+        set
+        {
+            if (selectedTop != value)
+            {
+                selectedTop = value;
+                UpdateFilteredCategories(); // Update the filtered list
+                StateHasChanged();
+            }
+        }
+    }
+
+
+    private IEnumerable<CategoryData> filteredCategories = Enumerable.Empty<CategoryData>();
+    private IEnumerable<object> ExportRows => filteredCategories.Select(category => new
+    {
+        CategoryId = category.CategoryID,
+        Category = category.CategoryTitle,
+        Views = category.CategoryViewCount ?? 0
+    });
+
+    protected override void OnParametersSet()
+    {
+        UpdateFilteredCategories();
+    }
+
+    private void UpdateFilteredCategories()
+    {
+        if (Categories != null)
+        {
+            filteredCategories = Categories.OrderByDescending(c => c.CategoryViewCount).Take(selectedTop).ToList();
+        }
+    }
+}

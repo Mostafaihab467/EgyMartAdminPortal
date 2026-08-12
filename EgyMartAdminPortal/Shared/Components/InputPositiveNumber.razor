@@ -1,0 +1,81 @@
+﻿<input type="text"
+       class="form-control w-100"
+       @bind="Value"
+       @ref="InputElement"
+       @oninput="OnInput"
+       @onkeydown="OnKeyDown"
+       @onkeydown:preventDefault="@PreventDefault"
+       @onkeyup="HandleKeyPress"
+       @onblur="SaveEdit" />
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyPress { get; set; }
+    [Parameter] public EventCallback OnBlur { get; set; }
+
+    private ElementReference InputElement;
+    private bool PreventDefault = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        PreventDefault = !IsAllowedKey(e.Key);
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        await OnKeyPress.InvokeAsync(e);
+    }
+
+    private async Task SaveEdit()
+    {
+        await OnBlur.InvokeAsync();
+    }
+
+    private static bool IsAllowedKey(string key)
+    {
+        return key switch
+        {
+            "Backspace" or "ArrowLeft" or "ArrowRight" or "Delete" or "Enter" or "Tab" => true,
+            _ => key.Length == 1 && char.IsDigit(key[0])
+        };
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            Value = 0;
+            await ValueChanged.InvokeAsync(Value);
+        }
+        else if (int.TryParse(input, out int newValue) && newValue >= 0)
+        {
+            Value = newValue;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+
+    public async Task FocusAsync()
+    {
+        await Task.Yield();
+        try
+        {
+            await InputElement.FocusAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FocusAsync] Failed to focus: {ex.Message}");
+        }
+    }
+}

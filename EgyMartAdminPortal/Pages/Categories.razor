@@ -1,0 +1,400 @@
+﻿@page "/category"
+@inject CategoryService CategoryService
+@inject ToastrService ToastService
+@inject NavigationManager Navigation
+
+
+
+<PageTitle>Product Categories</PageTitle>
+<h1>Product Categories</h1>
+<div class="mt-2">
+    <button class="btn btn-primary" @onclick="() => ShowPopup(0)"><i class="fas fa-plus-circle"></i> Add New</button>
+</div>
+
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateCategory" FormModel="newCategory">
+    <div class="form-group">
+        <label for="categoryTitle">Category Title</label>
+        <input type="text" class="form-control" id="categoryTitle" @bind="@newCategory.CategoryTitle" @ref="@itemRef" />
+        <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
+    </div>
+    @* <div class="form-group"> *@
+    @*     <label for="categoryImageURL">Category Image Class</label> *@
+    @*     <input type="text" class="form-control" id="categoryImageURL" @bind="newCategory.CategoryImageURL" /> *@
+    @*     <ValidationMessage For="@(() => newCategory.CategoryImageURL)" /> *@
+    @*     <small class="form-text text-muted">Example: "fas fa-user"</small> *@
+    @* </div> *@
+    <div class="form-group">
+        <label for="displayOrder">Display Order</label>
+        <InputPositiveNumber Value="@newCategory.DisplayOrder"
+        ValueChanged="@(value => { newCategory.DisplayOrder = value; StateHasChanged(); })" />
+        <ValidationMessage For="@(() => newCategory.DisplayOrder)" />
+    </div>
+</Popup>
+
+<div class="mt-3 text-center">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+@if (!isLoading)
+{
+    @if (allItems.Count == 0)
+    {
+        <p class="text-center">@notFound</p>
+    }
+    else
+    {
+        <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <table class="table accordion">
+            <thead>
+                <tr>
+                    <th scope="col">Category Icon</th>
+                    <th scope="col">CategoryTitle</th>
+                    <th scope="col">displayOrder</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in pagedItems)
+                {
+                    <tr>
+                        <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer" scope="row">
+                            <i class="fas fa-caret-right colored p-2 fs-6 @(expandedItems.Contains(item.CategoryID) ? "rotate-45" : "")" @onclick="() => ToggleChildItems(item.CategoryID)"></i>
+                            @* <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(item.CategoryImageURL), value)" InputType="faIcon" /> *@
+                            <div class="cursor-pointer w-75 d-inline-block">
+                                <i class="@item.CategoryImageURL fs-4"></i>
+                            </div>
+                        </td>
+                        <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="cursor-pointer">
+                            <EditableField T="string" Value="@item.CategoryTitle" ValueChanged="value => SaveEdit(item, nameof(item.CategoryTitle), value)" />
+                        </td>
+                        <td data-bs-toggle="collapse" data-bs-target="#@item.CategoryID" class="ps-5 cursor-pointer">
+                            <EditableField T="int" InputType="number" Value="@item.DisplayOrder" ValueChanged="@(value => SaveEdit(item, nameof(item.DisplayOrder), value))" />
+                        </td>
+                        <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(item.CategoryID, item.IsActive, true)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                            IndicatorType="BadgeIndicatorType.RoundedPill">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
+                        </td>
+                        <td>
+                            <Button class="btn btn-primary" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => ShowPopup(item.CategoryID)">
+                                <i class="fas fa-id-badge"></i>
+                            </Button>
+
+                            <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="item.CategoryID"
+                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                             {
+                                 { "CategoryImageURL", item.CategoryImageURL }
+                             })">
+                                <label for="pageTitle">Category Title</label>
+                                <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
+                                <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
+                            </TranslatePopup>
+                        </td>
+                    </tr>
+                    <tr class="collapse @(expandedItems.Contains(item.CategoryID) ? "show" : "")" id="@($"child-{item.CategoryID}")" data-bs-parent=".table">
+                        <td colspan="5">
+                            @if (childItems.ContainsKey(item.CategoryID) && childItems[item.CategoryID].Any())
+                            {
+                                <p>Child Categories: @childItems[item.CategoryID].Count</p>
+                                <table class="table childTable">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Category Icon</th>
+                                            <th scope="col">CategoryTitle</th>
+                                            <th scope="col">displayOrder</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var child in childItems[item.CategoryID])
+                                        {
+                                            <tr class="child">
+                                                <td>
+                                                    <i class="@child.CategoryImageURL cursor-pointer w-75 fs-4"></i>
+                                                    @* <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(child.CategoryImageURL), value)" InputType="faIcon" /> *@
+                                                </td>
+                                                <td>
+                                                    <EditableField T="string" Value="@child.CategoryTitle" ValueChanged="value => SaveEdit(child, nameof(child.CategoryTitle), value)" />
+                                                </td>
+                                                <td>
+                                                    <EditableField T="int" InputType="number" Value="@child.DisplayOrder" ValueChanged="value => SaveEdit(child, nameof(child.DisplayOrder), value)" />
+                                                </td>
+                                                <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(child.CategoryID, child.IsActive, false)">
+                                                    <Badge Class="@($"p-2 {(child.IsActive ? "btn-success" : "btn-danger")}")"
+                                                    IndicatorType="BadgeIndicatorType.RoundedPill">
+                                                        @(child.IsActive ? "Active" : "Not Active")
+                                                    </Badge>
+                                                </td>
+                                                <td>
+                                                    <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID"
+                                                    OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                                                 {
+                                                     { "CategoryImageURL", child.CategoryImageURL }
+                                                 })">
+                                                        <label for="pageTitle">Category Title</label>
+                                                        <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
+                                                        <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
+                                                    </TranslatePopup>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <p class="text-center">@notFound</p>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+<!-- Pagination Component -->
+<MPagination TItem="Category"
+Items="allItems"
+CurrentPage="@CurrentPage"
+PageSize="@PageSize"
+OnPageChanged="HandlePageChanged" />
+
+@code {
+    private List<Category> allItems = new();
+    private List<Category> pagedItems = new();
+    private Category newCategory = new();
+    public ElementReference itemRef;
+
+    private Dictionary<long, List<Category>> childItems = new();
+    private HashSet<long> expandedItems = new();
+
+    private string notFound = "No Categories Found";
+    private string popupTitle = "Add New Category";
+    private bool showPopup = false;
+    private bool isLoading = true;
+
+    private int CurrentPage = 1;
+    private int PageSize = 25;
+
+    private List<MenuItem> menuItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetCategoriesAsync();
+    }
+
+    private void ShowPopup(long ParentID)
+    {
+        showPopup = true;
+        newCategory = new Category();
+        newCategory.ParentID = ParentID;
+        StateHasChanged();
+        Task.Delay(100).ContinueWith(async _ => await itemRef.FocusAsync());
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            showPopup = false;
+            await CreateCategory();
+        }
+        else if (e.Key == "Escape")
+        {
+            showPopup = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CreateCategory()
+    {
+        newCategory.LangID = 1;
+        newCategory.CategoryImageURL = "-";
+        var response = await CategoryService.CreateAsync(newCategory);
+        if (response.IsSuccessStatusCode)
+        {
+            if (!expandedItems.Contains(newCategory.ParentID))
+            {
+                expandedItems.Add(newCategory.ParentID);
+            }
+            await ToastService.ShowSuccessAsync("Category Created Successfully", "Success");
+
+            if (newCategory.ParentID == 0)
+            {
+                await GetCategoriesAsync();
+            }
+            else
+            {
+                await GetChildCategories(newCategory.ParentID);
+            }
+            showPopup = false;
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error While Creating New Category", "Error");
+        }
+    }
+
+    private async Task GetCategoriesAsync()
+    {
+        var response = await CategoryService.GetAsync();
+        if (response.Count != 0)
+        {
+            allItems = response;
+            isLoading = false;
+            CurrentPage = 1;
+            UpdatePagedItems();
+        }
+        else
+        {
+            isLoading = false;
+            await ToastService.ShowErrorAsync("Error While Getting Categories", "Error");
+        }
+    }
+
+    private async Task GetChildCategories(long categoryID)
+    {
+        var response = await CategoryService.GetChildAsync(categoryID);
+        if (response.Success)
+        {
+
+            childItems[categoryID] = response.Data.Any() ? response.Data : new List<Category>(); // ✅ Ensure key exists
+        }
+        else
+        {
+            notFound = "No Child Categories Found";
+            childItems[categoryID] = new List<Category>();
+        }
+        // ✅ Ensure UI updates
+        StateHasChanged();
+    }
+
+    private async Task ToggleChildItems(long categoryID)
+    {
+        showPopup = false;
+        if (expandedItems.Contains(categoryID))
+        {
+            expandedItems.Remove(categoryID);
+            childItems.Remove(categoryID); // ✅ Collapse: Remove child data
+        }
+        else
+        {
+            expandedItems.Add(categoryID);
+            await GetChildCategories(categoryID);
+        }
+
+        // Trigger UI refresh
+        StateHasChanged();
+    }
+
+    private async Task ToggleStatus(long itemID, bool currentStatus, bool isParent)
+    {
+        showPopup = false;
+        var item = isParent
+            ? allItems.FirstOrDefault(i => i.CategoryID == itemID)
+            : childItems.Values.SelectMany(list => list).FirstOrDefault(i => i.CategoryID == itemID);
+
+        if (item == null)
+        {
+            await ToastService.ShowErrorAsync("Item not found", "Error");
+            return;
+        }
+
+        item.IsActive = !currentStatus;
+        var response = await CategoryService.ChangeStatusAsync(itemID, item.IsActive);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            item.IsActive = currentStatus;
+            await ToastService.ShowErrorAsync("Error updating status", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SaveEdit(Category item, string fieldName, object newValue)
+    {
+        showPopup = false;
+
+        var property = typeof(Category).GetProperty(fieldName);
+        if (property == null) return;
+
+        var currentValue = property.GetValue(item);
+
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+
+        if (fieldName == nameof(Category.CategoryTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Category Title is empty", "Validation Error");
+            return;
+        }
+        if (fieldName == nameof(Category.CategoryImageURL) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Category Icon is empty", "Validation Error");
+            return;
+        }
+
+        if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
+        {
+            property.SetValue(item, intValue);
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            property.SetValue(item, newValue!.ToString());
+        }
+
+        var response = await CategoryService.EditAsync(item);
+        if (response.IsSuccessStatusCode)
+        {
+            await ToastService.ShowSuccessAsync("Update successful", "Success");
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error updating item", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private void UpdatePagedItems()
+    {
+        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        showPopup = false;
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task Refresh()
+    {
+        showPopup = false;
+        await ToastService.ShowSuccessAsync("Category translation completed!", "Success");
+    }
+}

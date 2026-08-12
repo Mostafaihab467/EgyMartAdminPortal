@@ -1,0 +1,7 @@
+﻿.childTable tbody td.child i {
+    color: var(--secondary-color);
+}
+
+    .childTable tbody td.child:hover i {
+        color: var(--primary-color);
+    }

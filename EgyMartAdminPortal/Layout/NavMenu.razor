@@ -1,0 +1,118 @@
+﻿<div class="sidebar @SidebarCssClass">
+    <div class="sidebar-header">
+        <div class="px-2 py-3 d-flex justify-content-center gap-2">
+            <span>
+                <a class="navbar-brand" href="">
+                    @(IsNavCollapsed ? "" : "Admin Portal")
+                </a>
+            </span>
+            <button class="btn btn-sm" @onclick="ToggleSidebar">
+                <i class="fas @(IsNavCollapsed ? "fa-chevron-right" : "fa-chevron-left")"></i>
+            </button>
+        </div>
+    </div>
+    <nav class="nav flex-column">
+        @foreach (var parent in NavItems.Where(n => n.ParentID == 0))
+        {
+            <div class="nav-item px-2">
+                @if (NavItems.Any(n => n.ParentID == parent.ID))
+                {
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle tooltip-container"
+                           aria-expanded="@(openDropdown == parent.ID ? "true" : "false")"
+                           @onclick="() => ToggleDropdown(parent.ID)">
+                            <i class="fas fa-@parent.IconName font-medium-3 @(IsNavCollapsed ? "" : "pe-2")"></i>
+                            @if (!IsNavCollapsed)
+                            {
+                                <span>@parent.Text</span>
+                            }
+                            else
+                            {
+                                <span class="tooltip-text">@parent.Text</span>
+                            }
+                        </a>
+                        <div class="collapse @(openDropdown == parent.ID ? "show" : "hidden")" id="@($"collapse-{parent.ID}")">
+                            @foreach (var child in NavItems.Where(n => n.ParentID == parent.ID))
+                            {
+                                <NavLink class="nav-link nav-side ms-3 tooltip-container" href="@child.Href" Match="NavLinkMatch.All">
+                                    <i class="fas fa-@child.IconName font-medium-3 @(IsNavCollapsed ? "" : "pe-2")"></i>
+                                    @if (!IsNavCollapsed)
+                                    {
+                                        <span>@child.Text</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="tooltip-text">@child.Text</span>
+                                    }
+                                </NavLink>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <NavLink class="nav-link nav-side tooltip-container" href="@parent.Href" Match="NavLinkMatch.All">
+                        <i class="fas fa-@parent.IconName font-medium-3 @(IsNavCollapsed ? "" : "pe-2")"></i>
+                        @if (!IsNavCollapsed)
+                        {
+                            <span>@parent.Text</span>
+                        }
+                        else
+                        {
+                            <span class="tooltip-text">@parent.Text</span>
+                        }
+                    </NavLink>
+                }
+            </div>
+        }
+    </nav>
+</div>
+
+
+@code {
+    private bool IsNavCollapsed = false;
+    private string SidebarCssClass => IsNavCollapsed ? "sidebar-collapsed" : "sidebar-expanded";
+    private int? openDropdown;
+
+    protected override void OnInitialized()
+    {
+        // Open the first dropdown with children by default
+        openDropdown = NavItems.FirstOrDefault(n => NavItems.Any(c => c.ParentID == n.ID))?.ID;
+    }
+
+    private void ToggleSidebar()
+    {
+        IsNavCollapsed = !IsNavCollapsed;
+    }
+
+    private void ToggleDropdown(int parentId)
+    {
+        openDropdown = (openDropdown == parentId) ? null : parentId;
+    }
+
+    private List<MNavItem> NavItems = new()
+    {
+        new MNavItem { ID = 1, Href = "/", IconName = "home", Text = "Dashboard", ParentID = 0 },
+        new MNavItem { ID = 2, Href = "contact-us", IconName = "address-book", Text = "Contact Us Page", ParentID = 0 },
+        new MNavItem { ID = 3, Href = "user-management", IconName = "users-rectangle", Text = "User Managment", ParentID = 0 },
+
+        // Account Management (Parent)
+        new MNavItem { ID = 4, Href = "", IconName = "user", Text = "Pending Account", ParentID = 0 },
+        new MNavItem { ID = 5, Href = "supplier", IconName = "user-clock", Text = " Supplier", ParentID = 4 },
+        new MNavItem { ID = 6, Href = "customer", IconName = "user-cog", Text = "Customer", ParentID = 4 },
+
+        new MNavItem { ID = 7, Href = "attributes", IconName = "circle-nodes", Text = "Attributes", ParentID = 0 },
+        new MNavItem { ID = 8, Href = "category", IconName = "list-alt", Text = "Product Categories", ParentID = 0 },
+        new MNavItem { ID = 9, Href = "ads-subscriptions", IconName = "ad", Text = "Ads Subscriptions", ParentID = 0 },
+        new MNavItem { ID = 10, Href = "subscribtions", IconName = "wallet", Text = "News List Subscriptions", ParentID = 0 },
+
+        // CMS (Parent)
+        new MNavItem { ID = 11, Href = "", IconName = "newspaper", Text = "CMS", ParentID = 0 },
+        new MNavItem { ID = 12, Href = "social-media", IconName = "bezier-curve", Text = "Social Media", ParentID = 11 },
+        new MNavItem { ID = 13, Href = "header-menu", IconName = "newspaper", Text = "Header Menu", ParentID = 11 },
+        new MNavItem { ID = 14, Href = "slider-menu", IconName = "sliders-h", Text = "Slider", ParentID = 11 },
+        new MNavItem { ID = 15, Href = "footer", IconName = "minus", Text = "Footer", ParentID = 11 },
+        new MNavItem { ID = 16, Href = "pages", IconName = "pager", Text = "Pages", ParentID = 11 },
+        new MNavItem { ID = 17, Href = "faqs", IconName = "question-circle", Text = "FAQs", ParentID = 11 },
+    };
+}

@@ -1,0 +1,328 @@
+﻿@inject AttributeService AttributeService
+@inject ToastrService ToastService
+
+<Button Color="ButtonColor.Primary" TooltipTitle="Link To Category"
+        TooltipPlacement="TooltipPlacement.Top"
+        @onclick="() => isPopupVisible = true">
+    <i class="fa-solid fa-link"></i>
+</Button>
+
+@if (isPopupVisible)
+{
+    <div class="modal fade show d-block" @onkeydown="HandleKeyPress" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Category</h5>
+                    <button type="button" class="btn-close" @onclick="ClosePopup"></button>
+                </div>
+                <div class="modal-body">
+                    @if (isLoading)
+                    {
+                        <p>Loading categories...</p>
+                    }
+                    else if (categories.Any())
+                    {
+                        <ul class="tree">
+                            @foreach (var topLevelCategory in groupedCategories[0].OrderBy(c => c.DisplayOrder))
+                            {
+                                <li class="tree-node">
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (groupedCategories.ContainsKey(topLevelCategory.CategoryID))
+                                        {
+                                            <span class="tree-toggle" @onclick="() => ToggleExpand(topLevelCategory.CategoryID)">
+                                                @(expandedCategories.Contains(topLevelCategory.CategoryID) ? "−" : "+")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span style="width: 1.5rem; display: inline-block;"></span>
+                                        }
+                                        <input type="checkbox" id="cat_@topLevelCategory.CategoryID"
+                                               checked="@linkedCategories.Contains(topLevelCategory.CategoryID)"
+                                               @onchange="async (_) => await ToggleCategory(topLevelCategory.CategoryID, topLevelCategory.LinkID)" />
+                                        <label for="cat_@topLevelCategory.CategoryID">
+                                            <strong>@topLevelCategory.CategoryTitle</strong>
+                                            <small class="text-muted"> (ID: @topLevelCategory.CategoryID)</small>
+                                        </label>
+                                    </div>
+                                    @if (groupedCategories.ContainsKey(topLevelCategory.CategoryID) && expandedCategories.Contains(topLevelCategory.CategoryID))
+                                    {
+                                        <ul class="tree-children mt-2 ms-4">
+                                            @foreach (var childCategory in groupedCategories[topLevelCategory.CategoryID].OrderBy(c => c.DisplayOrder))
+                                            {
+                                                <li class="tree-node">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        @if (groupedCategories.ContainsKey(childCategory.CategoryID))
+                                                        {
+                                                            <span class="tree-toggle" @onclick="() => ToggleExpand(childCategory.CategoryID)">
+                                                                @(expandedCategories.Contains(childCategory.CategoryID) ? "−" : "+")
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span style="width: 1.5rem; display: inline-block;"></span>
+                                                        }
+                                                        <input type="checkbox" id="cat_@childCategory.CategoryID"
+                                                               checked="@linkedCategories.Contains(childCategory.CategoryID)"
+                                                               @onchange="async (_) => await ToggleCategory(childCategory.CategoryID, childCategory.LinkID)" />
+                                                        <label for="cat_@childCategory.CategoryID">
+                                                            @childCategory.CategoryTitle
+                                                            <small class="text-muted"> (ID: @childCategory.CategoryID)</small>
+                                                        </label>
+                                                    </div>
+                                                    @if (groupedCategories.ContainsKey(childCategory.CategoryID) && expandedCategories.Contains(childCategory.CategoryID))
+                                                    {
+                                                        <ul class="tree-children mt-2 ms-4">
+                                                            @RenderChildCategories(childCategory.CategoryID)
+                                                        </ul>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p>No categories available.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ClosePopup">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .tree {
+        list-style: none;
+        padding: 0;
+    }
+
+    .tree-node {
+        margin: 0.5rem 0;
+    }
+
+        .tree-node label {
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+    .tree-toggle {
+        cursor: pointer;
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+
+        .tree-toggle:hover {
+            background-color: #f0f0f0;
+            border-radius: 50%;
+        }
+
+    .tree-children {
+        margin-left: 1.5rem;
+    }
+
+    .tree input[type="checkbox"] {
+        transform: scale(1.2);
+    }
+</style>
+
+@code {
+    private bool isPopupVisible = false;
+    private bool isLoading = false;
+    private bool isFirstLoad = false;
+    private List<LinksAC> categories = new();
+    private Dictionary<long, List<LinksAC>> groupedCategories = new();
+    private HashSet<long> linkedCategories = new();
+    private HashSet<long> expandedCategories = new();
+
+    [Parameter] public long AttributeID { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (isPopupVisible && !isFirstLoad)
+        {
+            isFirstLoad = true;
+            isLoading = true;
+            await LoadCategories();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            var result = await AttributeService.GetLinkMatrixAsync(AttributeID);
+            categories = result?.OrderBy(c => c.DisplayOrder).ToList() ?? new List<LinksAC>();
+
+            groupedCategories = categories
+                .GroupBy(c => c.ParentID)
+                .ToDictionary(g => g.Key, g => g.OrderBy(c => c.DisplayOrder).ToList());
+
+            if (!groupedCategories.ContainsKey(0))
+            {
+                groupedCategories[0] = new List<LinksAC>();
+            }
+
+            linkedCategories = categories
+                .Where(c => c.LinkID.HasValue)
+                .Select(c => c.CategoryID)
+                .ToHashSet();
+
+            foreach (var category in categories)
+            {
+                expandedCategories.Add(category.CategoryID);
+            }
+        }
+        catch
+        {
+            await ToastService.ShowErrorAsync("Failed to load categories.", "Error");
+        }
+
+        isLoading = false;
+    }
+
+    private void ToggleExpand(long categoryId)
+    {
+        if (expandedCategories.Contains(categoryId))
+        {
+            expandedCategories.Remove(categoryId);
+        }
+        else
+        {
+            expandedCategories.Add(categoryId);
+        }
+        StateHasChanged();
+    }
+
+    private async Task ToggleCategory(long categoryId, long? linkID)
+    {
+        bool isLinked = linkedCategories.Contains(categoryId);
+        var category = categories.FirstOrDefault(c => c.CategoryID == categoryId);
+
+        if (category == null)
+            return;
+
+        if (isLinked && linkID != null)
+        {
+            var response = await AttributeService.DeleteLinkAsync(linkID);
+
+            if (response.Success)
+            {
+                linkedCategories.Remove(categoryId);
+                category.LinkID = null;
+                await ToastService.ShowSuccessAsync("Link removed successfully.", "Unlinked");
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("Failed to remove link.", "Error");
+            }
+        }
+        else
+        {
+            var response = await AttributeService.SetLinkAsync(AttributeID, categoryId);
+
+            if (response.Success)
+            {
+                linkedCategories.Add(categoryId);
+                await LoadCategories();
+                await ToastService.ShowSuccessAsync("Link added successfully.", "Linked");
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("Failed to add link.", "Error");
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private void ClosePopup()
+    {
+        isPopupVisible = false;
+        isFirstLoad = false;
+        StateHasChanged();
+    }
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            ClosePopup();
+        }
+    }
+
+    private RenderFragment RenderChildCategories(long parentId) => builder =>
+    {
+        if (!groupedCategories.ContainsKey(parentId))
+            return;
+
+        foreach (var childCategory in groupedCategories[parentId].OrderBy(c => c.DisplayOrder))
+        {
+            bool hasChildren = groupedCategories.ContainsKey(childCategory.CategoryID);
+
+            builder.OpenElement(0, "li");
+            builder.AddAttribute(1, "class", "tree-node");
+            builder.OpenElement(2, "div");
+            builder.AddAttribute(3, "class", "d-flex align-items-center gap-2");
+
+            // Toggle button for categories with children
+            if (hasChildren)
+            {
+                builder.OpenElement(4, "span");
+                builder.AddAttribute(5, "class", "tree-toggle");
+                builder.AddAttribute(6, "onclick", EventCallback.Factory.Create(this, () => ToggleExpand(childCategory.CategoryID)));
+                builder.AddContent(7, expandedCategories.Contains(childCategory.CategoryID) ? "−" : "+");
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.OpenElement(8, "span");
+                builder.AddAttribute(9, "style", "width: 1.5rem; display: inline-block;");
+                builder.CloseElement();
+            }
+
+            // Checkbox and label
+            builder.OpenElement(10, "input");
+            builder.AddAttribute(11, "type", "checkbox");
+            builder.AddAttribute(12, "id", $"cat_{childCategory.CategoryID}");
+            builder.AddAttribute(13, "checked", linkedCategories.Contains(childCategory.CategoryID));
+            builder.AddAttribute(14, "onchange", EventCallback.Factory.Create(this, async () => await ToggleCategory(childCategory.CategoryID, childCategory.LinkID)));
+            builder.CloseElement();
+
+            builder.OpenElement(15, "label");
+            builder.AddAttribute(16, "for", $"cat_{childCategory.CategoryID}");
+            builder.AddContent(17, childCategory.CategoryTitle);
+            builder.OpenElement(18, "small");
+            builder.AddAttribute(19, "class", "text-muted ms-1");
+            builder.AddContent(20, $" (ID: {childCategory.CategoryID})");
+            builder.CloseElement();
+            builder.CloseElement();
+            builder.CloseElement(); // div
+
+            // Render nested children if expanded
+            if (hasChildren && expandedCategories.Contains(childCategory.CategoryID))
+            {
+                builder.OpenElement(21, "ul");
+                builder.AddAttribute(22, "class", "tree-children mt-2 ms-4");
+                builder.AddContent(23, RenderChildCategories(childCategory.CategoryID));
+                builder.CloseElement();
+            }
+
+            builder.CloseElement(); // li
+        }
+    };
+}

@@ -1,0 +1,369 @@
+﻿@page "/ads-subscriptions"
+
+@inject NavigationManager NavigationManager
+@inject SubscriptionService SubscriptionService
+@inject ToastrService ToastService
+
+<PageTitle>Ads Subscriptions</PageTitle>
+<h1>Ads Subscriptions</h1>
+<div class="mt-2">
+    <button class="btn btn-primary" @onclick="() => ShowPopup(false, 0)"><i class="fas fa-plus-circle"></i> Add New</button>
+</div>
+
+<Popup IsVisible="showPopup" Title="@popupTitle" OnSave="CreateEditAdvertising" FormModel="newItem">
+    <div class="form-group">
+        <label for="planTitle">Plan Title</label>
+        <input type="text" class="form-control" id="planTitle" @bind="newItem.PlanTitle" @ref="itemRef" />
+        <ValidationMessage For="@(() => newItem.PlanTitle)" />
+    </div>
+    <div class="form-group">
+        <label for="planLocation">Plan Location</label>
+        <select class="form-control" id="planLocation" @bind="newItem.LocationID">
+            <option value="0" disabled selected>Select Plan Location</option>
+            @foreach (var location in locations)
+            {
+                <option value="@location.AdsLocationID">@location.AdsLocationTitle</option>
+            }
+        </select>
+        <ValidationMessage For="@(() => newItem.LocationID)" />
+    </div>
+    <div class="form-group">
+        <label for="durationDays">Duration Per Day</label>
+        <input type="number" class="form-control" id="durationDays" @bind="newItem.DurationDays" />
+        <ValidationMessage For="@(() => newItem.DurationDays)" />
+    </div>
+    <div class="form-group">
+        <label for="costBefore">Cost Before</label>
+        <input type="number" class="form-control" id="costBefore" @bind="newItem.CostBefore" />
+        <ValidationMessage For="@(() => newItem.CostBefore)" />
+    </div>
+    <div class="form-group">
+        <label for="cost">Cost</label>
+        <input type="number" class="form-control" id="cost" @bind="newItem.Cost" />
+        <ValidationMessage For="@(() => newItem.Cost)" />
+    </div>
+    <div class="form-group">
+        <label for="planDescription">Plan Description</label>
+        <textarea class="form-control" id="planDescription" @bind="@newItem.PlanDescription" Rows="3"></textarea>
+    </div>
+</Popup>
+
+
+<div class="mt-3 text-center">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+
+@if (!isLoading)
+{
+    @if (allItems.Count == 0)
+    {
+        <p class="text-center">@notFound</p>
+    }
+    else
+    {
+        <PageSelect PageSize="@PageSize" Count="@allItems.Count" OnPageSizeChanged="HandlePageSizeChanged"></PageSelect>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>PlanTitle</th>
+                    <th>AdsLocationTitle</th>
+                    <th>PlanDescription</th>
+                    <th>DurationDays</th>
+                    <th>Cost Before</th>
+                    <th>Cost</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in pagedItems)
+                {
+                    <tr id="ad-@item.AdsPlanID">
+                        <td>@item.PlanTitle</td>
+                        <td>@item.AdsLocationTitle</td>
+                        <td>@item.PlanDescription</td>
+                        <td>@item.DurationDays</td>
+                        <td>@item.CostBefore</td>
+                        <td>@item.Cost</td>
+                        <td class="cursor-pointer" style="width: 5%;" @onclick="() => ToggleStatus(item.AdsPlanID, item.IsActive)">
+                            <Badge Class="@($"p-2 {(item.IsActive ? "btn-success" : "btn-danger")}")"
+                            IndicatorType="BadgeIndicatorType.RoundedPill"
+                            @onclick="() => ToggleStatus(item.AdsPlanID, item.IsActive)">
+                                @(item.IsActive ? "Active" : "Not Active")
+                            </Badge>
+                        </td>
+                        <td style="width: 8%;">
+                            <Button class="btn btn-primary" TooltipTitle="Edit" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Edit" @onclick="() => ShowPopup(true, item.AdsPlanID)"><i class="fas fa-edit"></i></Button>
+                            <TranslatePopup Item="@newItem" Service="SubscriptionService" BaseID="item.AdsPlanID"
+                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object> { { "AdsLocationTitle", item.AdsLocationTitle } })">
+                                <label for="planTitle">Plan Title</label>
+                                <input id="planTitle" class="form-control" @bind="@newItem.PlanTitle" />
+                                <ValidationMessage For="@(() => newItem.PlanTitle)" />
+
+                                <label for="planDescription" class="mt-2">Plan Description</label>
+                                <textarea id="planDescription" class="form-control" @bind="@newItem.PlanDescription"></textarea>
+                                <ValidationMessage For="@(() => newItem.PlanDescription)" />
+                            </TranslatePopup>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <!-- Pagination Component -->
+    <MPagination TItem="Subscription"
+    Items="allItems"
+    CurrentPage="@CurrentPage"
+    PageSize="@PageSize"
+    OnPageChanged="HandlePageChanged" />
+}
+
+@code {
+    private List<Subscription> allItems = new();
+    private List<Subscription> pagedItems = new();
+    private Subscription newItem = new();
+    private List<AdsLocation> locations = new();
+
+    public ElementReference itemRef;
+
+    private string notFound = "No Advertising Plans Found";
+    private string popupTitle = "Add New Plan";
+    private bool showPopup = false;
+    private bool isEdit = false;
+    private bool isLoading = true;
+
+    private int CurrentPage = 1;
+    private int PageSize = 25;
+
+    private async Task ShowPopup(bool editMode, long ID)
+    {
+        isEdit = editMode;
+        showPopup = true;
+        popupTitle = editMode ? "Edit Plan" : "Add New Plan";
+        var item = allItems.FirstOrDefault(a => a.AdsPlanID == ID);
+        newItem = editMode
+    ? new Subscription
+        {
+            AdsPlanID = item?.AdsPlanID ?? 0,
+            PlanTitle = item?.PlanTitle,
+            AdsLocationTitle = item?.AdsLocationTitle,
+            PlanDescription = item?.PlanDescription,
+            CostBefore = item?.CostBefore ?? 0,
+            Cost = item?.Cost ?? 0,
+            DurationDays = item?.DurationDays ?? 0,
+            LocationID = item?.LocationID ?? 0,
+            IsActive = item?.IsActive ?? false,
+            LangID = item?.LangID ?? 1,
+            BaseID = item?.BaseID ?? 0
+        }
+    : new Subscription();
+
+        StateHasChanged();
+        await Task.Delay(100);
+        await itemRef.FocusAsync();
+        if (ID == 0)
+        {
+            newItem.BaseID = 0;
+            newItem.LangID = 1;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetSubscriptionsAsync();
+        await GetAdsLocationsAsync();
+    }
+
+    private async Task CreateEditAdvertising()
+    {
+        if (newItem.CostBefore > 0)
+        {
+            if (newItem.Cost >= newItem.CostBefore)
+            {
+                await ToastService.ShowErrorAsync("Cost must be less than Cost Before.");
+                return;
+            }
+        }
+        if (newItem.DurationDays <= 0)
+        {
+            await ToastService.ShowErrorAsync("Duration Days must be bigger than 0.");
+            return;
+        }
+        if (newItem.AdsPlanID == 0)
+        {
+            if (string.IsNullOrEmpty(newItem.PlanTitle))
+            {
+                await ToastService.ShowErrorAsync("Plan Title is empty.");
+            }
+            var response = await SubscriptionService.CreateAsync(newItem);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await ToastService.ShowSuccessAsync("Plan Created Successfully", "Success");
+                showPopup = false;
+                await GetSubscriptionsAsync();
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("Error While Creating New Category", "Error");
+            }
+        }
+        else
+        {
+            var response = await SubscriptionService.EditAsync(newItem);
+            if (response.IsSuccessStatusCode)
+            {
+                // Find and update the existing item only after success
+                var existing = allItems.FirstOrDefault(a => a.AdsPlanID == newItem.AdsPlanID);
+                if (existing is not null)
+                {
+                    existing.PlanTitle = newItem.PlanTitle;
+                    existing.PlanDescription = newItem.PlanDescription;
+                    existing.DurationDays = newItem.DurationDays;
+                    existing.CostBefore = newItem.CostBefore;
+                    existing.Cost = newItem.Cost;
+                    existing.LocationID = newItem.LocationID;
+                    existing.AdsLocationTitle = locations.FirstOrDefault(x => x.AdsLocationID == newItem.LocationID)?.AdsLocationTitle ?? "";
+                }
+
+                await ToastService.ShowSuccessAsync("Plan Updated Successfully", "Success");
+                showPopup = false;
+                UpdatePagedItems(); // To reflect changes in the paged view
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync("Error While Updating Plan", "Error");
+            }
+        }
+    }
+
+    private async Task GetAdsLocationsAsync()
+    {
+        if (locations != null && locations.Count > 0)
+            return;
+        try
+        {
+            var response = await SubscriptionService.GetLocationsAsync();
+            if (response.Success)
+            {
+                locations = response.Data;
+                StateHasChanged();
+            }
+            else await ToastService.ShowErrorAsync(response.ResponseEngMsg);
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private async Task GetSubscriptionsAsync()
+    {
+        try
+        {
+            var response = await SubscriptionService.GetSubscriptionsAsync();
+            if (response.Success)
+            {
+                allItems = response.Data;
+                isLoading = false;
+                UpdatePagedItems();
+                showPopup = false;
+                StateHasChanged();
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync(response.ResponseEngMsg);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private async Task ToggleStatus(long itemID, bool currentStatus)
+    {
+
+        showPopup = false;
+        var item = allItems.FirstOrDefault(i => i.AdsPlanID == itemID);
+        if (item == null)
+        {
+            await ToastService.ShowErrorAsync("Item not found", "Error");
+            return;
+        }
+
+        var newStatus = !currentStatus;
+        var response = await SubscriptionService.ChangeStatusAsync(itemID, newStatus);
+
+        if (response.Success)
+        {
+            item.IsActive = newStatus;
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync("Error updating status", "Error");
+        }
+
+        StateHasChanged();
+    }
+
+    private void PrepareTranslation(Subscription newItem, Subscription item)
+    {
+        newItem.AdsLocationTitle = item.AdsLocationTitle;
+
+
+        newItem = new Subscription
+            {
+                AdsPlanID = newItem.AdsPlanID,
+                PlanTitle = newItem.PlanTitle,
+                AdsLocationTitle = newItem.AdsLocationTitle, // Force rebind
+                PlanDescription = newItem.PlanDescription,
+                CostBefore = newItem.CostBefore,
+                Cost = newItem.Cost,
+                DurationDays = newItem.DurationDays,
+                LocationID = newItem.LocationID,
+                LangID = newItem.LangID
+            };
+
+        StateHasChanged();
+    }
+
+    private void OnLocationChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int locationId))
+        {
+            newItem.LocationID = locationId;
+
+            var selectedLocation = locations.FirstOrDefault(loc => loc.AdsLocationID == locationId);
+        }
+    }
+
+    private void UpdatePagedItems()
+    {
+        showPopup = false;
+        pagedItems = allItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedItems();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        showPopup = false;
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedItems();
+    }
+
+    private async Task Refresh()
+    {
+        showPopup = false;
+        await ToastService.ShowSuccessAsync("Page translation completed!", "Success");
+    }
+}

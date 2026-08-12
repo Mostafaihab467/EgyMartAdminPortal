@@ -1,0 +1,15 @@
+﻿<RadzenHtmlEditor @bind-Value="content" Style="height: 400px;" />
+
+<RadzenButton Text="Show HTML Output" Click="@ShowHtml" Style="margin-top: 10px;" />
+
+<h4>HTML Output:</h4>
+<div>@content</div>
+
+@code {
+    private string content = "<p>Hello <strong>Radzen</strong>!</p>";
+
+    private void ShowHtml()
+    {
+        // 'content' already has the HTML from editor
+    }
+}

@@ -1,0 +1,21 @@
+﻿.table thead th {
+    text-transform: capitalize;
+}
+
+@keyframes slideOutLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+}
+
+.slide-out {
+    animation: slideOutLeft 0.5s ease-out forwards;
+}
+
+

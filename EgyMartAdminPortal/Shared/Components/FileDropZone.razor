@@ -1,0 +1,161 @@
+﻿@inject IJSRuntime JSRuntime
+
+@if (!InputFile)
+{
+    <div class="mt-0" @onclick="ToggleInputFile">
+        <img src="@Image" alt="Uploaded Image" class="img-thumbnail" width="150" style="cursor: pointer;" />
+    </div>
+}
+else
+{
+    <div class="container text-center my-2 position-relative" tabindex="0"
+         @ondragover="HandleDragOver"
+         @ondragleave="HandleDragLeave"
+         @ondrop="HandleDrop">
+        @if (CloseIcon)
+        {
+            <Button class="position-absolute top-0 end-0 m-2 me-4"
+                    Color="ButtonColor.Primary"
+                    TooltipTitle="Close"
+                    Outline="true"
+                    TooltipPlacement="TooltipPlacement.Top"
+                    @onclick="CloseInput">
+                <i class="fa-solid fa-xmark"></i>
+            </Button>
+        }
+
+        <label class="border border-primary border-2 rounded-3 p-4 bg-light d-block"
+               style="max-width: 400px; margin: auto; cursor: pointer; @dragStyle"
+               @ondrop="HandleDrop"
+               @ondragover="HandleDragOver"
+               @ondragleave="HandleDragLeave">
+            <InputFile OnChange="OnInputFileChange"
+                       class="d-none"
+                       accept=".png, .jpg, .jpeg"
+                       id="fileUploadImage" />
+
+            @if (!string.IsNullOrEmpty(Image))
+            {
+                <img src="@Image" alt="Uploaded Image" class="img-thumbnail mb-2" width="150" />
+            }
+
+            <div class="d-flex flex-column align-items-center">
+                <i class="bi bi-cloud-upload display-4 text-dark"></i>
+                <p class="mb-1">Click to upload or drag and drop</p>
+            </div>
+
+            <span class="text-muted small">@fileName</span>
+        </label>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="text-danger mt-2">@errorMessage</div>
+        }
+
+        @if (isUploading)
+        {
+            <div class="mt-3">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         role="progressbar"
+                         style="width: @uploadProgress%;">
+                        @uploadProgress%
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public EventCallback<string> OnImageUploaded { get; set; }
+    [Parameter] public bool InputFile { get; set; } = false;
+    [Parameter] public string? Image { get; set; } = string.Empty;
+    [Parameter] public bool CloseIcon { get; set; } = false;
+
+    private string fileName = "No Files Selected";
+    private string errorMessage = string.Empty;
+    private bool isUploading = false;
+    private int uploadProgress = 0;
+    private string dragStyle = string.Empty;
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        fileName = file.Name;
+        errorMessage = string.Empty;
+
+        string[] allowedExtensions = { ".png", ".jpg", ".jpeg" };
+        string fileExtension = Path.GetExtension(file.Name).ToLower();
+
+        if (!allowedExtensions.Contains(fileExtension))
+        {
+            errorMessage = "Invalid file type. Please upload a .png, .jpg, or .jpeg file.";
+            StateHasChanged();
+            return;
+        }
+
+        isUploading = true;
+        uploadProgress = 0;
+        StateHasChanged();
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 25 * 1024 * 1024);
+        var buffer = new byte[file.Size];
+        int totalBytes = (int)file.Size;
+        int bytesRead = 0;
+
+        while (bytesRead < totalBytes)
+        {
+            int read = await stream.ReadAsync(buffer, bytesRead, Math.Min(1024 * 100, totalBytes - bytesRead));
+            bytesRead += read;
+            uploadProgress = (int)((double)bytesRead / totalBytes * 100);
+            StateHasChanged();
+            await Task.Delay(30);
+        }
+
+        string base64String = Convert.ToBase64String(buffer);
+        Image = $"data:{file.ContentType};base64,{base64String}";
+        isUploading = false;
+
+        await OnImageUploaded.InvokeAsync(Image);
+        StateHasChanged();
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        e.DataTransfer.DropEffect = "copy";
+        dragStyle = "background-color: #e9ecef; border-color: #0d6efd;";
+        StateHasChanged();
+    }
+
+    private void HandleDragLeave(DragEventArgs e)
+    {
+        dragStyle = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        dragStyle = string.Empty;
+        StateHasChanged();
+
+        // Trigger the file input programmatically
+        await JSRuntime.InvokeVoidAsync("triggerFileInput", "fileUploadImage");
+    }
+
+    private async Task TriggerFileInput()
+    {
+        await JSRuntime.InvokeVoidAsync("triggerFileInput", "fileUploadImage");
+    }
+
+    private void ToggleInputFile()
+    {
+        InputFile = true;
+    }
+
+    private void CloseInput()
+    {
+        InputFile = false;
+        StateHasChanged();
+    }
+}

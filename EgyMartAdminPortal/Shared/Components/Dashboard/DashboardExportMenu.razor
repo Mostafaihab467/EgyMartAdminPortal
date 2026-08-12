@@ -1,0 +1,49 @@
+@inject IJSRuntime JSRuntime
+
+<div class="dropdown dashboard-export-menu">
+    <button class="btn btn-link btn-sm text-muted p-0 dashboard-export-button"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            title="Export">
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+            <button class="dropdown-item" type="button" @onclick="ExportToExcel">
+                <i class="fa-solid fa-file-excel me-2"></i>Export Excel
+            </button>
+        </li>
+    </ul>
+</div>
+
+@code {
+    [Parameter] public string FileName { get; set; } = "Dashboard.xlsx";
+    [Parameter] public string SheetName { get; set; } = "Dashboard";
+    [Parameter] public IEnumerable<object>? Rows { get; set; }
+
+    private async Task ExportToExcel()
+    {
+        await JSRuntime.InvokeVoidAsync("exportToExcel", FileName, Rows ?? Enumerable.Empty<object>(), SheetName);
+    }
+}
+
+<style>
+    .dashboard-export-menu {
+        position: relative;
+        z-index: 2;
+    }
+
+    .dashboard-export-button {
+        width: 1.75rem;
+        height: 1.75rem;
+        line-height: 1;
+    }
+
+    .dashboard-export-button:hover,
+    .dashboard-export-button:focus {
+        color: #990202 !important;
+        background-color: rgba(153, 2, 2, 0.08);
+        border-radius: 50%;
+    }
+</style>

@@ -1,0 +1,79 @@
+﻿<div class="card shadow-sm p-3" style="max-width: 220px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold">Select Date Range</h6>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold mb-0 px-2">@CurrentMonth.ToString("MMM yyyy")</h6>
+        <div class="mx-2">
+            <button class="btn btn-sm btn-light" @onclick="PrevMonth">❮</button>
+            <button class="btn btn-sm btn-light" @onclick="NextMonth">❯</button>
+        </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid">
+            @foreach (var day in DaysOfWeek)
+            {
+                <span class="day-header">@day</span>
+            }
+
+            @for (int i = 0; i < StartDayOffset; i++)
+            {
+                <span class="empty-day"></span>
+            }
+
+        @foreach (var day in DaysInMonth)
+        {
+            bool isStart = day.Date == FromDate.Date;
+            bool isEnd = day.Date == ToDate.Date;
+            bool isInRange = day.Date > FromDate.Date && day.Date < ToDate.Date;
+
+            <span class="calendar-day
+                        @(isStart ? "start" : "")
+                        @(isEnd ? "end" : "")
+                        @(isInRange ? "in-range" : "")"
+                  @onclick="() => SelectDate(day)">
+                @day.Day
+            </span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public DateTime FromDate { get; set; } = DateTime.Today.AddDays(-7);
+    [Parameter] public DateTime ToDate { get; set; } = DateTime.Today;
+    [Parameter] public EventCallback<(DateTime From, DateTime To)> OnDateRangeChanged { get; set; }
+
+    private DateTime CurrentMonth = DateTime.Today;
+    private string[] DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" };
+    private bool isSelectingStart = true;
+
+    private List<DateTime> DaysInMonth => Enumerable.Range(1, DateTime.DaysInMonth(CurrentMonth.Year, CurrentMonth.Month))
+        .Select(day => new DateTime(CurrentMonth.Year, CurrentMonth.Month, day)).ToList();
+
+    private int StartDayOffset => (int)(new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1).DayOfWeek + 6) % 7;
+
+    private async Task SelectDate(DateTime selectedDay)
+    {
+        if (isSelectingStart)
+        {
+            FromDate = selectedDay;
+            ToDate = selectedDay;
+            isSelectingStart = false;
+        }
+        else
+        {
+            ToDate = selectedDay;
+            if (FromDate > ToDate)
+            {
+                (FromDate, ToDate) = (ToDate, FromDate); // Swap if needed
+            }
+            isSelectingStart = true;
+
+            await OnDateRangeChanged.InvokeAsync((FromDate, ToDate));
+        }
+    }
+
+    private void PrevMonth() => CurrentMonth = CurrentMonth.AddMonths(-1);
+    private void NextMonth() => CurrentMonth = CurrentMonth.AddMonths(1);
+}
