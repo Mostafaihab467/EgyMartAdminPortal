@@ -1,0 +1,27 @@
+/* Category tree (scoped to CategoryTreeNode): depth indent follows the layout
+   direction via logical properties (right side in RTL, left side in LTR),
+   plus a vertical guide linking each nested level to its parent. */
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.rotate-45 {
+    transform: rotate(45deg);
+    transition: transform 0.15s ease-in-out;
+}
+
+.tree-cell {
+    display: flex;
+    align-items: center;
+}
+
+.tree-guide {
+    border-inline-start: 2px solid #dee2e6;
+    padding-inline-start: 0.5rem;
+    border-radius: 1px;
+}
+
+tr.tree-row:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
