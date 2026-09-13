@@ -13,3 +13,7 @@
 **/appsettings.json
 **/appsettings.*.json
 !**/appsettings.Example.json
+
+# Ignore user-specific / editor files
+*.user
+.vscode/
