@@ -11,18 +11,16 @@
 @code {
     [Parameter] public int Value { get; set; }
     [Parameter] public EventCallback<int> ValueChanged { get; set; }
-    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyPress { get; set; } // New event parameter
-    [Parameter] public EventCallback OnBlur { get; set; } // New event parameter
+    [Parameter] public EventCallback<KeyboardEventArgs> OnKeyPress { get; set; }
+    [Parameter] public EventCallback OnBlur { get; set; }
 
     private ElementReference InputElement;
     private bool PreventDefault = false;
-    private bool _isRendered = false; // Ensure ElementReference is valid after render
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _isRendered = true;
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -47,25 +45,37 @@
         return key switch
         {
             "Backspace" or "ArrowLeft" or "ArrowRight" or "Delete" or "Enter" or "Tab" => true,
-            _ => key.Length == 1 && char.IsDigit(key[0]) // Only allow digits (0-9)
+            _ => key.Length == 1 && char.IsDigit(key[0])
         };
     }
 
     private async Task OnInput(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int newValue) && newValue >= 0)
+        var input = e.Value?.ToString() ?? "";
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            Value = 0;
+            await ValueChanged.InvokeAsync(Value);
+        }
+        else if (int.TryParse(input, out int newValue) && newValue >= 0)
         {
             Value = newValue;
-            await ValueChanged.InvokeAsync(newValue);
+            await ValueChanged.InvokeAsync(Value);
         }
     }
 
+
     public async Task FocusAsync()
     {
-        if (_isRendered)
+        await Task.Yield();
+        try
         {
-            await Task.Delay(50); // Ensure DOM is ready
             await InputElement.FocusAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FocusAsync] Failed to focus: {ex.Message}");
         }
     }
 }

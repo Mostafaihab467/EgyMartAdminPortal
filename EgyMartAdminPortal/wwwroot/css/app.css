@@ -25,7 +25,7 @@ body {
     color: var(--primary-color);
 }
 
-.w-2{
+.w-2 {
     width: 2%;
 }
 
@@ -57,6 +57,10 @@ body {
     color: var(--primary-color);
 }
 
+.text-field::placeholder {
+    color: #c86161 !important;
+}
+
 .form-control:disabled {
     color: var(--nav-item-color);
 }
@@ -79,7 +83,7 @@ button {
 }
 
     button:hover {
-/*        background-color: var(--secondary-color);*/
+        /*        background-color: var(--secondary-color);*/
     }
 
 textarea.form-control {
@@ -357,7 +361,7 @@ code {
 
 .childTable tbody tr.child {
     /*    background-color: #ffffff;*/
-/*    transition: background 0.3s ease-in-out;*/
+    /*    transition: background 0.3s ease-in-out;*/
 }
 
 .childTable i {
@@ -409,13 +413,13 @@ code {
     display: none;
 }
 
-.dropdown .collapse.show {
-    display: block;
-}
+    .dropdown .collapse.show {
+        display: block;
+    }
 
-.dropdown .collapse.hidden {
-    display: none;
-}
+    .dropdown .collapse.hidden {
+        display: none;
+    }
 
 .sidebar-collapsed .nav-link span {
     display: block;
@@ -472,12 +476,18 @@ code {
     font-size: 12px;
     padding: 2px 6px;
 }
+
     .btn-sm:hover {
         color: var(--primary-color);
         background-color: var(--background-primary-color);
     }
+
 .m-model {
     max-width: 50rem !important;
+}
+
+.tr-model {
+    max-width: 85rem !important;
 }
 
 /* wwwroot/css/app.css */
@@ -537,4 +547,41 @@ code {
 
 .border-primary {
     border-color: var(--primary-color) !important
+}
+
+.user-type-badge {
+    display: inline-block;
+    overflow-wrap: break-word;
+    text-align: center;
+}
+
+.m-c {
+    margin-left: 68% !important;
+    min-width: fit-content;
+}
+
+.contact-us-banner {
+    background-image: url('/images/contact-us.png');
+    background-size: cover;
+    background-position: center;
+    height: 350px;
+    border-radius: 8px;
+}
+
+.icon-box {
+    display: inline-block;
+    padding: 10px 12px;
+    background-color: var(--primary-color); /* Bootstrap primary color or any you prefer */
+    border-radius: 6px;
+}
+
+    .icon-box i {
+        color: white;
+        font-size: 1.2rem;
+    }
+
+.rz-html-editor {
+    height: auto;
+    min-height: auto !important;
+    max-width: 55rem !important;
 }

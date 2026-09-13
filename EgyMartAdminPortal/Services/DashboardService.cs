@@ -1,22 +1,17 @@
 ﻿using EgyMartAdminPortal.Models;
 using EgyMartAdminPortal.Models.Dashoard;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace EgyMartAdminPortal.Services
 {
     public class DashboardService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "reporting/api/v1/Reporting/AdminDashboard";
+        protected string ApiUrl = "reporting/api/v2/Reporting/AdminDashboard";
         //01
         public async Task<List<AgeData>> ViewCountByAge()
         {
-            Console.WriteLine($"Requesting: {ApiUrl}/ViewCountByAge");
-
             var response = await _httpClient.GetFromJsonAsync<ApiAgeResponse>($"{ApiUrl}/ViewCountByAge");
-
-            Console.WriteLine($"Response: {JsonSerializer.Serialize(response)}");
 
             return response?.Data ?? [];
         }

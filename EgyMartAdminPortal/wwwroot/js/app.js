@@ -1,8 +1,17 @@
-﻿window.triggerClick = (element) => {
+﻿window.triggerFileInput = (elementId) => {
+    const element = document.getElementById(elementId);
     if (element) {
         element.click();
-    } else {
-        console.error("Invalid element reference passed to triggerClick:", element);
+    }
+};
+
+window.blazorDragDrop = {
+    preventDefault: function (elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.addEventListener('dragover', function (e) {
+            e.preventDefault();
+        }, false);
     }
 };
 
@@ -18,55 +27,24 @@ window.sessionStorageHelper = {
     }
 };
 
+window.localStorageHelper = {
+    getItem: function (key) {
+        return localStorage.getItem(key);
+    },
+    setItem: function (key, value) {
+        localStorage.setItem(key, value);
+    },
+    removeItem: function (key) {
+        localStorage.removeItem(key);
+    }
+};
+
+
 window.focusElement = (element) => {
     if (element) {
         element.focus();
     }
 };
-
-
-window.CKEditorInterop = {
-    init: (editorId, dotNetRef) => {
-        ClassicEditor
-            .create(document.querySelector(`#${editorId}`), {
-                extraPlugins: [MyCustomUploadAdapterPlugin],
-                toolbar: [
-                    'undo', 'redo', '|',
-                    'bold', 'italic', '|',
-                    'heading', '|',
-                    'link', 'blockQuote', '|',
-                    'bulletedList', 'numberedList', '|',
-                    'indent', 'outdent', '|',
-                    'insertTable'
-                ],
-            })
-            .then(editor => {
-                window[editorId] = editor;
-                editor.editing.view.focus();
-                let editableElement = editor.ui.view.editable.element;
-
-                // Ensure correct width on initialization
-                editableElement.style.width = '100%';
-                editableElement.style.maxWidth = '50rem';
-
-                editor.model.document.on('change:data', () => {
-                    dotNetRef.invokeMethodAsync('EditorDataChanged', editor.getData());
-                });
-            })
-            .catch(error => {
-                console.error('CKEditor error:', error);
-            });
-    },
-    getData: function (id) {
-        return window[id] ? window[id].getData() : '';
-    },
-    destroy: function (id) {
-        if (window[id]) {
-            window[id].destroy().then(() => delete window[id]);
-        }
-    }
-};
-
 
 window.getActiveElementTag = () => {
     return document.activeElement.tagName.toLowerCase();
@@ -107,6 +85,23 @@ function MyCustomUploadAdapterPlugin(editor) {
         return new MyUploadAdapter(loader);
     };
 }
+
+window.scrollContent = {
+    scrollVertical: function (elementSelector, direction) {
+        const element = document.querySelector(elementSelector);
+        if (element) {
+            const scrollAmount = direction === 'up' ? -100 : 100; // Adjust scroll amount as needed
+            element.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        }
+    },
+    scrollHorizontal: function (elementSelector, direction) {
+        const element = document.querySelector(elementSelector);
+        if (element) {
+            const scrollAmount = direction === 'left' ? -150 : 150; // Adjust for user card width
+            element.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
+};
 
 class MyUploadAdapter {
     constructor(loader) {
@@ -169,3 +164,90 @@ function handleImageError(imageElement) {
             imageElement.src = "images/avatars/user.jpg"; // Fallback image on error
         });
 }
+
+window.cryptoHelper = {
+    async signRequest(userEmail, endpoint, plainText, ivBase64) {
+        function getMyKey(userEmail, endpoint) {
+            const originalKey = "NlOd2ZNXdgDdz0k?vQP@sFWOXBOGp4)1";
+            const normalize = str => str.replace(/[^a-zA-Z0-9]/g, '');
+            const getDayIndex = () => {
+                const today = new Date();
+                const day = today.getDate();
+                const month = today.getMonth() + 1;
+                return month === 1 ? day : ((month - 1) * 30) + day;
+            };
+
+            //let key = normalize(userEmail) + normalize(endpoint) + getDayIndex().toString(); // no toLowerCase
+            let key = normalize(userEmail) + normalize(endpoint.split('/').pop()) + getDayIndex().toString(); // no toLowerCase
+            if (key.length < 32) {
+                key += originalKey.substring(0, 32 - key.length);
+            } else {
+                key = key.substring(0, 32);
+            }
+            return key;
+        }
+
+        const keyText = getMyKey(userEmail, endpoint);
+        const enc = new TextEncoder();
+        const keyBytes = enc.encode(keyText);
+        const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
+        const messageBytes = enc.encode(plainText);
+        const cryptoKey = await crypto.subtle.importKey(
+            "raw",
+            keyBytes,
+            { name: "AES-CBC" },
+            false,
+            ["encrypt"]
+        );
+
+        const encrypted = await crypto.subtle.encrypt(
+            { name: "AES-CBC", iv: iv },
+            cryptoKey,
+            messageBytes
+        );
+        return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+    }
+};
+
+window.sessionTimeout = {
+    registerActivity: function (dotNetHelper) {
+        const events = ['mousemove', 'keydown', 'click', 'touchstart'];
+
+        const resetInactivity = () => {
+            dotNetHelper.invokeMethodAsync('ResetInactivityTimer');
+        };
+
+        const onVisibilityChange = () => {
+            dotNetHelper.invokeMethodAsync('OnVisibilityChange', document.visibilityState);
+        };
+
+        events.forEach(event =>
+            document.addEventListener(event, resetInactivity)
+        );
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+    },
+
+    getCurrentUrl: function () {
+        return window.location.href;
+    }
+};
+
+window.initializeMap = (lat, lng, dotNetHelper) => {
+    const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: lat, lng: lng },
+        zoom: 12,
+    });
+
+    const marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        draggable: true,
+    });
+
+    marker.addListener("dragend", function (event) {
+        const newLat = event.latLng.lat();
+        const newLng = event.latLng.lng();
+        dotNetHelper.invokeMethodAsync("UpdateCoordinates", newLat, newLng);
+    });
+};

@@ -3,7 +3,8 @@
 
 <li class="nav-item dropdown dropdown-language">
     <div class="dropdown">
-        <a class="nav-link dropdown-toggle" id="dropdownFlag" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        @* <a class="nav-link dropdown-toggle" id="dropdownFlag" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> *@
+        <a class="nav-link dropdown-toggle" style="cursor: default !important; color: #212529 !important;" id="dropdownFlag">
             <i class="@SelectedLanguage?.FlagClass"></i>
             <span class="selected-language">@SelectedLanguage?.LangTitle</span>
         </a>
@@ -19,7 +20,6 @@
         @* </ul> *@
     </div>
 </li>
-
 @code {
     private List<Language> Languages { get; set; } = new();
     private Language? SelectedLanguage { get; set; }

@@ -6,12 +6,12 @@ namespace EgyMartAdminPortal.Services
     public class CategoryService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "products/api/v1/CategoryList";
+        protected string ApiUrl = "products/api/jpt/v2/CategoryList";
         public async Task<List<Category>> GetAsync()
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=1");
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetTopLevel?LangID=1&RepType=0");
 
                 if (response == null || response.Data == null)
                     return [];
@@ -21,12 +21,12 @@ namespace EgyMartAdminPortal.Services
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 Console.WriteLine("API returned 404 - Resource not found.");
-                return []; // Return an empty list instead of throwing an error
+                return [];
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred: {ex.Message}");
-                return []; // Handle other errors gracefully
+                return [];
             }
         }
         public string GetTranslateApiUrl()
@@ -35,7 +35,7 @@ namespace EgyMartAdminPortal.Services
         }
         public async Task<ApiResponse<List<Category>>> GetChildAsync(long categoryID)
         {
-            var response = await _httpClient.GetAsync($"{ApiUrl}/GetChild/{categoryID}/0");
+            var response = await _httpClient.GetAsync($"{ApiUrl}/GetChild/{categoryID}/0/1");
 
             if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
             {

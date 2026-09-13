@@ -1,33 +1,47 @@
 ﻿using EgyMartAdminPortal.Models;
-using System;
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
-using static System.Net.WebRequestMethods;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class UserService(HttpClient httpClient)
+    public class UserService(HttpClient httpClient, LocalStorageService localStorageService)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "auth/api/v1/";
+        private readonly LocalStorageService _localStorageService = localStorageService;
+        protected string ApiUrl = "auth/api/v2/";
         private async Task<ApiResponse<List<T>>> FetchPendingUsersAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<T>>>($"{ApiUrl}Auth/{endpoint}");
             return response!;
         }
-        private async Task<bool> VerifyUserAsync(string userType, long userId, int status)
+
+        private async Task<bool> VerifyUserAsync(string userType, long userId, long verifiedID, bool? status = null)
         {
             var userParam = (userType == "Supplier") ? "userID" : "customerID";
-            var response =await _httpClient.PutAsync($"{ApiUrl}Auth/{userType}/Verify?{userParam}={userId}&verifiedID={status}", null);
+            var statusParam = (status.HasValue) ? $"&status={(status.Value ? 1 : 2)}" : string.Empty;
+
+            var url = $"{ApiUrl}Auth/{userType}/Verify?{userParam}={userId}&verifiedID={verifiedID}{statusParam}";
+
+            var response = await _httpClient.PutAsync(url, null);
             return response.IsSuccessStatusCode;
         }
 
         public async Task<ApiResponse<List<Supplier>>> GetPendingVerifySuppliersAsync() => await FetchPendingUsersAsync<Supplier>("PendingVerifySuppliers/Get");
         public async Task<ApiResponse<List<Customer>>> GetPendingVerifyCustomersAsync() => await FetchPendingUsersAsync<Customer>("PendingVerifyCustomer/Get");
 
-        public async Task<bool> VerifySupplierAsync(long supplierId, int status) => await VerifyUserAsync("Supplier", supplierId, status);
-        public async Task<bool> VerifyCustomerAsync(long customerId, int status) => await VerifyUserAsync("Customer", customerId, status);
+        public async Task<bool> VerifySupplierAsync(long supplierId, long verifiedID, bool status) =>
+    await VerifyUserAsync("Supplier", supplierId, verifiedID, status);
+
+        public async Task<bool> VerifyCustomerAsync(long customerId, long verifiedID) =>
+            await VerifyUserAsync("Customer", customerId, verifiedID);
+
+        public async Task<long> GetUserIdAsync()
+        {
+            return (await _localStorageService.GetItemAsync<Person>("userData"))!.UserID;
+        }
 
         public async Task<ApiResponse<CreateUserResult>> CreateUserAsync(Person request)
         {
@@ -46,7 +60,6 @@ namespace EgyMartAdminPortal.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<ApiResponse<CreateUserResult>>();
-                    Console.WriteLine(result!.Data.UserId);
                     return result ?? new ApiResponse<CreateUserResult> { Success = false, ResponseEngMsg = "Empty response from server." };
                 }
                 else
@@ -86,6 +99,31 @@ namespace EgyMartAdminPortal.Services
             }
         }
 
+        public async Task<List<UserTypeWithCount>> GetAdminTypesAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<UserTypeWithCount>>>(
+                    $"{ApiUrl}UsersManagment/Types/GetSome");
+
+                if (response != null && response.Success)
+                    return response.Data;
+
+                return new List<UserTypeWithCount>(); // or throw error
+            }
+            catch (Exception ex)
+            {
+                // Optionally log or rethrow
+                throw new ApplicationException("Error fetching user types", ex);
+            }
+        }
+
+        public async Task<string> GetUserTypeTitleByIdAsync(int id)
+        {
+            var types = (await GetUsersTypesAsync()).Data;
+            return types.FirstOrDefault(t => t.UserTypeID == id)?.UserTypeTitle ?? "Unknown";
+        }
+
         public async Task<ApiResponse<List<Person>>> GetListByTypeAsync(int typeID, int pageNumber = 1, int sizePerPage = 50)
         {
             try
@@ -103,16 +141,12 @@ namespace EgyMartAdminPortal.Services
                         {
                             if (person.VerificationStatus == null)
                             {
-                                person.VerificationStatus = 0; // Set default value if null
+                                person.VerificationStatus = 0;
                             }
-                            if(person.ProfileImage == null)
+                            if (person.ProfileImage == null)
                             {
                                 person.ProfileImage = $"images/avatars/user.jpg";
                             }
-                            //if (!person.ProfileImage!.StartsWith("https://"))
-                            //{
-                            //    person.ProfileImage = $"https://api.egyptbigmart.com:5051/Uploads/ProfileImgs/{person.ProfileImage}";
-                            //}
                         }
                     }
                     return result ?? new ApiResponse<List<Person>> { Success = false, ResponseEngMsg = "Empty response from server." };
@@ -180,9 +214,50 @@ namespace EgyMartAdminPortal.Services
             }
         }
 
+        public async Task<bool> ResetLoginFailAsync(string userName)
+        {
+            try
+            {
+                var payload = new { userName };
+                var content = new StringContent(
+                    JsonSerializer.Serialize(payload),
+                    Encoding.UTF8,
+                    "application/json");
+
+                var response = await _httpClient.PutAsync($"{ApiUrl}Auth/FailCounter/Reset", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[ResetLoginFailAsync] HTTP error: {response.StatusCode}");
+                    return false;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
+
+                if (result == null)
+                {
+                    Console.WriteLine("[ResetLoginFailAsync] Failed to deserialize response.");
+                    return false;
+                }
+
+                if (!result.Success)
+                {
+                    Console.WriteLine($"[ResetLoginFailAsync] API responded with failure: {result.ResponseEngMsg}");
+                }
+
+                return result.Data == 0 ? false : true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ResetLoginFailAsync] Exception: {ex.Message}");
+                return false;
+            }
+        }
+
+
         public async Task<string?> DownloadSupplierAttachmentAsync(long OwnerID)
         {
-            var response = await _httpClient.GetAsync($"cms/api/v1/CompanyProfile/download_verficationFilePDf/{OwnerID}");
+            var response = await _httpClient.GetAsync($"cms/api/jpt/v2/CompanyProfile/download_verficationFilePDf/{OwnerID}");
 
             if (response.IsSuccessStatusCode)
             {
@@ -206,5 +281,6 @@ namespace EgyMartAdminPortal.Services
 
             throw new Exception("Failed to download attachment");
         }
+
     }
 }

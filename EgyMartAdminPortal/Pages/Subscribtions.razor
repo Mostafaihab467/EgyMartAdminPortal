@@ -24,7 +24,7 @@
 
             <ValidationMessage For="@(() => endDate)" class="text-danger" />
         </div>
-        <Button class="btn btn-primary" Type="ButtonType.Submit" TooltipTitle="Fetch Subscriptions" TooltipPlacement="TooltipPlacement.Top">
+        <Button class="btn btn-primary" Type="BlazorBootstrap.ButtonType.Submit" TooltipTitle="Fetch Subscriptions" TooltipPlacement="TooltipPlacement.Top">
             <i class="fas fa-filter"></i>
         </Button>
     </div>
@@ -98,7 +98,7 @@
     private List<Subscribtion> pagedItems = new();
 
     private bool isLoading = false;
-    private string notFound = "No subscribtions Found";
+    private string notFound = "There are no subscribers yet. Please choose a longer period.";
     private int CurrentPage = 1;
     private int PageSize = 25;
 

@@ -93,25 +93,26 @@
     private List<MNavItem> NavItems = new()
     {
         new MNavItem { ID = 1, Href = "/", IconName = "home", Text = "Dashboard", ParentID = 0 },
-        new MNavItem { ID = 1, Href = "/user-management", IconName = "users-rectangle", Text = "User Managment", ParentID = 0 },
+        new MNavItem { ID = 2, Href = "contact-us", IconName = "address-book", Text = "Contact Us Page", ParentID = 0 },
+        new MNavItem { ID = 3, Href = "user-management", IconName = "users-rectangle", Text = "User Managment", ParentID = 0 },
 
         // Account Management (Parent)
-        new MNavItem { ID = 2, Href = "", IconName = "user", Text = "Pending Account", ParentID = 0 },
-        new MNavItem { ID = 3, Href = "supplier", IconName = "user-clock", Text = " Supplier", ParentID = 2 },
-        new MNavItem { ID = 4, Href = "customer", IconName = "user-cog", Text = "Customer", ParentID = 2 },
+        new MNavItem { ID = 4, Href = "", IconName = "user", Text = "Pending Account", ParentID = 0 },
+        new MNavItem { ID = 5, Href = "supplier", IconName = "user-clock", Text = " Supplier", ParentID = 4 },
+        new MNavItem { ID = 6, Href = "customer", IconName = "user-cog", Text = "Customer", ParentID = 4 },
 
-        new MNavItem { ID = 5, Href = "attributes", IconName = "circle-nodes", Text = "Attributes", ParentID = 0 },
-        new MNavItem { ID = 5, Href = "category", IconName = "list-alt", Text = "Product Categories", ParentID = 0 },
-        new MNavItem { ID = 6, Href = "ads-subscriptions", IconName = "ad", Text = "Ads Subscriptions", ParentID = 0 },
-        new MNavItem { ID = 7, Href = "subscribtions", IconName = "wallet", Text = "News List Subscriptions", ParentID = 0 },
+        new MNavItem { ID = 7, Href = "attributes", IconName = "circle-nodes", Text = "Attributes", ParentID = 0 },
+        new MNavItem { ID = 8, Href = "category", IconName = "list-alt", Text = "Product Categories", ParentID = 0 },
+        new MNavItem { ID = 9, Href = "ads-subscriptions", IconName = "ad", Text = "Ads Subscriptions", ParentID = 0 },
+        new MNavItem { ID = 10, Href = "subscribtions", IconName = "wallet", Text = "News List Subscriptions", ParentID = 0 },
 
         // CMS (Parent)
-        new MNavItem { ID = 8, Href = "", IconName = "newspaper", Text = "CMS", ParentID = 0 },
-        new MNavItem { ID = 9, Href = "social-media", IconName = "bezier-curve", Text = "Social Media", ParentID = 8 },
-        new MNavItem { ID = 10, Href = "header-menu", IconName = "newspaper", Text = "Header Menu", ParentID = 8 },
-        new MNavItem { ID = 11, Href = "slider-menu", IconName = "sliders-h", Text = "Slider", ParentID = 8 },
-        new MNavItem { ID = 12, Href = "footer", IconName = "minus", Text = "Footer", ParentID = 8 },
-        new MNavItem { ID = 13, Href = "pages", IconName = "pager", Text = "Pages", ParentID = 8 },
-        new MNavItem { ID = 14, Href = "faqs", IconName = "question-circle", Text = "FAQs", ParentID = 8 },
+        new MNavItem { ID = 11, Href = "", IconName = "newspaper", Text = "CMS", ParentID = 0 },
+        new MNavItem { ID = 12, Href = "social-media", IconName = "bezier-curve", Text = "Social Media", ParentID = 11 },
+        new MNavItem { ID = 13, Href = "header-menu", IconName = "newspaper", Text = "Header Menu", ParentID = 11 },
+        new MNavItem { ID = 14, Href = "slider-menu", IconName = "sliders-h", Text = "Slider", ParentID = 11 },
+        new MNavItem { ID = 15, Href = "footer", IconName = "minus", Text = "Footer", ParentID = 11 },
+        new MNavItem { ID = 16, Href = "pages", IconName = "pager", Text = "Pages", ParentID = 11 },
+        new MNavItem { ID = 17, Href = "faqs", IconName = "question-circle", Text = "FAQs", ParentID = 11 },
     };
 }

@@ -130,7 +130,7 @@
                      { "TargetUrl", child.TargetUrl }
                  })">
                                                          <label for="mainItemTitle">Main Title</label>
-                                                         <input id="mainItemTitle" class="form-control" bind="@child.MenuItemTitle" />
+                                                        <input id="mainItemTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
                                                         <ValidationMessage For="@(() => newItem.MenuItemTitle)" />
                                                      </TranslatePopup> 
                                                 </td>
@@ -304,7 +304,32 @@
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
-        if (currentValue?.ToString() == newValue?.ToString()) return;
+
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+        if (fieldName == nameof(HeaderMenu.MenuItemTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Menu Title is empty", "Validation Error");
+            return;
+        }
+        
+        if (fieldName == nameof(HeaderMenu.TargetUrl) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Menu URL is empty", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

@@ -12,4 +12,20 @@ namespace EgyMartAdminPortal.Models
         public string Password { get; set; } = string.Empty;
         public bool RememberMe { get; set; } = false;
     }
+    public class LoginData
+    {
+        public Person User { get; set; } = default!;
+        public Tokens Tokens { get; set; } = default!;
+    }
+
+    public class Tokens
+    {
+        public string Jwt { get; set; } = "";
+        public string RefreshToken { get; set; } = "";
+    }
+
+    public class NewToken
+    {
+        public string NewJWT { get; set; } = string.Empty;
+    }
 }

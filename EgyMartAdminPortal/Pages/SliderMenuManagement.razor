@@ -101,7 +101,8 @@
                             <TranslatePopup Item="@newItem" Service="SliderMenuService" BaseID="@item.SliderID"
                             OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
                 {
-                    { "Call2ActionURL", item.Call2ActionURL }
+                    { "Call2ActionURL", item.Call2ActionURL },
+                    { "ImageURL", item.ImageURL },
                 })">
                                 <label for="mainTitle">Main Title</label>
                                 <input id="mainTitle" class="form-control" @bind="@newItem.MainTitle" />
@@ -174,7 +175,44 @@ OnPageChanged="HandlePageChanged" />
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
-        if (currentValue?.ToString() == newValue?.ToString()) return;
+        
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+        if (fieldName == nameof(SliderMenu.MainTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Menu Title is empty", "Validation Error");
+            return;
+        }
+
+        if (fieldName == nameof(SliderMenu.ShortTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Short Title is empty", "Validation Error");
+            return;
+        }
+
+        if (fieldName == nameof(SliderMenu.Call2ActionMsg) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Action Message is empty", "Validation Error");
+            return;
+        }
+
+        if (fieldName == nameof(SliderMenu.Call2ActionURL) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Action URL is empty", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

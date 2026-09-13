@@ -150,7 +150,34 @@
         if (property == null) return;
 
         var currentValue = property.GetValue(item);
+
         if (currentValue?.ToString() == newValue?.ToString()) return;
+
+        if (property.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue?.ToString(), out int newIntValue) &&
+                currentValue is int currentIntValue &&
+                newIntValue == currentIntValue)
+            {
+                return;
+            }
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            if (currentValue?.ToString() == newValue?.ToString()) return;
+        }
+
+        if (fieldName == nameof(SocialMedia.LinkTitle) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Link Title is empty", "Validation Error");
+            return;
+        }
+        
+        if (fieldName == nameof(SocialMedia.LinkTarget) && string.IsNullOrWhiteSpace(newValue?.ToString()))
+        {
+            await ToastService.ShowErrorAsync("Link URL is empty", "Validation Error");
+            return;
+        }
 
         if (property.PropertyType == typeof(int) && int.TryParse(newValue!.ToString(), out int intValue))
         {

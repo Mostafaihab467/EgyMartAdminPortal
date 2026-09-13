@@ -6,6 +6,7 @@ namespace EgyMartAdminPortal.Models
     {
         public long UserID { get; set; }
         public short UserTypeID { get; set; }
+        public string UserTypeTitle { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please Enter Display Name")]
         public string DisplayName { get; set; } = string.Empty;
@@ -23,7 +24,7 @@ namespace EgyMartAdminPortal.Models
 
         public string? ProfileImage { get; set; } = string.Empty;
         public bool IsVerfied { get; set; } = false;
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
         public bool FirstLogin { get; set; } = false;
         public int FailLoginCount { get; set; } = 0;
         public bool IsDeleted { get; set; }

@@ -3,6 +3,6 @@
     public class CostPlanData
     {
         public long PlanID { get; set; }
-        public long TotaCost { get; set; }
+        public decimal TotalCost { get; set; }
     }
 }

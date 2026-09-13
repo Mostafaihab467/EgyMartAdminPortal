@@ -6,7 +6,7 @@ namespace EgyMartAdminPortal.Services
     public class FAQService(HttpClient httpClient)
     {
         private readonly HttpClient _httpClient = httpClient;
-        protected string ApiUrl = "cms/api/v1/WidgetsFAQ";
+        protected string ApiUrl = "cms/api/jpt/v2/WidgetsFAQ";
 
         public string GetTranslateApiUrl()
         {

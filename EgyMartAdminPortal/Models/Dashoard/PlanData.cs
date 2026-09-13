@@ -2,7 +2,9 @@
 {
     public class PlanData
     {
-        public int PlanId { get; set; }
-        public long ViewCount { get; set; }
+        public long PlanId { get; set; }
+        public string? PlanTitle { get; set; } = "Plan";
+        public long PlansCount { get; set; }
+        public decimal TotalCost { get; set; }
     }
 }

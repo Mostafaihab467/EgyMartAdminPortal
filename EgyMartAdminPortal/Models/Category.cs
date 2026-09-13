@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using EgyMartAdminPortal.Handlers;
 using System.ComponentModel.DataAnnotations;
 
 namespace EgyMartAdminPortal.Models
@@ -14,8 +15,6 @@ namespace EgyMartAdminPortal.Models
 
         [Range(1, int.MaxValue, ErrorMessage = "Display Order is required.")]
         public int DisplayOrder { get; set; }
-
-        [Required(ErrorMessage = "Category Icon is required.")]
         public string CategoryImageURL { get; set; }
         public bool IsActive { get; set; }
     }

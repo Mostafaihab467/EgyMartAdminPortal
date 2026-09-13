@@ -8,7 +8,7 @@ namespace EgyMartAdminPortal.Services
     {
         private readonly HttpClient _httpClient = httpClient;
         private readonly AuthService authService = authService;
-        protected string ApiUrl = "products/api/Attribute";
+        protected string ApiUrl = "products/api/jpt/v2/Attribute";
         public async Task<List<Attributes>> GetAsync()
         {
             try
@@ -39,7 +39,7 @@ namespace EgyMartAdminPortal.Services
         
         public async Task<ApiResponse<int>> CreateAsync(Attributes newAttribute)
         {
-            var user = await authService.GetUser();
+            var user = await authService.GetUserAsync();
             newAttribute.RcBy = user.UserID;
 
             var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/Create", newAttribute);

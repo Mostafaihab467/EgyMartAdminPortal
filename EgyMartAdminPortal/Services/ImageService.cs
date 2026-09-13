@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
+using System.Net.Http.Json;
 
 public class ImageService
 {
@@ -28,13 +29,13 @@ public class ImageService
 
         content.Add(new StreamContent(memoryStream), "file", file.Name);
 
-        //var response = await _httpClient.PostAsync("https://localhost:5001/api/FileUpload/upload", content);
+        var response = await _httpClient.PostAsync("api/FileUpload/upload", content);
 
-        //if (!response.IsSuccessStatusCode)
-        //    throw new Exception("Failed to upload image.");
+        if (!response.IsSuccessStatusCode)
+            throw new Exception("Failed to upload image.");
 
-        //var result = await response.Content.ReadFromJsonAsync<string>();
+        var result = await response.Content.ReadFromJsonAsync<string>();
 
-        return $"https://localhost:5001/FileUpload/upload/Sider/{file.Name}.{fileExtension}" ?? string.Empty;
+        return result ?? string.Empty;
     }
 }
