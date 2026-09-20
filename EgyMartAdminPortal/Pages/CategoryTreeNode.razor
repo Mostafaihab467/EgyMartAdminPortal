@@ -1,0 +1,95 @@
+@* Recursive category tree node. Renders one row plus all of its descendants.
+   Subtree = full descendant list of the top-level parent (from GetChild),
+   regrouped here by ParentID so every level nests under its real parent. *@
+
+<tr class="tree-row" @key="Node.CategoryID">
+    <td scope="row">
+        <div class="tree-cell" style="padding-inline-start: @(Depth * 1.75)rem">
+            @* Top-level rows always show the caret (children load on first
+               expand); deeper rows only when the loaded subtree has children. *@
+            @if (Depth == 0 || HasChildren)
+            {
+                <i class="fas fa-caret-right colored p-2 fs-6 cursor-pointer @(IsExpanded ? "rotate-45" : "")" @onclick="() => OnToggle.InvokeAsync(Node.CategoryID)"></i>
+            }
+            else
+            {
+                <i class="fas fa-caret-right p-2 fs-6 invisible"></i>
+            }
+            <div class="@(Depth > 0 ? "tree-guide" : "d-inline-block")">
+                <i class="@Node.CategoryImageURL fs-4"></i>
+            </div>
+        </div>
+    </td>
+    <td>
+        <EditableField T="string" Value="@Node.CategoryTitle" ValueChanged="value => ForwardSaveEdit(Node, nameof(Node.CategoryTitle), value)" />
+    </td>
+    <td class="ps-5">
+        <EditableField T="int" InputType="number" Value="@Node.DisplayOrder" ValueChanged="@(value => ForwardSaveEdit(Node, nameof(Node.DisplayOrder), value))" />
+    </td>
+    <td class="cursor-pointer" style="width: 5%;" @onclick="() => OnToggleStatus.InvokeAsync((Node.CategoryID, Node.IsActive))">
+        <Badge Class="@($"p-2 {(Node.IsActive ? "btn-success" : "btn-danger")}")"
+               IndicatorType="BadgeIndicatorType.RoundedPill">
+            @(Node.IsActive ? "Active" : "Not Active")
+        </Badge>
+    </td>
+    <td>
+        <Button class="btn btn-primary" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => OnCreateChild.InvokeAsync(Node.CategoryID)">
+            <i class="fas fa-id-badge"></i>
+        </Button>
+
+        <TranslatePopup Item="@PopupModel" Service="CategoryService" BaseID="Node.CategoryID"
+                        OnTranslationSuccess="OnTranslationSuccess" CurrentData="@(new Dictionary<string, object>
+                         {
+                             { "CategoryImageURL", Node.CategoryImageURL }
+                         })">
+            <label for="pageTitle">Category Title</label>
+            <input id="pageTitle" class="form-control" @bind="@PopupModel.CategoryTitle" />
+            <ValidationMessage For="@(() => PopupModel.CategoryTitle)" />
+        </TranslatePopup>
+    </td>
+</tr>
+
+@if (IsExpanded && !HasChildren)
+{
+    <tr @key="@($"empty-{Node.CategoryID}")">
+        <td colspan="5" class="text-center text-muted">No child categories</td>
+    </tr>
+}
+
+@if (IsExpanded && HasChildren && Depth < MaxDepth)
+{
+    @foreach (var child in DirectChildren)
+    {
+        <CategoryTreeNode Node="child" Depth="Depth + 1" Subtree="Subtree"
+                          ExpandedItems="ExpandedItems" MaxDepth="MaxDepth"
+                          OnToggle="OnToggle" OnCreateChild="OnCreateChild"
+                          OnToggleStatus="OnToggleStatus" OnSaveEdit="OnSaveEdit"
+                          CategoryService="CategoryService" PopupModel="PopupModel"
+                          OnTranslationSuccess="OnTranslationSuccess" @key="child.CategoryID" />
+    }
+}
+
+@code {
+    [Parameter] public Category Node { get; set; } = new();
+    [Parameter] public int Depth { get; set; }
+    [Parameter] public List<Category> Subtree { get; set; } = new();
+    [Parameter] public HashSet<long> ExpandedItems { get; set; } = new();
+    [Parameter] public int MaxDepth { get; set; } = 25;
+    [Parameter] public EventCallback<long> OnToggle { get; set; }
+    [Parameter] public EventCallback<long> OnCreateChild { get; set; }
+    [Parameter] public EventCallback<(long id, bool current)> OnToggleStatus { get; set; }
+    [Parameter] public EventCallback<(Category item, string field, object? value)> OnSaveEdit { get; set; }
+    [Parameter] public CategoryService CategoryService { get; set; } = default!;
+    [Parameter] public Category PopupModel { get; set; } = new();
+    [Parameter] public EventCallback OnTranslationSuccess { get; set; }
+
+    private bool IsExpanded => ExpandedItems.Contains(Node.CategoryID);
+
+    private IEnumerable<Category> DirectChildren =>
+        Subtree.Where(c => c.ParentID == Node.CategoryID).OrderBy(c => c.DisplayOrder);
+
+    private bool HasChildren => Subtree.Any(c => c.ParentID == Node.CategoryID);
+
+    private Task ForwardSaveEdit(Category item, string field, object? value) =>
+        OnSaveEdit.InvokeAsync((item, field, value));
+}
