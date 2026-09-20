@@ -1,50 +1,69 @@
-﻿@inject NavigationManager Navigation
-@inject LanguageService LanguageService
+@inject LocalizationService Loc
+@implements IDisposable
 
-<li class="nav-item dropdown dropdown-language">
+<li class="nav-item dropdown dropdown-language me-3">
     <div class="dropdown">
-        @* <a class="nav-link dropdown-toggle" id="dropdownFlag" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> *@
-        <a class="nav-link dropdown-toggle" style="cursor: default !important; color: #212529 !important;" id="dropdownFlag">
-            <i class="@SelectedLanguage?.FlagClass"></i>
-            <span class="selected-language">@SelectedLanguage?.LangTitle</span>
+        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 py-1 px-2 rounded border border-light-subtle"
+           id="dropdownFlag"
+           data-bs-toggle="dropdown"
+           aria-haspopup="true"
+           aria-expanded="false"
+           role="button"
+           style="cursor: pointer; background-color: #f8f9fa;">
+            <i class="@CurrentFlagClass"></i>
+            <span class="selected-language fw-semibold">@CurrentLanguageTitle</span>
+            <i class="fas fa-chevron-down ms-1" style="font-size: 0.75rem;"></i>
         </a>
-        @* <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownFlag"> *@
-        @*     @foreach (var language in Languages) *@
-        @*     { *@
-        @*         <li> *@
-        @*             <a class="dropdown-item" href="#" @onclick="() => ChangeLanguage(language)"> *@
-        @*                 <i class="@language.FlagClass"></i> @language.LangTitle *@
-        @*             </a> *@
-        @*         </li> *@
-        @*     } *@
-        @* </ul> *@
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="dropdownFlag">
+            <li>
+                <a class="dropdown-item d-flex align-items-center gap-2 @(Loc.CurrentLanguage == "en" ? "active bg-light text-primary fw-bold" : "")"
+                   href="javascript:void(0);"
+                   @onclick='() => SelectLanguage("en")'>
+                    <i class="flag-icon flag-icon-us"></i>
+                    <span>English</span>
+                    @if (Loc.CurrentLanguage == "en")
+                    {
+                        <i class="fas fa-check ms-auto text-primary" style="font-size: 0.8rem;"></i>
+                    }
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item d-flex align-items-center gap-2 @(Loc.CurrentLanguage == "ar" ? "active bg-light text-primary fw-bold" : "")"
+                   href="javascript:void(0);"
+                   @onclick='() => SelectLanguage("ar")'>
+                    <i class="flag-icon flag-icon-eg"></i>
+                    <span>العربية</span>
+                    @if (Loc.CurrentLanguage == "ar")
+                    {
+                        <i class="fas fa-check ms-auto text-primary" style="font-size: 0.8rem;"></i>
+                    }
+                </a>
+            </li>
+        </ul>
     </div>
 </li>
+
 @code {
-    private List<Language> Languages { get; set; } = new();
-    private Language? SelectedLanguage { get; set; }
+    private string CurrentFlagClass => Loc.CurrentLanguage == "ar" ? "flag-icon flag-icon-eg" : "flag-icon flag-icon-us";
+    private string CurrentLanguageTitle => Loc.CurrentLanguage == "ar" ? "العربية" : "English";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        Languages = await LanguageService.GetAsync();
-        SelectedLanguage = Languages.FirstOrDefault() ?? new Language { LangTitle = "English" };
-
-        // Remove selected language from the list on initialization
-        Languages.Remove(SelectedLanguage);
+        Loc.OnLanguageChanged += HandleLanguageChanged;
     }
 
-    private void ChangeLanguage(Language language)
+    private void HandleLanguageChanged()
     {
-        // Add the previous language back to the list
-        if (SelectedLanguage != null)
-        {
-            Languages.Add(SelectedLanguage);
-        }
+        InvokeAsync(StateHasChanged);
+    }
 
-        // Set the new selected language and remove it from the list
-        SelectedLanguage = language;
-        Languages.Remove(language);
+    private async Task SelectLanguage(string lang)
+    {
+        await Loc.SetLanguageAsync(lang);
+    }
 
-        StateHasChanged();
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
     }
 }

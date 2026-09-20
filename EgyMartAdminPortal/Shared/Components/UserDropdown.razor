@@ -1,4 +1,4 @@
-﻿@inject NavigationManager Navigation
+@inject NavigationManager Navigation
 @inject AuthService AuthService
 
 <li class="nav-item dropdown dropdown-user">
@@ -15,9 +15,9 @@
         </span>
     </a>
     <div class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="dropdown-user">
-        <a class="dropdown-item fs-6" @onclick="ShowPasswordChangePopup"><i class="fas fa-unlock-alt"></i> Change Password</a>
+        <a class="dropdown-item fs-6" @onclick="ShowPasswordChangePopup"><i class="fas fa-unlock-alt"></i> @Loc["Change Password"]</a>
         <div class="dropdown-divider"></div>
-        <a class="dropdown-item fs-6" @onclick="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a class="dropdown-item fs-6" @onclick="Logout"><i class="fa-solid fa-right-from-bracket"></i> @Loc["Logout"]</a>
     </div>
 </li>
 

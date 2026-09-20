@@ -1,4 +1,4 @@
-﻿@typeparam TItem
+@typeparam TItem
 @inject NavigationManager NavManager
 
 <PageSelect PageSize="PageSize" PageSizeChanged="OnPageSizeChanged" />
@@ -10,7 +10,7 @@
         <tr>
             @foreach (var column in Columns)
             {
-                <th>@column</th>
+                <th>@Loc[column]</th>
             }
         </tr>
     </thead>
@@ -18,7 +18,7 @@
         @if (PagedItems == null || PagedItems.Count == 0)
         {
             <tr>
-                <td colspan="@Columns.Count" class="text-center">No data available</td>
+                <td colspan="@Columns.Count" class="text-center">@Loc["No data available"]</td>
             </tr>
         }
         else

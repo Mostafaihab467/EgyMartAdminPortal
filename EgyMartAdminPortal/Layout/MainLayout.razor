@@ -1,8 +1,10 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @inject AuthService AuthService
+@implements IDisposable
+
 <RadzenDialog />
 <AuthGuard>
-    <div class="bb-page">
+    <div class="bb-page @(Loc.IsRtl ? "rtl" : "ltr")" dir="@(Loc.IsRtl ? "rtl" : "ltr")">
         <NavMenu />
         <main>
             <HeaderNavMenu User="AuthService.User"></HeaderNavMenu>
@@ -12,3 +14,21 @@
         </main>
     </div>
 </AuthGuard>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += HandleLanguageChanged;
+        await Loc.InitializeAsync();
+    }
+
+    private void HandleLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
+    }
+}

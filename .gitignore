@@ -10,3 +10,32 @@ bin/*
 /.vs
 bin/
 obj/
+
+# Build output
+**/bin/
+**/obj/
+**/publish/
+publish/
+*.rar
+
+# Publish artifacts accidentally copied to repo root (not part of source)
+# Remote tracks only .sln + EgyMartAdminPortal/ folder
+/publish/
+/wwwroot/
+/web.config
+/emcc-props.json
+/EgyMartAdminPortal.staticwebassets.endpoints.json
+
+# Ignore appsettings (secrets / local config)
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.Example.json
+
+# Ignore user-specific / editor files
+*.user
+*.pubxml.user
+.vscode/
+.vs/
+
+# Dependencies
+**/node_modules/

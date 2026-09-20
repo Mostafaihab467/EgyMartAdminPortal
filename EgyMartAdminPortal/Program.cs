@@ -38,6 +38,7 @@ builder.Services.AddScoped(sp =>
 // Services
 builder.Services.AddScoped<SessionTimeoutService>();
 builder.Services.AddScoped<LocalStorageService>();
+builder.Services.AddScoped<LocalizationService>();
 builder.Services.AddScoped<LanguageService>();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddScoped<ToastrService>();
@@ -60,6 +61,8 @@ builder.Services.AddScoped<SubscriptionService>();
 builder.Services.AddScoped<SocialMediaService>();
 builder.Services.AddScoped<SubscribtionService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<StoreService>();
+builder.Services.AddScoped<CouponService>();
 
 builder.Services.AddRadzenComponents();
 

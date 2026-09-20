@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     --primary-color: #990202;
     --success-color: #a4ffd5;
     --secondary-color: #ffffff;
@@ -585,3 +585,82 @@ code {
     min-height: auto !important;
     max-width: 55rem !important;
 }
+
+/* ========================================================
+   RTL & Arabic Localization Styles
+   ======================================================== */
+[dir="rtl"], 
+[dir="rtl"] body, 
+[dir="rtl"] button, 
+[dir="rtl"] input, 
+[dir="rtl"] select, 
+[dir="rtl"] textarea,
+[dir="rtl"] .form-control,
+[dir="rtl"] .btn,
+[dir="rtl"] .navbar,
+[dir="rtl"] .sidebar,
+[dir="rtl"] .table,
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+    direction: rtl;
+}
+
+[dir="rtl"] {
+    text-align: right;
+}
+
+[dir="rtl"] .dropdown-menu {
+    text-align: right;
+}
+
+[dir="rtl"] .table th,
+[dir="rtl"] .table td,
+[dir="rtl"] .childTable th,
+[dir="rtl"] .childTable td {
+    text-align: right !important;
+}
+
+[dir="rtl"] .table th.text-end,
+[dir="rtl"] .table td.text-end,
+[dir="rtl"] .text-md-end {
+    text-align: left !important;
+}
+
+[dir="rtl"] .sidebar-header .btn {
+    transform: scaleX(-1);
+}
+
+[dir="rtl"] .tooltip-text {
+    left: auto;
+    right: 110%;
+}
+
+[dir="rtl"] .sidebar-collapsed .tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+[dir="rtl"] .me-1, [dir="rtl"] .me-2, [dir="rtl"] .me-3 {
+    margin-left: 0.5rem !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .ms-1, [dir="rtl"] .ms-2, [dir="rtl"] .ms-3 {
+    margin-right: 0.5rem !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .modal-header .btn-close {
+    margin: -0.5rem auto -0.5rem -0.5rem;
+}
+
+[dir="rtl"] .dropdown-item {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+[dir="rtl"] .avatar-status-online {
+    right: auto;
+    left: 20px;
+}
+

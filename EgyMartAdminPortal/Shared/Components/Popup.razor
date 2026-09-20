@@ -1,4 +1,4 @@
-﻿@inject IJSRuntime JSRuntime
+@inject IJSRuntime JSRuntime
 
 @if (IsVisible)
 {
@@ -7,7 +7,7 @@
             <div class="modal-dialog @Class">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">@Title</h5>
+                        <h5 class="modal-title">@Loc[Title]</h5>
                         <button type="button" class="btn-close" @onclick="() => { IsVisible = false; StateHasChanged(); }"></button>
                     </div>
                     <div class="modal-body">
@@ -15,10 +15,10 @@
                         @ChildContent
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="() => IsVisible = false">Close</button>
+                        <button type="button" class="btn btn-secondary" @onclick="() => IsVisible = false">@Loc["Close"]</button>
                         @if (OnSave.HasDelegate)
                         {
-                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="submit" class="btn btn-primary">@Loc["Save"]</button>
                         }
                     </div>
                 </div>

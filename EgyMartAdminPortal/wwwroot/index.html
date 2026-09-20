@@ -18,11 +18,27 @@
     <link href="_content/Radzen.Blazor/css/default-base.css" rel="stylesheet" />
     <link href="_content/Blazor.Bootstrap/blazor.bootstrap.css" rel="stylesheet" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="EgyMartAdminPortal.styles.css" rel="stylesheet" />
 
-
+    <script>
+        (function () {
+            try {
+                var lang = localStorage.getItem('portal_language') || 'en';
+                var dir = lang === 'ar' ? 'rtl' : 'ltr';
+                document.documentElement.setAttribute('lang', lang);
+                document.documentElement.setAttribute('dir', dir);
+                if (dir === 'rtl') {
+                    document.body ? document.body.classList.add('rtl') : document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('rtl'); });
+                }
+            } catch (e) { }
+        })();
+    </script>
 </head>
 
 <body>

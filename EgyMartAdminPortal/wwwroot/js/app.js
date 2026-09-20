@@ -1,4 +1,21 @@
-﻿window.triggerFileInput = (elementId) => {
+window.localizationHelper = {
+    setLanguage: function (lang, dir) {
+        document.documentElement.setAttribute('lang', lang);
+        document.documentElement.setAttribute('dir', dir);
+        if (dir === 'rtl') {
+            document.body.classList.add('rtl');
+            document.body.classList.remove('ltr');
+        } else {
+            document.body.classList.add('ltr');
+            document.body.classList.remove('rtl');
+        }
+    },
+    getStoredLanguage: function () {
+        return localStorage.getItem('portal_language') || 'en';
+    }
+};
+
+window.triggerFileInput = (elementId) => {
     const element = document.getElementById(elementId);
     if (element) {
         element.click();

@@ -1,21 +1,21 @@
-﻿@inject ToastrService ToastService
+@inject ToastrService ToastService
 
 <div class="d-inline-block">
     @if (VerificationStatus == 0)
     {
-        <Button class="btn btn-primary me-2" TooltipTitle="Verify" TooltipPlacement="TooltipPlacement.Top"
-                data-bs-original-title="Verify" @onclick="() => VerificationUser(1)">
+        <Button class="btn btn-primary me-2" TooltipTitle="@Loc["Verify"]" TooltipPlacement="TooltipPlacement.Top"
+                data-bs-original-title="@Loc["Verify"]" @onclick="() => VerificationUser(1)">
             <i class="fas fa-user-check"></i>
         </Button>
         @if (IsSupplier)
         {
-            <Button class="btn btn-primary me-2" TooltipTitle="Deny" TooltipPlacement="TooltipPlacement.Top"
-                    data-bs-original-title="Deny" @onclick="() => VerificationUser(2)">
+            <Button class="btn btn-primary me-2" TooltipTitle="@Loc["Deny"]" TooltipPlacement="TooltipPlacement.Top"
+                    data-bs-original-title="@Loc["Deny"]" @onclick="() => VerificationUser(2)">
                 <i class="fa-solid fa-ban"></i>
             </Button>
 
-            <Button class="btn btn-primary" TooltipTitle="Show Attachment" TooltipPlacement="TooltipPlacement.Top"
-                    data-bs-original-title="Show Attachment" @onclick="() => ShowAttachement()">
+            <Button class="btn btn-primary" TooltipTitle="@Loc["Show Attachment"]" TooltipPlacement="TooltipPlacement.Top"
+                    data-bs-original-title="@Loc["Show Attachment"]" @onclick="() => ShowAttachement()">
                 <i class="fa-solid fa-file-pdf"></i>
             </Button>
         }
@@ -23,7 +23,7 @@
     }
     else
     {
-        <span class="@StatusClass">@StatusText</span>
+        <span class="@StatusClass">@Loc[StatusText]</span>
     }
 </div>
 

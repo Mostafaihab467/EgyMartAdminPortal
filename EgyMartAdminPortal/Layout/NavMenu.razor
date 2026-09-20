@@ -1,13 +1,15 @@
-﻿<div class="sidebar @SidebarCssClass">
+@implements IDisposable
+
+<div class="sidebar @SidebarCssClass">
     <div class="sidebar-header">
         <div class="px-2 py-3 d-flex justify-content-center gap-2">
             <span>
                 <a class="navbar-brand" href="">
-                    @(IsNavCollapsed ? "" : "Admin Portal")
+                    @(IsNavCollapsed ? "" : Loc["Admin Portal"])
                 </a>
             </span>
             <button class="btn btn-sm" @onclick="ToggleSidebar">
-                <i class="fas @(IsNavCollapsed ? "fa-chevron-right" : "fa-chevron-left")"></i>
+                <i class="fas @(IsNavCollapsed ? (Loc.IsRtl ? "fa-chevron-left" : "fa-chevron-right") : (Loc.IsRtl ? "fa-chevron-right" : "fa-chevron-left"))"></i>
             </button>
         </div>
     </div>
@@ -21,28 +23,28 @@
                         <a class="nav-link dropdown-toggle tooltip-container"
                            aria-expanded="@(openDropdown == parent.ID ? "true" : "false")"
                            @onclick="() => ToggleDropdown(parent.ID)">
-                            <i class="fas fa-@parent.IconName font-medium-3 @(IsNavCollapsed ? "" : "pe-2")"></i>
+                            <i class="fas fa-@parent.IconName font-medium-3 @(IsNavCollapsed ? "" : (Loc.IsRtl ? "ps-2" : "pe-2"))"></i>
                             @if (!IsNavCollapsed)
                             {
-                                <span>@parent.Text</span>
+                                <span>@Loc[parent.Text]</span>
                             }
                             else
                             {
-                                <span class="tooltip-text">@parent.Text</span>
+                                <span class="tooltip-text">@Loc[parent.Text]</span>
                             }
                         </a>
                         <div class="collapse @(openDropdown == parent.ID ? "show" : "hidden")" id="@($"collapse-{parent.ID}")">
                             @foreach (var child in NavItems.Where(n => n.ParentID == parent.ID))
                             {
                                 <NavLink class="nav-link nav-side ms-3 tooltip-container" href="@child.Href" Match="NavLinkMatch.All">
-                                    <i class="fas fa-@child.IconName font-medium-3 @(IsNavCollapsed ? "" : "pe-2")"></i>
+                                    <i class="fas fa-@child.IconName font-medium-3 @(IsNavCollapsed ? "" : (Loc.IsRtl ? "ps-2" : "pe-2"))"></i>
                                     @if (!IsNavCollapsed)
                                     {
-                                        <span>@child.Text</span>
+                                        <span>@Loc[child.Text]</span>
                                     }
                                     else
                                     {
-                                        <span class="tooltip-text">@child.Text</span>
+                                        <span class="tooltip-text">@Loc[child.Text]</span>
                                     }
                                 </NavLink>
                             }
@@ -52,14 +54,14 @@
                 else
                 {
                     <NavLink class="nav-link nav-side tooltip-container" href="@parent.Href" Match="NavLinkMatch.All">
-                        <i class="fas fa-@parent.IconName font-medium-3 @(IsNavCollapsed ? "" : "pe-2")"></i>
+                        <i class="fas fa-@parent.IconName font-medium-3 @(IsNavCollapsed ? "" : (Loc.IsRtl ? "ps-2" : "pe-2"))"></i>
                         @if (!IsNavCollapsed)
                         {
-                            <span>@parent.Text</span>
+                            <span>@Loc[parent.Text]</span>
                         }
                         else
                         {
-                            <span class="tooltip-text">@parent.Text</span>
+                            <span class="tooltip-text">@Loc[parent.Text]</span>
                         }
                     </NavLink>
                 }
@@ -76,8 +78,14 @@
 
     protected override void OnInitialized()
     {
+        Loc.OnLanguageChanged += HandleLanguageChanged;
         // Open the first dropdown with children by default
         openDropdown = NavItems.FirstOrDefault(n => NavItems.Any(c => c.ParentID == n.ID))?.ID;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
     }
 
     private void ToggleSidebar()
@@ -90,6 +98,11 @@
         openDropdown = (openDropdown == parentId) ? null : parentId;
     }
 
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
     private List<MNavItem> NavItems = new()
     {
         new MNavItem { ID = 1, Href = "/", IconName = "home", Text = "Dashboard", ParentID = 0 },
@@ -98,11 +111,13 @@
 
         // Account Management (Parent)
         new MNavItem { ID = 4, Href = "", IconName = "user", Text = "Pending Account", ParentID = 0 },
-        new MNavItem { ID = 5, Href = "supplier", IconName = "user-clock", Text = " Supplier", ParentID = 4 },
+        new MNavItem { ID = 5, Href = "supplier", IconName = "user-clock", Text = "Supplier", ParentID = 4 },
         new MNavItem { ID = 6, Href = "customer", IconName = "user-cog", Text = "Customer", ParentID = 4 },
 
         new MNavItem { ID = 7, Href = "attributes", IconName = "circle-nodes", Text = "Attributes", ParentID = 0 },
         new MNavItem { ID = 8, Href = "category", IconName = "list-alt", Text = "Product Categories", ParentID = 0 },
+        new MNavItem { ID = 18, Href = "stores", IconName = "store", Text = "Stores Management", ParentID = 0 },
+        new MNavItem { ID = 19, Href = "coupons", IconName = "ticket-alt", Text = "Coupon Management", ParentID = 0 },
         new MNavItem { ID = 9, Href = "ads-subscriptions", IconName = "ad", Text = "Ads Subscriptions", ParentID = 0 },
         new MNavItem { ID = 10, Href = "subscribtions", IconName = "wallet", Text = "News List Subscriptions", ParentID = 0 },
 

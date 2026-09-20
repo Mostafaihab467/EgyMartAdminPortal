@@ -1,4 +1,4 @@
-﻿@code {
+@code {
     [Parameter] public Person? User { get; set; }
 }
 
@@ -15,9 +15,7 @@
         </ul>
     </div>
     <ul class="nav navbar-nav align-items-center">
-        @* <LanguageDropdown></LanguageDropdown> *@
-        @* <DarkModeToggle></DarkModeToggle> *@
-        @* <SearchNavMenu></SearchNavMenu> *@
+        <LanguageDropdown></LanguageDropdown>
         <UserDropdown User="User"></UserDropdown>
     </ul>
 </div>

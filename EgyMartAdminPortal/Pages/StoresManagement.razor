@@ -1,0 +1,750 @@
+@page "/stores"
+@inject StoreService StoreService
+@inject UserService UserService
+@inject ToastrService ToastService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>@Loc["Stores Management"]</PageTitle>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="mb-0">@Loc["Stores Management"]</h3>
+        <small class="text-muted">@Loc["Manage physical pickup locations, verify vendor stores, and approve store products."]</small>
+    </div>
+    <button class="btn btn-primary" @onclick="OpenCreateModal">
+        <i class="fas fa-plus me-1"></i> @Loc["Add New Store"]
+    </button>
+</div>
+
+<!-- Loading Spinner -->
+<div class="text-center my-3">
+    <LoadingSpinner IsLoading="isLoading" />
+</div>
+
+@if (!isLoading)
+{
+    @if (allStores.Count == 0)
+    {
+        <div class="card p-5 text-center shadow-sm">
+            <i class="fas fa-store-slash fa-3x text-muted mb-3"></i>
+            <h5>@Loc["No Stores Found"]</h5>
+            <p class="text-muted">@Loc["No pickup stores have been registered yet."]</p>
+            <div class="mt-2">
+                <button class="btn btn-primary" @onclick="OpenCreateModal">
+                    <i class="fas fa-plus me-1"></i> @Loc["Create First Store"]
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Search and Page Size Filter -->
+        <div class="row align-items-center mb-3 g-2">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0"
+                           placeholder="@Loc["Search by store name, address, city, or vendor..."]"
+                           @bind="searchTerm" @bind:event="oninput" @onkeyup="FilterStores" />
+                    @if (!string.IsNullOrEmpty(searchTerm))
+                    {
+                        <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" @bind="verificationFilter" @bind:after="FilterStores">
+                    <option value="All">@Loc["All Verification Statuses"]</option>
+                    <option value="Verified">@Loc["Verified Only"]</option>
+                    <option value="Pending">@Loc["Pending Verification Only"]</option>
+                </select>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <PageSelect PageSize="@PageSize" Count="@filteredStores.Count" OnPageSizeChanged="HandlePageSizeChanged" />
+            </div>
+        </div>
+
+        <!-- Stores Table -->
+        <div class="table-responsive shadow-sm rounded bg-white">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 70px;">@Loc["ID"]</th>
+                        <th>@Loc["Store Name"]</th>
+                        <th>@Loc["Vendor / Owner"]</th>
+                        <th>@Loc["Location"]</th>
+                        <th>@Loc["Phone"]</th>
+                        <th>@Loc["Verified Products"]</th>
+                        <th>@Loc["Status"]</th>
+                        <th>@Loc["Verification"]</th>
+                        <th class="text-end" style="min-width: 210px;">@Loc["Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (pagedStores.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">
+                                @Loc["No stores match your search criteria."]
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var store in pagedStores)
+                        {
+                            <tr>
+                                <td><span class="badge bg-light text-dark">#@store.StoreId</span></td>
+                                <td>
+                                    <strong>@store.Name</strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-tag text-secondary me-2"></i>
+                                        <span>@(GetVendorDisplayName(store.VendorUserId))</span>
+                                    </div>
+                                    <small class="text-muted">@Loc["Vendor ID"]: @store.VendorUserId</small>
+                                </td>
+                                <td>
+                                    <div>@store.AddressLine</div>
+                                    @if (!string.IsNullOrEmpty(store.City))
+                                    {
+                                        <small class="text-muted"><i class="fas fa-map-marker-alt me-1 text-danger"></i>@store.City</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(store.Phone))
+                                    {
+                                        <a href="tel:@store.Phone" class="text-decoration-none">
+                                            <i class="fas fa-phone-alt me-1 text-success"></i>@store.Phone
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-info text-white rounded-pill px-2 py-1">
+                                        @store.VerifiedProductCount @Loc["items"]
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (store.IsActive)
+                                    {
+                                        <span class="badge bg-success">@Loc["Active"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">@Loc["Inactive"]</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (store.IsVerified)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i> @Loc["Verified"]
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-clock me-1"></i> @Loc["Pending"]
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        @if (store.IsVerified)
+                                        {
+                                            <button class="btn btn-outline-warning" title="@Loc["Unverify"]"
+                                                    @onclick="() => VerifyStoreAsync(store, false)">
+                                                <i class="fas fa-times me-1"></i> @Loc["Unverify"]
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-success" title="@Loc["Verify"]"
+                                                    @onclick="() => VerifyStoreAsync(store, true)">
+                                                <i class="fas fa-check me-1"></i> @Loc["Verify"]
+                                            </button>
+                                        }
+
+                                        <button class="btn btn-outline-info" title="@Loc["Products Verification"]"
+                                                @onclick="() => OpenProductsModalAsync(store)">
+                                            <i class="fas fa-boxes me-1"></i> @Loc["Store Products"]
+                                        </button>
+
+                                        <button class="btn btn-outline-primary" title="@Loc["Edit Store"]"
+                                                @onclick="() => OpenEditModal(store)">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        <button class="btn btn-outline-danger" title="@Loc["Delete Store"]"
+                                                @onclick="() => DeleteStoreAsync(store)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Component -->
+        <div class="mt-3">
+            <MPagination TItem="StoreItem"
+                         Items="filteredStores"
+                         CurrentPage="@CurrentPage"
+                         PageSize="@PageSize"
+                         OnPageChanged="HandlePageChanged" />
+        </div>
+    }
+}
+
+<!-- Create Store Popup -->
+<Popup IsVisible="showCreatePopup" Title="@Loc["Create New Store"]" OnSave="CreateStoreAsync" FormModel="@newStore">
+    <div class="mb-3">
+        <label for="createStoreName" class="form-label">@Loc["Store Name"] <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="createStoreName" placeholder="e.g. Cairo Downtown Pickup Point"
+               @bind="newStore.Name" />
+        <ValidationMessage For="@(() => newStore.Name)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="createVendorSelect" class="form-label">@Loc["Vendor / Owner"] <span class="text-danger">*</span></label>
+        <select class="form-select" id="createVendorSelect" @bind="newStore.VendorUserId">
+            <option value="">-- @Loc["Select"] @Loc["Vendor"] --</option>
+            @foreach (var supplier in suppliersList)
+            {
+                <option value="@supplier.UserID">@supplier.DisplayName (@supplier.UserName)</option>
+            }
+        </select>
+        <ValidationMessage For="@(() => newStore.VendorUserId)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="createAddress" class="form-label">@Loc["Address"] <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="createAddress" placeholder="Street address, building, floor"
+               @bind="newStore.AddressLine" />
+        <ValidationMessage For="@(() => newStore.AddressLine)" />
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <label for="createCity" class="form-label">@Loc["City"]</label>
+            <input type="text" class="form-control" id="createCity" placeholder="e.g. Cairo, Giza, Alexandria"
+                   @bind="newStore.City" />
+            <ValidationMessage For="@(() => newStore.City)" />
+        </div>
+        <div class="col-md-6">
+            <label for="createPhone" class="form-label">@Loc["Phone"]</label>
+            <input type="text" class="form-control" id="createPhone" placeholder="e.g. 01012345678"
+                   @bind="newStore.Phone" />
+            <ValidationMessage For="@(() => newStore.Phone)" />
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <label for="createLatitude" class="form-label">@Loc["Latitude"]</label>
+            <input type="text" class="form-control" id="createLatitude" placeholder="e.g. 30.0444"
+                   @bind="newStore.Latitude" />
+            <ValidationMessage For="@(() => newStore.Latitude)" />
+        </div>
+        <div class="col-md-6">
+            <label for="createLongitude" class="form-label">@Loc["Longitude"]</label>
+            <input type="text" class="form-control" id="createLongitude" placeholder="e.g. 31.2357"
+                   @bind="newStore.Longitude" />
+            <ValidationMessage For="@(() => newStore.Longitude)" />
+        </div>
+    </div>
+</Popup>
+
+<!-- Edit Store Popup -->
+<Popup IsVisible="showEditPopup" Title="@Loc["Edit Store"]" OnSave="SaveEditStoreAsync" FormModel="@editStore">
+    <div class="mb-3">
+        <label for="editStoreName" class="form-label">@Loc["Store Name"] <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="editStoreName" @bind="editStore.Name" />
+        <ValidationMessage For="@(() => editStore.Name)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="editVendorSelect" class="form-label">@Loc["Vendor / Owner"]</label>
+        <select class="form-select" id="editVendorSelect" @bind="editStore.VendorUserId">
+            <option value="">-- @Loc["Select"] @Loc["Vendor"] --</option>
+            @foreach (var supplier in suppliersList)
+            {
+                <option value="@supplier.UserID">@supplier.DisplayName (@supplier.UserName)</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="editAddress" class="form-label">@Loc["Address"] <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="editAddress" @bind="editStore.AddressLine" />
+        <ValidationMessage For="@(() => editStore.AddressLine)" />
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <label for="editCity" class="form-label">@Loc["City"]</label>
+            <input type="text" class="form-control" id="editCity" @bind="editStore.City" />
+            <ValidationMessage For="@(() => editStore.City)" />
+        </div>
+        <div class="col-md-6">
+            <label for="editPhone" class="form-label">@Loc["Phone"]</label>
+            <input type="text" class="form-control" id="editPhone" @bind="editStore.Phone" />
+            <ValidationMessage For="@(() => editStore.Phone)" />
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <label for="editLatitude" class="form-label">@Loc["Latitude"]</label>
+            <input type="text" class="form-control" id="editLatitude" @bind="editStore.Latitude" />
+        </div>
+        <div class="col-md-6">
+            <label for="editLongitude" class="form-label">@Loc["Longitude"]</label>
+            <input type="text" class="form-control" id="editLongitude" @bind="editStore.Longitude" />
+        </div>
+    </div>
+
+    <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="editIsActive" @bind="editStore.IsActive" />
+        <label class="form-check-label" for="editIsActive">@Loc["Active"]</label>
+    </div>
+</Popup>
+
+<!-- Store Products Modal -->
+@if (showProductsModal && selectedStore != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title mb-0">@Loc["Store Products"]: @selectedStore.Name</h5>
+                        <small class="text-muted">@Loc["Vendor ID"]: @selectedStore.VendorUserId | @Loc["Location"]: @selectedStore.AddressLine, @selectedStore.City</small>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CloseProductsModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (isLoadingProducts)
+                    {
+                        <div class="text-center py-4">
+                            <LoadingSpinner IsLoading="true" />
+                        </div>
+                    }
+                    else if (storeProducts.Count == 0)
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-box-open fa-3x mb-3 text-secondary"></i>
+                            <p>@Loc["No data available"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>@Loc["ID"]</th>
+                                        <th>@Loc["Name"]</th>
+                                        <th>@Loc["Price"]</th>
+                                        <th>@Loc["Status"]</th>
+                                        <th>@Loc["Verification"]</th>
+                                        <th class="text-end">@Loc["Actions"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in storeProducts)
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-light text-dark">#@p.ProductId</span></td>
+                                            <td><strong>@p.ProductTitle</strong></td>
+                                            <td>@p.CostAfter.ToString("C2")</td>
+                                            <td>
+                                                @if (p.IsActive)
+                                                {
+                                                    <span class="badge bg-success">@Loc["Active"]</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@Loc["Inactive"]</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (p.IsVerified)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i> @Loc["Verified"]
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-clock me-1"></i> @Loc["Pending"]
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                @if (p.IsVerified)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-warning"
+                                                            @onclick="() => VerifyProductAsync(p, false)">
+                                                        <i class="fas fa-times me-1"></i> @Loc["Unverify"]
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-success"
+                                                            @onclick="() => VerifyProductAsync(p, true)">
+                                                        <i class="fas fa-check me-1"></i> @Loc["Verify"]
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseProductsModal">@Loc["Close"]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<StoreItem> allStores = new();
+    private List<StoreItem> filteredStores = new();
+    private List<StoreItem> pagedStores = new();
+    private List<Person> suppliersList = new();
+
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string verificationFilter = "All";
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+
+    // Create Modal state
+    private bool showCreatePopup = false;
+    private CreateStoreModel newStore = new();
+
+    // Edit Modal state
+    private bool showEditPopup = false;
+    private EditStoreModel editStore = new();
+
+    // Products Modal state
+    private bool showProductsModal = false;
+    private bool isLoadingProducts = false;
+    private StoreItem? selectedStore;
+    private List<StoreProductItem> storeProducts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += HandleLanguageChanged;
+        await LoadSuppliersAsync();
+        await LoadStoresAsync();
+    }
+
+    private void HandleLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private async Task LoadSuppliersAsync()
+    {
+        try
+        {
+            // Supplier UserTypeID is 2
+            var response = await UserService.GetListByTypeAsync(2, pageNumber: 1, sizePerPage: 100);
+            if (response != null && response.Success && response.Data != null)
+            {
+                suppliersList = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[LoadSuppliersAsync] Error: {ex.Message}");
+        }
+    }
+
+    private string GetVendorDisplayName(long vendorUserId)
+    {
+        var supplier = suppliersList.FirstOrDefault(s => s.UserID == vendorUserId);
+        if (supplier != null && !string.IsNullOrWhiteSpace(supplier.DisplayName))
+        {
+            return supplier.DisplayName;
+        }
+        return $"{Loc["Vendor"]} #{vendorUserId}";
+    }
+
+    private async Task LoadStoresAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var response = await StoreService.GetAllStoresAsync();
+            if (response.Success && response.Data != null)
+            {
+                allStores = response.Data;
+                FilterStores();
+            }
+            else
+            {
+                await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? Loc["No data available"]);
+                allStores = new();
+                filteredStores = new();
+                pagedStores = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync($"{Loc["Error"]}: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void FilterStores()
+    {
+        IEnumerable<StoreItem> query = allStores;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.Trim().ToLowerInvariant();
+            query = query.Where(s =>
+                (!string.IsNullOrEmpty(s.Name) && s.Name.ToLowerInvariant().Contains(term)) ||
+                (!string.IsNullOrEmpty(s.AddressLine) && s.AddressLine.ToLowerInvariant().Contains(term)) ||
+                (!string.IsNullOrEmpty(s.City) && s.City.ToLowerInvariant().Contains(term)) ||
+                (!string.IsNullOrEmpty(s.Phone) && s.Phone.Contains(term)) ||
+                GetVendorDisplayName(s.VendorUserId).ToLowerInvariant().Contains(term) ||
+                s.VendorUserId.ToString().Contains(term)
+            );
+        }
+
+        if (verificationFilter == "Verified")
+        {
+            query = query.Where(s => s.IsVerified);
+        }
+        else if (verificationFilter == "Pending")
+        {
+            query = query.Where(s => !s.IsVerified);
+        }
+
+        filteredStores = query.ToList();
+        CurrentPage = 1;
+        UpdatePagedStores();
+    }
+
+    private void UpdatePagedStores()
+    {
+        pagedStores = filteredStores
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+
+    private void HandlePageChanged(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagedStores();
+    }
+
+    private void HandlePageSizeChanged(int newSize)
+    {
+        PageSize = newSize;
+        CurrentPage = 1;
+        UpdatePagedStores();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = "";
+        FilterStores();
+    }
+
+    // --- Create Store ---
+    private void OpenCreateModal()
+    {
+        newStore = new CreateStoreModel();
+        showCreatePopup = true;
+    }
+
+    private async Task CreateStoreAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newStore.Name) || string.IsNullOrWhiteSpace(newStore.AddressLine))
+        {
+            await ToastService.ShowWarningAsync(Loc["Required"]);
+            return;
+        }
+
+        var response = await StoreService.CreateStoreAsync(newStore);
+        if (response.Success)
+        {
+            await ToastService.ShowSuccessAsync(Loc["Store created successfully"]);
+            showCreatePopup = false;
+            await LoadStoresAsync();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? Loc["Error"]);
+        }
+    }
+
+    // --- Edit Store ---
+    private void OpenEditModal(StoreItem store)
+    {
+        editStore = new EditStoreModel
+        {
+            StoreId = store.StoreId,
+            Name = store.Name,
+            AddressLine = store.AddressLine,
+            City = store.City,
+            Latitude = store.Latitude,
+            Longitude = store.Longitude,
+            Phone = store.Phone,
+            IsActive = store.IsActive,
+            VendorUserId = store.VendorUserId
+        };
+        showEditPopup = true;
+    }
+
+    private async Task SaveEditStoreAsync()
+    {
+        if (string.IsNullOrWhiteSpace(editStore.Name) || string.IsNullOrWhiteSpace(editStore.AddressLine))
+        {
+            await ToastService.ShowWarningAsync(Loc["Required"]);
+            return;
+        }
+
+        var response = await StoreService.EditStoreAsync(editStore);
+        if (response.Success)
+        {
+            await ToastService.ShowSuccessAsync(Loc["Store updated successfully"]);
+            showEditPopup = false;
+            await LoadStoresAsync();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? Loc["Error"]);
+        }
+    }
+
+    // --- Verify / Unverify Store ---
+    private async Task VerifyStoreAsync(StoreItem store, bool isVerified)
+    {
+        var response = await StoreService.VerifyStoreAsync(store.StoreId, isVerified);
+        if (response.Success)
+        {
+            store.IsVerified = isVerified;
+            var message = isVerified ? Loc["Store verified successfully"] : $"{Loc["Store updated successfully"]}";
+            await ToastService.ShowSuccessAsync(message);
+            StateHasChanged();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? Loc["Error"]);
+        }
+    }
+
+    // --- Delete Store ---
+    private async Task DeleteStoreAsync(StoreItem store)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"{Loc["Are you sure you want to delete this store?"]} ({store.Name})");
+        if (!confirmed) return;
+
+        var response = await StoreService.DeleteStoreAsync(store.StoreId);
+        if (response.Success)
+        {
+            await ToastService.ShowSuccessAsync(Loc["Store deleted successfully"]);
+            allStores.RemoveAll(s => s.StoreId == store.StoreId);
+            FilterStores();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? Loc["Error"]);
+        }
+    }
+
+    // --- Products Modal & Product Verification ---
+    private async Task OpenProductsModalAsync(StoreItem store)
+    {
+        selectedStore = store;
+        showProductsModal = true;
+        isLoadingProducts = true;
+        storeProducts = new();
+        StateHasChanged();
+
+        try
+        {
+            var response = await StoreService.GetStoreProductsAsync(store.StoreId);
+            if (response.Success && response.Data != null)
+            {
+                storeProducts = response.Data;
+            }
+            else
+            {
+                await ToastService.ShowWarningAsync(response.ResponseEngMsg ?? Loc["No data available"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastService.ShowErrorAsync($"{Loc["Error"]}: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingProducts = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseProductsModal()
+    {
+        showProductsModal = false;
+        selectedStore = null;
+        storeProducts.Clear();
+    }
+
+    private async Task VerifyProductAsync(StoreProductItem product, bool isVerified)
+    {
+        var response = await StoreService.VerifyStoreProductAsync(product.StoreProductId, isVerified);
+        if (response.Success)
+        {
+            product.IsVerified = isVerified;
+            var message = isVerified ? Loc["Product verified successfully"] : Loc["Product rejected successfully"];
+            await ToastService.ShowSuccessAsync(message);
+
+            // Update parent store verified product count in UI
+            if (selectedStore != null)
+            {
+                selectedStore.VerifiedProductCount = storeProducts.Count(p => p.IsActive && p.IsVerified);
+            }
+            StateHasChanged();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync(response.ResponseEngMsg ?? Loc["Error"]);
+        }
+    }
+}
