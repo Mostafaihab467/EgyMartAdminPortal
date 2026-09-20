@@ -63,6 +63,7 @@ builder.Services.AddScoped<SubscribtionService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<StoreService>();
 builder.Services.AddScoped<CouponService>();
+builder.Services.AddScoped<NewsletterService>();
 
 builder.Services.AddRadzenComponents();
 
