@@ -1,4 +1,4 @@
-﻿@inject HttpClient HttpClient
+@inject HttpClient HttpClient
 @inject ToastrService ToastService
 @inject DashboardService DashboardService
 
@@ -165,34 +165,10 @@
     {
         try
         {
-            // Fetch TotalCostByPlan
-            var totalCostResponse = await DashboardService.TotalCostByPlan();
-            if (totalCostResponse.Count == 0)
-            {
-                await ToastService.ShowErrorAsync("Failed to load total cost data.");
-                return;
-            }
-
-            // Fetch UserSubscriptionCountByPlan
-            var subscriptionCountResponse = await DashboardService.UserSubscriptionCountByPlan();
-            if (subscriptionCountResponse.Count == 0)
-            {
-                await ToastService.ShowErrorAsync("Failed to load subscription count data.");
-                return;
-            }
-
-            // Fetch UsersSubscriptionWillFinish
-            var expiringUsersResponse = await DashboardService.UserSubscriptionWillFinish(daysRange);
-            if (expiringUsersResponse.Count == 0)
-            {
-                await ToastService.ShowErrorAsync("Failed to load expiring users data.");
-                return;
-            }
-
-            // Combine data
-            var planCosts = totalCostResponse;
-            var planSubscriptions = subscriptionCountResponse;
-            expiringUsers = expiringUsersResponse;
+            // Fetch TotalCostByPlan, UserSubscriptionCountByPlan, and UsersSubscriptionWillFinish
+            var planCosts = await DashboardService.TotalCostByPlan() ?? new List<CostPlanData>();
+            var planSubscriptions = await DashboardService.UserSubscriptionCountByPlan() ?? new List<PlanData>();
+            expiringUsers = await DashboardService.UserSubscriptionWillFinish(daysRange) ?? new List<UserSub>();
 
             // Map to PlanData
             plans = planSubscriptions.Select(sub => new PlanData
@@ -215,11 +191,11 @@
             plans.AddRange(missingPlans);
 
             plans = plans.OrderBy(p => p.PlanId).ToList();
-            // isLoading = false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // isLoading = false;
+            Console.WriteLine($"Error loading subscription plans overview: {ex.Message}");
+            await ToastService.ShowErrorAsync("Failed to load subscription plans overview.", "Error");
         }
     }
 }

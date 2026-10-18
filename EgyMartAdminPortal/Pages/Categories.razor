@@ -1,4 +1,4 @@
-﻿@page "/category"
+@page "/category"
 @inject CategoryService CategoryService
 @inject ToastrService ToastService
 @inject NavigationManager Navigation
@@ -97,7 +97,8 @@
                         <td colspan="5">
                             @if (childItems.ContainsKey(item.CategoryID) && childItems[item.CategoryID].Any())
                             {
-                                <p>Child Categories: @childItems[item.CategoryID].Count</p>
+                                var directChildren = GetDirectChildren(item.CategoryID).ToList();
+                                <p class="fw-semibold text-primary mb-2"><i class="fas fa-folder-open me-1"></i> Child Categories: @directChildren.Count</p>
                                 <table class="table childTable">
                                     <thead>
                                         <tr>
@@ -109,12 +110,14 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var child in childItems[item.CategoryID])
+                                        @foreach (var child in directChildren)
                                         {
                                             <tr class="child">
                                                 <td>
-                                                    <i class="@child.CategoryImageURL cursor-pointer w-75 fs-4"></i>
-                                                    @* <EditableField T="string" Value="@item.CategoryImageURL" ValueChanged="value => SaveEdit(item, nameof(child.CategoryImageURL), value)" InputType="faIcon" /> *@
+                                                    <i class="fas fa-caret-right colored p-2 fs-6 cursor-pointer @(expandedItems.Contains(child.CategoryID) ? "rotate-45" : "")" @onclick="() => ToggleSubChildItems(child.CategoryID, item.CategoryID)"></i>
+                                                    <div class="cursor-pointer w-75 d-inline-block">
+                                                        <i class="@child.CategoryImageURL fs-4"></i>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <EditableField T="string" Value="@child.CategoryTitle" ValueChanged="value => SaveEdit(child, nameof(child.CategoryTitle), value)" />
@@ -129,6 +132,10 @@
                                                     </Badge>
                                                 </td>
                                                 <td>
+                                                    <Button class="btn btn-primary btn-sm me-1" TooltipTitle="Create Child" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Create Child" @onclick="() => ShowPopup(child.CategoryID)">
+                                                        <i class="fas fa-id-badge"></i>
+                                                    </Button>
+
                                                     <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="child.CategoryID"
                                                     OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
                                                  {
@@ -138,6 +145,67 @@
                                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
                                                         <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
                                                     </TranslatePopup>
+                                                </td>
+                                            </tr>
+                                            <tr class="collapse @(expandedItems.Contains(child.CategoryID) ? "show" : "")" id="@($"subchild-{child.CategoryID}")">
+                                                <td colspan="5" class="ps-4 bg-light bg-opacity-50">
+                                                    @{
+                                                        var subChildren = GetSubChildren(child.CategoryID, item.CategoryID).ToList();
+                                                    }
+                                                    @if (subChildren.Any())
+                                                    {
+                                                        <p class="mb-1 text-muted small fw-semibold"><i class="fas fa-level-down-alt me-1"></i> Sub-Categories (Level 3): @subChildren.Count</p>
+                                                        <table class="table table-sm bg-white rounded border shadow-sm">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th scope="col" style="width: 15%;">Category Icon</th>
+                                                                    <th scope="col">CategoryTitle</th>
+                                                                    <th scope="col" style="width: 15%;">displayOrder</th>
+                                                                    <th scope="col" style="width: 15%;">Status</th>
+                                                                    <th scope="col" style="width: 15%;">Actions</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var sub in subChildren)
+                                                                {
+                                                                    <tr>
+                                                                        <td>
+                                                                            <i class="@sub.CategoryImageURL fs-5 ps-3"></i>
+                                                                        </td>
+                                                                        <td>
+                                                                            <EditableField T="string" Value="@sub.CategoryTitle" ValueChanged="value => SaveEdit(sub, nameof(sub.CategoryTitle), value)" />
+                                                                        </td>
+                                                                        <td>
+                                                                            <EditableField T="int" InputType="number" Value="@sub.DisplayOrder" ValueChanged="value => SaveEdit(sub, nameof(sub.DisplayOrder), value)" />
+                                                                        </td>
+                                                                        <td class="cursor-pointer" @onclick="() => ToggleStatus(sub.CategoryID, sub.IsActive, false)">
+                                                                            <Badge Class="@($"p-2 {(sub.IsActive ? "btn-success" : "btn-danger")}")"
+                                                                            IndicatorType="BadgeIndicatorType.RoundedPill">
+                                                                                @(sub.IsActive ? "Active" : "Not Active")
+                                                                            </Badge>
+                                                                        </td>
+                                                                        <td>
+                                                                            <TranslatePopup Item="@newCategory" Service="CategoryService" BaseID="sub.CategoryID"
+                                                                            OnTranslationSuccess="Refresh" CurrentData="@(new Dictionary<string, object>
+                                                                         {
+                                                                             { "CategoryImageURL", sub.CategoryImageURL }
+                                                                         })">
+                                                                                <label for="pageTitle">Category Title</label>
+                                                                                <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
+                                                                                <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
+                                                                            </TranslatePopup>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="p-2 text-center text-muted small">
+                                                            <i class="fas fa-info-circle me-1"></i> No Sub-Categories Found. Click "Create Child" on @child.CategoryTitle to add Level 3 categories.
+                                                        </div>
+                                                    }
                                                 </td>
                                             </tr>
                                         }
@@ -210,6 +278,44 @@ OnPageChanged="HandlePageChanged" />
         }
     }
 
+    private IEnumerable<Category> GetDirectChildren(long parentId)
+    {
+        if (!childItems.ContainsKey(parentId)) return Enumerable.Empty<Category>();
+        return childItems[parentId].Where(c => c.ParentID == parentId).OrderBy(c => c.DisplayOrder);
+    }
+
+    private IEnumerable<Category> GetSubChildren(long childId, long parentId)
+    {
+        if (childItems.ContainsKey(childId) && childItems[childId].Any())
+        {
+            return childItems[childId].Where(c => c.ParentID == childId).OrderBy(c => c.DisplayOrder);
+        }
+        if (childItems.ContainsKey(parentId))
+        {
+            return childItems[parentId].Where(c => c.ParentID == childId).OrderBy(c => c.DisplayOrder);
+        }
+        return Enumerable.Empty<Category>();
+    }
+
+    private async Task ToggleSubChildItems(long childID, long parentID)
+    {
+        showPopup = false;
+        if (expandedItems.Contains(childID))
+        {
+            expandedItems.Remove(childID);
+            childItems.Remove(childID);
+        }
+        else
+        {
+            expandedItems.Add(childID);
+            if (!childItems.ContainsKey(childID) || !childItems[childID].Any())
+            {
+                await GetChildCategories(childID);
+            }
+        }
+        StateHasChanged();
+    }
+
     private async Task CreateCategory()
     {
         newCategory.LangID = 1;
@@ -230,6 +336,17 @@ OnPageChanged="HandlePageChanged" />
             else
             {
                 await GetChildCategories(newCategory.ParentID);
+
+                // If adding a Level 3 category, also ensure Level 1 parent is expanded and refreshed
+                var parentItem = childItems.Values.SelectMany(list => list).FirstOrDefault(c => c.CategoryID == newCategory.ParentID);
+                if (parentItem != null && parentItem.ParentID != 0)
+                {
+                    if (!expandedItems.Contains(parentItem.ParentID))
+                    {
+                        expandedItems.Add(parentItem.ParentID);
+                    }
+                    await GetChildCategories(parentItem.ParentID);
+                }
             }
             showPopup = false;
         }
@@ -261,15 +378,13 @@ OnPageChanged="HandlePageChanged" />
         var response = await CategoryService.GetChildAsync(categoryID);
         if (response.Success)
         {
-
-            childItems[categoryID] = response.Data.Any() ? response.Data : new List<Category>(); // ✅ Ensure key exists
+            childItems[categoryID] = response.Data.Any() ? response.Data : new List<Category>();
         }
         else
         {
             notFound = "No Child Categories Found";
             childItems[categoryID] = new List<Category>();
         }
-        // ✅ Ensure UI updates
         StateHasChanged();
     }
 
@@ -279,7 +394,7 @@ OnPageChanged="HandlePageChanged" />
         if (expandedItems.Contains(categoryID))
         {
             expandedItems.Remove(categoryID);
-            childItems.Remove(categoryID); // ✅ Collapse: Remove child data
+            childItems.Remove(categoryID);
         }
         else
         {
@@ -287,7 +402,6 @@ OnPageChanged="HandlePageChanged" />
             await GetChildCategories(categoryID);
         }
 
-        // Trigger UI refresh
         StateHasChanged();
     }
 

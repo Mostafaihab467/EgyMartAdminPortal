@@ -1,4 +1,4 @@
-﻿using EgyMartAdminPortal.Models;
+using EgyMartAdminPortal.Models;
 using EgyMartAdminPortal.Models.Dashoard;
 using System.Net.Http.Json;
 
@@ -18,14 +18,14 @@ namespace EgyMartAdminPortal.Services
         //02
         public async Task<List<UserSub>> UserSubscriptionWillFinish(int WillFinishDays)
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<UserSub>>>($"{ApiUrl}/UsersSubscriptionWillFinish?WillFinishDays={WillFinishDays}"))!;
-            return response.Data;
+            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<UserSub>>>($"{ApiUrl}/UsersSubscriptionWillFinish?WillFinishDays={WillFinishDays}");
+            return response?.Data ?? [];
         }
         //03
         public async Task<List<PlanData>> UserSubscriptionCountByPlan()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<PlanData>>>($"{ApiUrl}/UserSubscriptionCountByPlan"))!;
-            return response.Data;
+            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<PlanData>>>($"{ApiUrl}/UserSubscriptionCountByPlan");
+            return response?.Data ?? [];
         }
         //04
         public async Task<List<SubscriptionData>> TrendingUserSubscriptionsCount(int topSelect)
@@ -66,8 +66,8 @@ namespace EgyMartAdminPortal.Services
         //10
         public async Task<List<CostPlanData>> TotalCostByPlan()
         {
-            var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<CostPlanData>>>($"{ApiUrl}/TotalCostByPlan"))!;
-            return response.Data;
+            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<CostPlanData>>>($"{ApiUrl}/TotalCostByPlan");
+            return response?.Data ?? [];
         }
         //11
         public async Task<List<UsersData>> TopUsersViewProducts(int days, int top)

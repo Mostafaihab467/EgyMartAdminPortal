@@ -249,9 +249,14 @@
                 <h5 class="fw-bold mb-0 text-primary">
                     <i class="fas fa-address-book me-2"></i>@Loc["Subscribers"]
                 </h5>
-                <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" @onclick="() => showAddSubscriberModal = true">
-                    <i class="fas fa-plus me-1"></i>@Loc["Add Subscriber"]
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm" @onclick="() => showUnsubscribeModal = true">
+                        <i class="fas fa-user-slash me-1"></i>@Loc["Unsubscribe"]
+                    </button>
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" @onclick="() => showAddSubscriberModal = true">
+                        <i class="fas fa-plus me-1"></i>@Loc["Add Subscriber"]
+                    </button>
+                </div>
             </div>
             <div class="card-body p-4">
                 <!-- Filters Row -->
@@ -577,6 +582,48 @@
     </div>
 }
 
+<!-- Modal: Unsubscribe Subscriber -->
+@if (showUnsubscribeModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" dir="@(Loc.IsRtl ? "rtl" : "ltr")">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow-lg border-0">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="fas fa-user-slash me-2"></i>@Loc["Unsubscribe"]
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => showUnsubscribeModal = false"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        @(Loc.IsRtl ? "أدخل البريد الإلكتروني للمشترك الذي ترغب في إلغاء اشتراكه من النشرة البريدية." : "Enter the email address of the subscriber you want to unsubscribe from the newsletter.")
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@Loc["Email Address"] <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" @bind="unsubscribeEmail" placeholder="example@mail.com" required />
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light rounded-pill px-4" @onclick="() => showUnsubscribeModal = false">
+                        @(Loc.IsRtl ? "إلغاء" : "Cancel")
+                    </button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4" @onclick="HandleManualUnsubscribe" disabled="@(string.IsNullOrWhiteSpace(unsubscribeEmail) || isUnsubscribing)">
+                        @if (isUnsubscribing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            @(Loc.IsRtl ? "جاري الإلغاء..." : "Unsubscribing...")
+                        }
+                        else
+                        {
+                            @(Loc.IsRtl ? "تأكيد إلغاء الاشتراك" : "Confirm Unsubscribe")
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private string activeTab = "broadcast";
     private NewsletterStats? stats;
@@ -611,6 +658,11 @@
     private bool showAddSubscriberModal = false;
     private string newSubscriberEmail = string.Empty;
     private string newSubscriberUserType = "Customer";
+
+    // Unsubscribe Modal
+    private bool showUnsubscribeModal = false;
+    private string unsubscribeEmail = string.Empty;
+    private bool isUnsubscribing = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -713,7 +765,7 @@
     {
         if (sub.IsActive)
         {
-            var res = await NewsletterService.UnsubscribeAsync(sub.EMailAddress);
+            var res = await NewsletterService.UnsubscribeAsync(sub.EMailAddress, sub.SubscribeID);
             if (res.Success)
             {
                 await Toastr.ShowSuccessAsync(Loc.IsRtl ? "تم إلغاء الاشتراك بنجاح" : "Unsubscribed successfully");
@@ -738,6 +790,26 @@
             {
                 await Toastr.ShowErrorAsync(res.Message);
             }
+        }
+    }
+
+    private async Task HandleManualUnsubscribe()
+    {
+        if (string.IsNullOrWhiteSpace(unsubscribeEmail)) return;
+        isUnsubscribing = true;
+        var res = await NewsletterService.UnsubscribeAsync(unsubscribeEmail);
+        isUnsubscribing = false;
+        if (res.Success)
+        {
+            await Toastr.ShowSuccessAsync(Loc.IsRtl ? "تم إلغاء الاشتراك بنجاح" : "Unsubscribed successfully");
+            showUnsubscribeModal = false;
+            unsubscribeEmail = string.Empty;
+            await LoadSubscribers();
+            await LoadStats();
+        }
+        else
+        {
+            await Toastr.ShowErrorAsync(res.Message);
         }
     }
 

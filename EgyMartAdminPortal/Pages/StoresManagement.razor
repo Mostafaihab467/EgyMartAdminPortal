@@ -219,18 +219,6 @@
     </div>
 
     <div class="mb-3">
-        <label for="createVendorSelect" class="form-label">@Loc["Vendor / Owner"] <span class="text-danger">*</span></label>
-        <select class="form-select" id="createVendorSelect" @bind="newStore.VendorUserId">
-            <option value="">-- @Loc["Select"] @Loc["Vendor"] --</option>
-            @foreach (var supplier in suppliersList)
-            {
-                <option value="@supplier.UserID">@supplier.DisplayName (@supplier.UserName)</option>
-            }
-        </select>
-        <ValidationMessage For="@(() => newStore.VendorUserId)" />
-    </div>
-
-    <div class="mb-3">
         <label for="createAddress" class="form-label">@Loc["Address"] <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="createAddress" placeholder="Street address, building, floor"
                @bind="newStore.AddressLine" />

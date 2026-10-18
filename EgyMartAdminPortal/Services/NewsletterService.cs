@@ -195,11 +195,11 @@ namespace EgyMartAdminPortal.Services
             }
         }
 
-        public async Task<(bool Success, string Message)> UnsubscribeAsync(string email)
+        public async Task<(bool Success, string Message)> UnsubscribeAsync(string? email = null, long? subscriberId = null)
         {
             try
             {
-                var payload = new { Email = email.Trim() };
+                var payload = new { Email = email?.Trim(), SubscribeID = subscriberId };
                 var response = await _httpClient.PostAsJsonAsync($"{BaseApi}unsubscribe", payload);
                 if (response.IsSuccessStatusCode)
                 {
