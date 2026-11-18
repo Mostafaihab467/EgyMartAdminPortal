@@ -83,6 +83,11 @@ namespace EgyMartAdminPortal.Services
             var response = await _httpClient.PutAsJsonAsync($"{ApiUrl}/ChangeStatus", requestPayload);
             return response;
         }
+        public async Task<HttpResponseMessage> DeleteAsync(long categoryID)
+        {
+            // Deletes the category and its whole sub tree (the API owns that cascade).
+            return await _httpClient.DeleteAsync($"{ApiUrl}/Delete/{categoryID}");
+        }
         public async Task<List<Category>> GetByLangAsync(int langID, long baseID)
         {
             var response = (await _httpClient.GetFromJsonAsync<ApiResponse<List<Category>>>($"{ApiUrl}/GetByLang/{baseID}?LangID={langID}"))!;

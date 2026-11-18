@@ -2,6 +2,7 @@
 @inject CategoryService CategoryService
 @inject ToastrService ToastService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 
 
@@ -91,6 +92,11 @@
                                 <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
                                 <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
                             </TranslatePopup>
+
+                            <button class="btn btn-outline-danger btn-sm ms-1" title="Delete Category"
+                                    @onclick="() => DeleteCategory(item)">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     <tr class="collapse @(expandedItems.Contains(item.CategoryID) ? "show" : "")" id="@($"child-{item.CategoryID}")" data-bs-parent=".table">
@@ -145,6 +151,11 @@
                                                         <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
                                                         <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
                                                     </TranslatePopup>
+
+                                                    <button class="btn btn-outline-danger btn-sm ms-1" title="Delete Category"
+                                                            @onclick="() => DeleteCategory(child)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </td>
                                             </tr>
                                             <tr class="collapse @(expandedItems.Contains(child.CategoryID) ? "show" : "")" id="@($"subchild-{child.CategoryID}")">
@@ -194,6 +205,11 @@
                                                                                 <input id="pageTitle" class="form-control" @bind="@newCategory.CategoryTitle" />
                                                                                 <ValidationMessage For="@(() => newCategory.CategoryTitle)" />
                                                                             </TranslatePopup>
+
+                                                                            <button class="btn btn-outline-danger btn-sm ms-1" title="Delete Category"
+                                                                                    @onclick="() => DeleteCategory(sub)">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
                                                                         </td>
                                                                     </tr>
                                                                 }
@@ -428,6 +444,57 @@ OnPageChanged="HandlePageChanged" />
         }
 
         StateHasChanged();
+    }
+
+    private async Task DeleteCategory(Category item)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"Delete '{item.CategoryTitle}'? Its sub categories and translations are deleted too. This cannot be undone.");
+        if (!confirmed) return;
+
+        showPopup = false;
+        var response = await CategoryService.DeleteAsync(item.CategoryID);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await ToastService.ShowSuccessAsync("Category deleted successfully", "Success");
+
+            // The API removes the whole branch, so drop the lazy-loaded children and reload the tree.
+            expandedItems.Clear();
+            childItems.Clear();
+            notFound = "No Categories Found";
+            await GetCategoriesAsync();
+        }
+        else
+        {
+            await ToastService.ShowErrorAsync(await ReadErrorAsync(response), "Error");
+        }
+    }
+
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+
+            foreach (var name in new[] { "responseEngMsg", "ResponseEngMsg", "message", "Message" })
+            {
+                if (document.RootElement.TryGetProperty(name, out var element) &&
+                    element.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var text = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(text)) return text!;
+                }
+            }
+        }
+        catch
+        {
+            // A non-JSON error body falls through to the generic message below.
+        }
+
+        return "Error while deleting the category";
     }
 
     private async Task SaveEdit(Category item, string fieldName, object newValue)

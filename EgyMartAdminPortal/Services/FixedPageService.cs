@@ -77,5 +77,10 @@ namespace EgyMartAdminPortal.Services
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
             return result ?? new ApiResponse<int>() { Success = false, Data = 0 };
         }
+
+        public async Task<HttpResponseMessage> DeleteAsync(int id)
+        {
+            return await _httpClient.DeleteAsync($"{ApiUrl}/Delete/{id}");
+        }
     }
 }

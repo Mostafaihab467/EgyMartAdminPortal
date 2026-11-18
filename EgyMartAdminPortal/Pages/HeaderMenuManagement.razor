@@ -3,6 +3,7 @@
 @inject NavigationManager NavigationManager
 @inject HeaderMenuService HeaderMenuService
 @inject ToastrService ToastService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>HeaderMenu Management</PageTitle>
 <h1>HeaderMenu Management</h1>
@@ -87,6 +88,7 @@
                                 <input id="pageTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
                                 <ValidationMessage For="@(() => newItem.MenuItemTitle)" />
                             </TranslatePopup>
+                            <button class="btn btn-outline-danger btn-sm ms-1" title="Delete" @onclick="() => DeleteItemAsync(item, 0)"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                     <tr class="collapse @(expandedItems.Contains(item.MenuItemID) ? "show" : "")" id="@($"child-{item.MenuItemID}")" data-bs-parent=".table">
@@ -133,6 +135,7 @@
                                                         <input id="mainItemTitle" class="form-control" @bind="@newItem.MenuItemTitle" />
                                                         <ValidationMessage For="@(() => newItem.MenuItemTitle)" />
                                                      </TranslatePopup> 
+                                                    <button class="btn btn-outline-danger btn-sm ms-1" title="Delete" @onclick="() => DeleteItemAsync(child, item.MenuItemID)"><i class="fas fa-trash"></i></button>
                                                 </td>
                                             </tr>
                                         }
@@ -351,6 +354,70 @@
         }
 
         StateHasChanged();
+    }
+
+    // --- Delete Header Menu Item (top level or child) ---
+    private async Task DeleteItemAsync(HeaderMenu item, long parentID)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Delete '{item.MenuItemTitle}'? Its sub items and translations are deleted too. This cannot be undone.");
+        if (!confirmed) return;
+
+        var response = await HeaderMenuService.DeleteAsync(item.MenuItemID);
+        if (response.IsSuccessStatusCode)
+        {
+            if (parentID == 0)
+            {
+                allItems.RemoveAll(i => i.MenuItemID == item.MenuItemID);
+                childItems.Remove(item.MenuItemID);
+                expandedItems.Remove(item.MenuItemID);
+
+                var maxPage = Math.Max(1, (int)Math.Ceiling(allItems.Count / (double)PageSize));
+                if (CurrentPage > maxPage) CurrentPage = maxPage;
+                UpdatePagedItems();
+            }
+            else
+            {
+                foreach (var key in childItems.Keys.ToList())
+                {
+                    childItems[key].RemoveAll(c => c.MenuItemID == item.MenuItemID);
+                }
+            }
+
+            await ToastService.ShowSuccessAsync("Deleted successfully", "Success");
+        }
+        else
+        {
+            var message = await ReadErrorMessageAsync(response);
+            await ToastService.ShowErrorAsync(message ?? "Error while deleting item", "Error");
+        }
+    }
+
+    private static async Task<string?> ReadErrorMessageAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body)) return null;
+
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+
+            foreach (var name in new[] { "responseEngMsg", "ResponseEngMsg", "message", "Message" })
+            {
+                if (document.RootElement.TryGetProperty(name, out var element) &&
+                    element.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var value = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(value)) return value;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Response body is not JSON - fall back to the generic message.
+        }
+
+        return null;
     }
 
     private void UpdatePagedItems()

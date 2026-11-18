@@ -1,6 +1,7 @@
 ﻿@page "/faqs"
 @inject FAQService FAQService
 @inject ToastrService ToastService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>FAQs Management</PageTitle>
 <h3>FAQsManagement</h3>
@@ -79,6 +80,7 @@
                                 <HtmlEditor @bind-Value="@newItem.QAnswer" />
                                 <ValidationMessage For="@(() => newItem.QAnswer)" />
                             </TranslatePopup>
+                            <button class="btn btn-outline-danger btn-sm ms-1" title="Delete" @onclick="() => DeleteItemAsync(item)"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 }
@@ -230,6 +232,56 @@
         }
 
         StateHasChanged();
+    }
+
+    // --- Delete FAQ ---
+    private async Task DeleteItemAsync(FAQ item)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Delete '{item.QTitle}'? Its sub items and translations are deleted too. This cannot be undone.");
+        if (!confirmed) return;
+
+        var response = await FAQService.DeleteAsync(item.Qid);
+        if (response.IsSuccessStatusCode)
+        {
+            allItems.RemoveAll(i => i.Qid == item.Qid);
+            var maxPage = Math.Max(1, (int)Math.Ceiling(allItems.Count / (double)PageSize));
+            if (CurrentPage > maxPage) CurrentPage = maxPage;
+            UpdatePagedItems();
+            await ToastService.ShowSuccessAsync("Deleted successfully", "Success");
+        }
+        else
+        {
+            var message = await ReadErrorMessageAsync(response);
+            await ToastService.ShowErrorAsync(message ?? "Error while deleting item", "Error");
+        }
+    }
+
+    private static async Task<string?> ReadErrorMessageAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body)) return null;
+
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+
+            foreach (var name in new[] { "responseEngMsg", "ResponseEngMsg", "message", "Message" })
+            {
+                if (document.RootElement.TryGetProperty(name, out var element) &&
+                    element.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var value = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(value)) return value;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Response body is not JSON - fall back to the generic message.
+        }
+
+        return null;
     }
 
     private void UpdatePagedItems()

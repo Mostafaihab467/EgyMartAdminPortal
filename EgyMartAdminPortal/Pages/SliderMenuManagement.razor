@@ -1,6 +1,7 @@
 ﻿@page "/slider-menu"
 @inject SliderMenuService SliderMenuService
 @inject ToastrService ToastService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>SliderMenu Management</PageTitle>
 <h3>SliderMenuManagement</h3>
@@ -111,6 +112,7 @@
                                 <label for="call2ActionMsg">Action Msg</label>
                                 <input id="call2ActionMsg" class="form-control" @bind="@newItem.Call2ActionMsg" />
                             </TranslatePopup>
+                            <button class="btn btn-outline-danger btn-sm ms-1" title="Delete" @onclick="() => DeleteItemAsync(item)"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 }
@@ -273,6 +275,57 @@ OnPageChanged="HandlePageChanged" />
         }
 
         StateHasChanged();
+    }
+
+    // --- Delete Slider ---
+    private async Task DeleteItemAsync(SliderMenu item)
+    {
+        var title = string.IsNullOrWhiteSpace(item.MainTitle) ? item.ShortTitle : item.MainTitle;
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Delete '{title}'? Its sub items and translations are deleted too. This cannot be undone.");
+        if (!confirmed) return;
+
+        var response = await SliderMenuService.DeleteAsync(item.SliderID);
+        if (response.IsSuccessStatusCode)
+        {
+            allItems.RemoveAll(i => i.SliderID == item.SliderID);
+            var maxPage = Math.Max(1, (int)Math.Ceiling(allItems.Count / (double)PageSize));
+            if (CurrentPage > maxPage) CurrentPage = maxPage;
+            UpdatePagedItems();
+            await ToastService.ShowSuccessAsync("Deleted successfully", "Success");
+        }
+        else
+        {
+            var message = await ReadErrorMessageAsync(response);
+            await ToastService.ShowErrorAsync(message ?? "Error while deleting item", "Error");
+        }
+    }
+
+    private static async Task<string?> ReadErrorMessageAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body)) return null;
+
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+
+            foreach (var name in new[] { "responseEngMsg", "ResponseEngMsg", "message", "Message" })
+            {
+                if (document.RootElement.TryGetProperty(name, out var element) &&
+                    element.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var value = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(value)) return value;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Response body is not JSON - fall back to the generic message.
+        }
+
+        return null;
     }
 
     private void UpdatePagedItems()

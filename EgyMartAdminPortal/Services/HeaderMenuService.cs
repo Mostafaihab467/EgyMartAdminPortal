@@ -100,5 +100,10 @@ namespace EgyMartAdminPortal.Services
             var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}/ChangeStatus", requestPayload);
             return response;
         }
+
+        public async Task<HttpResponseMessage> DeleteAsync(long id)
+        {
+            return await _httpClient.DeleteAsync($"{ApiUrl}/Delete/{id}");
+        }
     }
 }
