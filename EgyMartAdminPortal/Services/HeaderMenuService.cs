@@ -1,11 +1,13 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class HeaderMenuService(HttpClient httpClient)
+    public class HeaderMenuService(HttpClient httpClient, ILogger<HeaderMenuService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
+        private readonly ILogger<HeaderMenuService> _logger = logger;
         protected string ApiUrl = "cms/api/jpt/v2/WidgetsHeaderMenu";
 
         public string GetTranslateApiUrl()
@@ -19,19 +21,19 @@ namespace EgyMartAdminPortal.Services
             {
                 var response = await _httpClient.GetFromJsonAsync<List<HeaderMenu>>($"{ApiUrl}/GetTopLevel/1/1");
 
-                if (response == null || response == null)
+                if (response == null)
                     return [];
 
                 return response;
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine("API returned 404 - Resource not found.");
+                _logger.LogWarning(ex, "Header menu endpoint returned 404");
                 return []; // Return an empty list instead of throwing an error
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading header menu");
                 return []; // Handle other errors gracefully
             }
         }

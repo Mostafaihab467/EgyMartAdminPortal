@@ -1,13 +1,15 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class AttributeService(HttpClient httpClient, AuthService authService)
+    public class AttributeService(HttpClient httpClient, AuthService authService, ILogger<AttributeService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
         private readonly AuthService authService = authService;
+        private readonly ILogger<AttributeService> _logger = logger;
         protected string ApiUrl = "products/api/jpt/v2/Attribute";
         public async Task<List<Attributes>> GetAsync()
         {
@@ -22,12 +24,12 @@ namespace EgyMartAdminPortal.Services
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine("API returned 404 - Resource not found.");
+                _logger.LogWarning(ex, "Attributes endpoint returned 404");
                 return []; // Return an empty list instead of throwing an error
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading attributes");
                 return []; // Handle other errors gracefully
             }
         }
@@ -93,8 +95,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                // Handle exceptions (network issues, etc.)
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading link matrix for attribute {AttributeId}", attributeID);
                 return [];
             }
         }

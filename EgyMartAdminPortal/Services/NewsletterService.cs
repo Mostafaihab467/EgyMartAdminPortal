@@ -176,8 +176,7 @@ namespace EgyMartAdminPortal.Services
                     return (true, "Broadcast sent successfully!");
                 }
 
-                var err = await response.Content.ReadAsStringAsync();
-                return (false, string.IsNullOrWhiteSpace(err) || (int)response.StatusCode >= 500 ? "Failed to send broadcast." : err);
+                return (false, await SafeErrorMessageAsync(response, "Failed to send broadcast."));
             }
             catch (Exception ex)
             {
@@ -196,11 +195,11 @@ namespace EgyMartAdminPortal.Services
                 {
                     return (true, "Subscribed successfully!");
                 }
-                var err = await response.Content.ReadAsStringAsync();
-                return (false, (int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : err);
+                return (false, await SafeErrorMessageAsync(response, "Failed to subscribe."));
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error subscribing newsletter address");
                 return (false, "An unexpected error occurred. Please try again.");
             }
         }
@@ -215,11 +214,11 @@ namespace EgyMartAdminPortal.Services
                 {
                     return (true, "Unsubscribed successfully!");
                 }
-                var err = await response.Content.ReadAsStringAsync();
-                return (false, (int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : err);
+                return (false, await SafeErrorMessageAsync(response, "Failed to unsubscribe."));
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error unsubscribing newsletter address");
                 return (false, "An unexpected error occurred. Please try again.");
             }
         }
@@ -233,13 +232,35 @@ namespace EgyMartAdminPortal.Services
                 {
                     return (true, "Subscriber deleted successfully!");
                 }
-                var err = await response.Content.ReadAsStringAsync();
-                return (false, (int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : err);
+                return (false, await SafeErrorMessageAsync(response, "Failed to delete subscriber."));
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error deleting subscriber {SubscriberId}", subscriberId);
                 return (false, "An unexpected error occurred. Please try again.");
             }
+        }
+
+        private static async Task<string> SafeErrorMessageAsync(HttpResponseMessage response, string fallback)
+        {
+            if ((int)response.StatusCode >= 500)
+                return "A server error occurred. Please try again later.";
+            try
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("responseEngMsg", out var msg) && msg.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var text = msg.GetString();
+                    if (!string.IsNullOrWhiteSpace(text) && text.Length <= 200)
+                        return text;
+                }
+            }
+            catch
+            {
+                // Ignore non-JSON bodies
+            }
+            return fallback;
         }
 
         #endregion

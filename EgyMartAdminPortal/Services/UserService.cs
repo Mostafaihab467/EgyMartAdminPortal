@@ -1,17 +1,19 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class UserService(HttpClient httpClient, LocalStorageService localStorageService)
+    public class UserService(HttpClient httpClient, LocalStorageService localStorageService, ILogger<UserService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
         private readonly LocalStorageService _localStorageService = localStorageService;
+        private readonly ILogger<UserService> _logger = logger;
         protected string ApiUrl = "auth/api/v2/";
+
         private async Task<ApiResponse<List<T>>> FetchPendingUsersAsync<T>(string endpoint)
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<T>>>($"{ApiUrl}Auth/{endpoint}");
@@ -33,7 +35,7 @@ namespace EgyMartAdminPortal.Services
         public async Task<ApiResponse<List<Customer>>> GetPendingVerifyCustomersAsync() => await FetchPendingUsersAsync<Customer>("PendingVerifyCustomer/Get");
 
         public async Task<bool> VerifySupplierAsync(long supplierId, long verifiedID, bool status) =>
-    await VerifyUserAsync("Supplier", supplierId, verifiedID, status);
+            await VerifyUserAsync("Supplier", supplierId, verifiedID, status);
 
         public async Task<bool> VerifyCustomerAsync(long customerId, long verifiedID) =>
             await VerifyUserAsync("Customer", customerId, verifiedID);
@@ -47,7 +49,7 @@ namespace EgyMartAdminPortal.Services
         {
             try
             {
-                var bayload = new
+                var payload = new
                 {
                     request.DisplayName,
                     request.UserName,
@@ -55,25 +57,23 @@ namespace EgyMartAdminPortal.Services
                     request.UserTypeID,
                     request.FirstLogin,
                 };
-                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}UsersManagment/Create", bayload);
+                var response = await _httpClient.PostAsJsonAsync($"{ApiUrl}UsersManagment/Create", payload);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<ApiResponse<CreateUserResult>>();
                     return result ?? new ApiResponse<CreateUserResult> { Success = false, ResponseEngMsg = "Empty response from server." };
                 }
-                else
+
+                return new ApiResponse<CreateUserResult>
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    return new ApiResponse<CreateUserResult>
-                    {
-                        Success = false,
-                        ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error: {error}")
-                    };
-                }
+                    Success = false,
+                    ResponseEngMsg = await SafeErrorMessageAsync(response, "Unable to create user. Please check the entered details.")
+                };
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error creating user");
                 return new ApiResponse<CreateUserResult>
                 {
                     Success = false,
@@ -91,6 +91,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error fetching user types");
                 return new ApiResponse<List<UserTypeWithCount>>
                 {
                     Success = false,
@@ -109,12 +110,12 @@ namespace EgyMartAdminPortal.Services
                 if (response != null && response.Success)
                     return response.Data;
 
-                return new List<UserTypeWithCount>(); // or throw error
+                return new List<UserTypeWithCount>();
             }
             catch (Exception ex)
             {
-                // Optionally log or rethrow
-                throw new ApplicationException("Error fetching user types", ex);
+                _logger.LogError(ex, "Error fetching admin user types");
+                throw new ApplicationException("Error fetching user types.");
             }
         }
 
@@ -145,24 +146,22 @@ namespace EgyMartAdminPortal.Services
                             }
                             if (person.ProfileImage == null)
                             {
-                                person.ProfileImage = $"images/avatars/user.jpg";
+                                person.ProfileImage = "images/avatars/user.jpg";
                             }
                         }
                     }
                     return result ?? new ApiResponse<List<Person>> { Success = false, ResponseEngMsg = "Empty response from server." };
                 }
-                else
+
+                return new ApiResponse<List<Person>>
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    return new ApiResponse<List<Person>>
-                    {
-                        Success = false,
-                        ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error: {error}")
-                    };
-                }
+                    Success = false,
+                    ResponseEngMsg = await SafeErrorMessageAsync(response, "Unable to load users.")
+                };
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error listing users by type {TypeID}", typeID);
                 return new ApiResponse<List<Person>>
                 {
                     Success = false,
@@ -175,19 +174,13 @@ namespace EgyMartAdminPortal.Services
         {
             try
             {
-                // Construct the URL for blocking/unblocking the user
                 var url = $"{ApiUrl}UsersManagment/BlockOrUnBlock?UserID={userId}&Active={active}";
-
-                // Send the PUT request to the API
                 var response = await _httpClient.PutAsync(url, null);
-
-                // Check if the request was successful
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
-                // Handle exceptions (network issues, etc.)
-                Console.WriteLine($"Exception occurred while updating user status: {ex.Message}");
+                _logger.LogError(ex, "Error updating user status for {UserId}", userId);
                 return false;
             }
         }
@@ -196,20 +189,12 @@ namespace EgyMartAdminPortal.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{ApiUrl}UsersManagment/ResetPassword?UserID={userId}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                var response = await _httpClient.PostAsync($"{ApiUrl}UsersManagment/ResetPassword?UserID={userId}", null);
+                return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error resetting password: {ex.Message}");
+                _logger.LogError(ex, "Error resetting password for {UserId}", userId);
                 return false;
             }
         }
@@ -228,32 +213,30 @@ namespace EgyMartAdminPortal.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[ResetLoginFailAsync] HTTP error: {response.StatusCode}");
+                    _logger.LogWarning("FailCounter reset HTTP error {StatusCode}", response.StatusCode);
                     return false;
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<ApiResponse<int>>();
-
                 if (result == null)
                 {
-                    Console.WriteLine("[ResetLoginFailAsync] Failed to deserialize response.");
+                    _logger.LogWarning("FailCounter reset failed to deserialize response");
                     return false;
                 }
 
                 if (!result.Success)
                 {
-                    Console.WriteLine($"[ResetLoginFailAsync] API responded with failure: {result.ResponseEngMsg}");
+                    _logger.LogWarning("FailCounter reset failed: {Message}", result.ResponseEngMsg);
                 }
 
-                return result.Data == 0 ? false : true;
+                return result.Data != 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ResetLoginFailAsync] Exception: {ex.Message}");
+                _logger.LogError(ex, "Error resetting login fail counter");
                 return false;
             }
         }
-
 
         public async Task<string?> DownloadSupplierAttachmentAsync(long OwnerID)
         {
@@ -279,8 +262,29 @@ namespace EgyMartAdminPortal.Services
                 return null;
             }
 
-            throw new Exception("Failed to download attachment");
+            throw new Exception("Failed to download attachment.");
         }
 
+        private static async Task<string> SafeErrorMessageAsync(HttpResponseMessage response, string fallback)
+        {
+            if ((int)response.StatusCode >= 500)
+                return "A server error occurred. Please try again later.";
+            try
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("responseEngMsg", out var msg) && msg.ValueKind == JsonValueKind.String)
+                {
+                    var text = msg.GetString();
+                    if (!string.IsNullOrWhiteSpace(text) && text.Length <= 200)
+                        return text;
+                }
+            }
+            catch
+            {
+                // Ignore non-JSON bodies
+            }
+            return fallback;
+        }
     }
 }

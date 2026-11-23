@@ -1,5 +1,6 @@
 ﻿@using System.Text.RegularExpressions
 @typeparam T
+@inject ILoggerFactory LoggerFactory
 
 @if (IsEditing)
 {
@@ -137,7 +138,7 @@ else
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Focus] Could not set focus: {ex.Message}");
+                LoggerFactory.CreateLogger("EditableField").LogDebug(ex, "Could not set focus");
             }
         }
     }
@@ -183,7 +184,7 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SaveEdit] Conversion error: {ex.Message}");
+            LoggerFactory.CreateLogger("EditableField").LogWarning(ex, "SaveEdit conversion error");
         }
 
         IsEditing = false;

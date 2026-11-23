@@ -1,6 +1,7 @@
 ﻿using EgyMartAdminPortal.Models;
 using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 
 namespace EgyMartAdminPortal.Services
@@ -40,7 +41,6 @@ namespace EgyMartAdminPortal.Services
                 }
             }
 
-
             return User;
         }
 
@@ -48,6 +48,53 @@ namespace EgyMartAdminPortal.Services
         {
             var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
             return tokens?.Jwt;
+        }
+
+        public async Task<bool> HasValidSessionAsync()
+        {
+            var user = await _localStorage.GetItemAsync<Person>(UserKey);
+            User = user ?? new Person();
+            var token = await GetAuthTokenAsync();
+
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(User.DisplayName))
+                return false;
+
+            if (!IsTokenExpired(token))
+                return true;
+
+            if (await TryRefreshTokenAsync())
+            {
+                var refreshed = await GetAuthTokenAsync();
+                return !string.IsNullOrWhiteSpace(refreshed) && !IsTokenExpired(refreshed);
+            }
+
+            return false;
+        }
+
+        public static bool IsTokenExpired(string? jwt)
+        {
+            if (string.IsNullOrWhiteSpace(jwt)) return true;
+            var parts = jwt.Split('.');
+            if (parts.Length < 2) return true;
+
+            try
+            {
+                var payload = parts[1].Replace('-', '+').Replace('_', '/');
+                switch (payload.Length % 4)
+                {
+                    case 2: payload += "=="; break;
+                    case 3: payload += "="; break;
+                }
+                var bytes = Convert.FromBase64String(payload);
+                using var doc = JsonDocument.Parse(bytes);
+                if (!doc.RootElement.TryGetProperty("exp", out var expEl) || !expEl.TryGetInt64(out var exp))
+                    return true;
+                return DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= exp;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         public async Task<ApiResponse<LoginData>> LoginAsync(string userName, string password)
@@ -143,10 +190,24 @@ namespace EgyMartAdminPortal.Services
 
         public async Task LogoutAsync()
         {
-            var currentUrl = _navigation.Uri;
-            if (!currentUrl.Contains("login"))
+            try
             {
-                await _localStorage.SetItemAsync("lastVisitedUrl", currentUrl);
+                var token = await GetAuthTokenAsync();
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    var client = _httpClientFactory.CreateClient("SignedClient");
+                    await client.PostAsync($"{ApiUrl}/Logout", null);
+                }
+            }
+            catch
+            {
+                // Best-effort server revocation; always clear local session
+            }
+
+            var relative = "/" + _navigation.ToBaseRelativePath(_navigation.Uri).TrimStart('/');
+            if (!relative.StartsWith("/login", StringComparison.OrdinalIgnoreCase))
+            {
+                await _localStorage.SetItemAsync("lastVisitedUrl", relative);
             }
             await _localStorage.RemoveItemAsync(TokenKey);
             await _localStorage.RemoveItemAsync(UserKey);

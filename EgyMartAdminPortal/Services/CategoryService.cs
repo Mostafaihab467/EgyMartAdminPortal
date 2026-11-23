@@ -1,11 +1,13 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class CategoryService(HttpClient httpClient)
+    public class CategoryService(HttpClient httpClient, ILogger<CategoryService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
+        private readonly ILogger<CategoryService> _logger = logger;
         protected string ApiUrl = "products/api/jpt/v2/CategoryList";
         public async Task<List<Category>> GetAsync()
         {
@@ -20,12 +22,12 @@ namespace EgyMartAdminPortal.Services
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine("API returned 404 - Resource not found.");
+                _logger.LogWarning(ex, "Categories endpoint returned 404");
                 return [];
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading categories");
                 return [];
             }
         }

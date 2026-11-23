@@ -1,11 +1,13 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class FixedPageService(HttpClient httpClient)
+    public class FixedPageService(HttpClient httpClient, ILogger<FixedPageService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
+        private readonly ILogger<FixedPageService> _logger = logger;
         protected string ApiUrl = "cms/api/jpt/v2/Widgets_FixedPages";
 
         public string GetTranslateApiUrl()
@@ -26,12 +28,12 @@ namespace EgyMartAdminPortal.Services
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine("API returned 404 - Resource not found.");
+                _logger.LogWarning(ex, "Fixed pages endpoint returned 404");
                 return []; // Return an empty list instead of throwing an error
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading fixed pages");
                 return []; // Handle other errors gracefully
             }
         }

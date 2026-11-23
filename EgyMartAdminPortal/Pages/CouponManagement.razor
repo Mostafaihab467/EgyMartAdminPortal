@@ -3,6 +3,7 @@
 @inject UserService UserService
 @inject ToastrService ToastService
 @inject IJSRuntime JSRuntime
+@inject ILogger<CouponManagement> Logger
 @implements IDisposable
 
 <PageTitle>@Loc["Coupon Management"]</PageTitle>
@@ -462,7 +463,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[LoadSuppliersAsync] Error: {ex.Message}");
+            Logger.LogError(ex, "Error loading suppliers");
         }
     }
 

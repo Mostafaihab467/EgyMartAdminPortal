@@ -11,25 +11,23 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var apiUrl = builder.Configuration.GetValue<string>("ApiUrl");
-if (string.IsNullOrWhiteSpace(apiUrl))
-    throw new InvalidOperationException("ApiUrl is not configured.");
+if (string.IsNullOrWhiteSpace(apiUrl) || !Uri.TryCreate(apiUrl, UriKind.Absolute, out var apiUri))
+    throw new InvalidOperationException("ApiUrl is not configured or invalid.");
+if (!builder.HostEnvironment.IsDevelopment() && !string.Equals(apiUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+    throw new InvalidOperationException("ApiUrl must use HTTPS outside Development.");
 
-// Register signature handler
-builder.Services.AddScoped<SignatureHandler>();
 builder.Services.AddScoped<JwtAuthorizationMessageHandler>();
 
 builder.Services.AddHttpClient("PlainClient", client =>
 {
-    client.BaseAddress = new Uri(apiUrl!);
+    client.BaseAddress = apiUri;
 });
 
-// Register HttpClient with handler
 builder.Services.AddHttpClient("SignedClient", client =>
 {
-    client.BaseAddress = new Uri(apiUrl!);
+    client.BaseAddress = apiUri;
 })
-.AddHttpMessageHandler<JwtAuthorizationMessageHandler>()
-.AddHttpMessageHandler<SignatureHandler>();
+.AddHttpMessageHandler<JwtAuthorizationMessageHandler>();
 
 builder.Services.AddScoped(sp =>
 {
@@ -44,7 +42,6 @@ builder.Services.AddScoped<LocalizationService>();
 builder.Services.AddScoped<LanguageService>();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddScoped<ToastrService>();
-builder.Services.AddScoped<ImageService>();
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<Func<AuthService>>(sp => () => sp.GetRequiredService<AuthService>());

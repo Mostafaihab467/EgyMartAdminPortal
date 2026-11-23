@@ -1,13 +1,15 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class SliderMenuService(HttpClient httpClient)
+    public class SliderMenuService(HttpClient httpClient, ILogger<SliderMenuService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
+        private readonly ILogger<SliderMenuService> _logger = logger;
         protected string ApiUrl = "cms/api/jpt/v2/WidgetsSliders";
 
         public string GetTranslateApiUrl()
@@ -28,12 +30,12 @@ namespace EgyMartAdminPortal.Services
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine("API returned 404 - Resource not found.");
+                _logger.LogWarning(ex, "Slider menu endpoint returned 404");
                 return []; // Return an empty list instead of throwing an error
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading sliders");
                 return []; // Handle other errors gracefully
             }
         }
@@ -89,14 +91,13 @@ namespace EgyMartAdminPortal.Services
                 }
                 else
                 {
-                    var errorMessage = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Error: {errorMessage}");
+                    _logger.LogWarning("EditSliderImage failed with HTTP {StatusCode} for slider {SliderId}", response.StatusCode, sliderId);
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error updating slider image {SliderId}", sliderId);
                 return false;
             }
         }

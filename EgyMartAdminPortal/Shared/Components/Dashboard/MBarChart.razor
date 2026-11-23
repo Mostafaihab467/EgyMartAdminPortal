@@ -15,7 +15,7 @@
             <rect x="@GetXPosition(data.ViewDay!)" y="@GetYPosition(data.ViewsCount)"
                   width="@BarWidth" height="@GetBarHeight(data.ViewsCount)"
                   fill="@BarColor" rx="4"></rect>
-            @((MarkupString)$"<text x='{GetXPosition(data.ViewDay!) + (BarWidth / 2)}' y='{GetYPosition(data.ViewsCount) - 5}' font-size='10' fill='black' text-anchor='middle'>{data.ViewsCount}</text>")
+            @RenderCountText(GetXPosition(data.ViewDay!) + (BarWidth / 2), GetYPosition(data.ViewsCount) - 5, data.ViewsCount)
         }
     </svg>
 
@@ -55,6 +55,18 @@
     private int GetBarHeight(int count) => (count * MaxHeight / (GetMaxViewCount() == 0 ? 1 : GetMaxViewCount()));
     private string GetShortDay(string? fullDay) => !string.IsNullOrEmpty(fullDay) && fullDay.Length >= 2 ? fullDay[..2] : "--";
     private int GetMaxViewCount() => ViewData.Any() ? ViewData.Max(v => v.ViewsCount) : 100;
+    private static RenderFragment RenderCountText(int x, int y, int count) => builder =>
+    {
+        builder.OpenElement(0, "text");
+        builder.AddAttribute(1, "x", x);
+        builder.AddAttribute(2, "y", y);
+        builder.AddAttribute(3, "font-size", "10");
+        builder.AddAttribute(4, "fill", "black");
+        builder.AddAttribute(5, "text-anchor", "middle");
+        builder.AddContent(6, count);
+        builder.CloseElement();
+    };
+
     private static string GetSafeFileName(string value)
     {
         var invalidChars = Path.GetInvalidFileNameChars();

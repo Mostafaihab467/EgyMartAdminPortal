@@ -1,11 +1,13 @@
 ﻿using EgyMartAdminPortal.Models;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
 namespace EgyMartAdminPortal.Services
 {
-    public class FAQService(HttpClient httpClient)
+    public class FAQService(HttpClient httpClient, ILogger<FAQService> logger)
     {
         private readonly HttpClient _httpClient = httpClient;
+        private readonly ILogger<FAQService> _logger = logger;
         protected string ApiUrl = "cms/api/jpt/v2/WidgetsFAQ";
 
         public string GetTranslateApiUrl()
@@ -26,12 +28,12 @@ namespace EgyMartAdminPortal.Services
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine("API returned 404 - Resource not found.");
+                _logger.LogWarning(ex, "FAQ endpoint returned 404");
                 return []; // Return an empty list instead of throwing an error
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _logger.LogError(ex, "Error loading FAQs");
                 return []; // Handle other errors gracefully
             }
         }

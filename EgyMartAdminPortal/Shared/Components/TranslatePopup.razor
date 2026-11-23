@@ -1,6 +1,7 @@
 ﻿@inject TranslationService TranslationService
 @inject LanguageService LanguageService
 @inject ToastrService ToastService
+@inject ILogger<TranslatePopup> Logger
 
 <div class="d-inline-block">
     <Button class="btn btn-primary" TooltipTitle="Translate" TooltipPlacement="TooltipPlacement.Top" data-bs-original-title="Translate" @onclick="ShowTranslationPopup">
@@ -100,7 +101,7 @@
     {
         if (service == null || Item == null)
         {
-            Console.WriteLine("Service or Item is null, skipping translation.");
+            Logger.LogDebug("Service or Item is null, skipping translation.");
             return;
         }
 
@@ -109,7 +110,7 @@
             var method = service.GetType().GetMethod("GetByLangAsync");
             if (method == null)
             {
-                Console.WriteLine("Method GetByLangAsync not found.");
+                Logger.LogDebug("Method GetByLangAsync not found on {ServiceType}.", service.GetType().Name);
                 return;
             }
 
@@ -145,7 +146,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching existing translations: {ex.Message}");
+            Logger.LogError(ex, "Error fetching existing translations");
         }
 
         StateHasChanged();
@@ -236,7 +237,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Exception: {ex.Message}");
+            Logger.LogError(ex, "Error translating page");
             await ToastService.ShowErrorAsync("An unexpected error occurred.", "Error");
         }
         finally
@@ -267,7 +268,7 @@
 
         if (missingFields.Any())
         {
-            Console.WriteLine($"Missing required fields: {string.Join(", ", missingFields)}");
+            Logger.LogWarning("Missing required fields for translation: {Fields}", string.Join(", ", missingFields));
             return false;
         }
 
@@ -315,7 +316,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error setting {propertyName}: {ex.Message}");
+                Logger.LogWarning(ex, "Error setting property {PropertyName}", propertyName);
             }
         }
 

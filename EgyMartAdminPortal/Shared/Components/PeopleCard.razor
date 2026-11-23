@@ -1,5 +1,6 @@
 ﻿@inject UserService UserService
 @inject ToastrService ToastService
+@inject ILogger<PeopleCard> Logger
 
 <div class="card text-center shadow-sm p-3 bg-white rounded-3">
     <Tooltip class="position-absolute top-0 start-0 m-2" Title="Verification Status" Placement="TooltipPlacement.Top">
@@ -169,7 +170,8 @@
         }
         else
         {
-            Console.WriteLine("Failed to update the user status.");
+            Logger.LogWarning("Failed to update user status for user {UserId}", Person.UserID);
+            await ToastService.ShowErrorAsync("Failed to update the user status.", "Error");
         }
     }
 

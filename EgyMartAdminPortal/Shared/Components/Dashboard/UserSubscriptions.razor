@@ -1,6 +1,7 @@
 @inject HttpClient HttpClient
 @inject ToastrService ToastService
 @inject DashboardService DashboardService
+@inject ILogger<UserSubscriptions> Logger
 
 <style>
     .scrolling-card {
@@ -194,7 +195,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading subscription plans overview: {ex.Message}");
+            Logger.LogError(ex, "Error loading subscription plans overview");
             await ToastService.ShowErrorAsync("Failed to load subscription plans overview.", "Error");
         }
     }
