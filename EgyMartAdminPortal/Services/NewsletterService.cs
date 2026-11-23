@@ -12,6 +12,7 @@ namespace EgyMartAdminPortal.Services
         private readonly HttpClient _httpClient;
         private readonly NavigationManager _navigationManager;
         private readonly ILogger<NewsletterService> _logger;
+        private readonly LocalStorageService _localStorage;
         private const string BaseApi = "cms/api/v1/Newsletter/";
 
         private HubConnection? _hubConnection;
@@ -25,8 +26,10 @@ namespace EgyMartAdminPortal.Services
         public NewsletterService(
             HttpClient httpClient,
             NavigationManager navigationManager,
-            ILogger<NewsletterService> logger)
+            ILogger<NewsletterService> logger,
+            LocalStorageService localStorage)
         {
+            _localStorage = localStorage;
             _httpClient = httpClient;
             _navigationManager = navigationManager;
             _logger = logger;
@@ -41,10 +44,17 @@ namespace EgyMartAdminPortal.Services
             try
             {
                 // Resolve Hub URL using ApiUrl base address (e.g. http://localhost:70/cms/hubs/notifications)
-                string hubUrl = new Uri(_httpClient.BaseAddress ?? new Uri("http://localhost:70"), "cms/hubs/notifications").ToString();
+                string hubUrl = new Uri(_httpClient.BaseAddress!, "cms/hubs/notifications").ToString();
 
                 _hubConnection = new HubConnectionBuilder()
-                    .WithUrl(hubUrl)
+                    .WithUrl(hubUrl, options =>
+                    {
+                        options.AccessTokenProvider = async () =>
+                        {
+                            var tokens = await _localStorage.GetItemAsync<Models.Tokens>("authToken");
+                            return tokens?.Jwt;
+                        };
+                    })
                     .WithAutomaticReconnect()
                     .Build();
 
@@ -167,12 +177,12 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var err = await response.Content.ReadAsStringAsync();
-                return (false, string.IsNullOrWhiteSpace(err) ? "Failed to send broadcast." : err);
+                return (false, string.IsNullOrWhiteSpace(err) || (int)response.StatusCode >= 500 ? "Failed to send broadcast." : err);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending broadcast");
-                return (false, ex.Message);
+                return (false, "An unexpected error occurred. Please try again.");
             }
         }
 
@@ -187,11 +197,11 @@ namespace EgyMartAdminPortal.Services
                     return (true, "Subscribed successfully!");
                 }
                 var err = await response.Content.ReadAsStringAsync();
-                return (false, err);
+                return (false, (int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : err);
             }
             catch (Exception ex)
             {
-                return (false, ex.Message);
+                return (false, "An unexpected error occurred. Please try again.");
             }
         }
 
@@ -206,11 +216,11 @@ namespace EgyMartAdminPortal.Services
                     return (true, "Unsubscribed successfully!");
                 }
                 var err = await response.Content.ReadAsStringAsync();
-                return (false, err);
+                return (false, (int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : err);
             }
             catch (Exception ex)
             {
-                return (false, ex.Message);
+                return (false, "An unexpected error occurred. Please try again.");
             }
         }
 
@@ -224,11 +234,11 @@ namespace EgyMartAdminPortal.Services
                     return (true, "Subscriber deleted successfully!");
                 }
                 var err = await response.Content.ReadAsStringAsync();
-                return (false, err);
+                return (false, (int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : err);
             }
             catch (Exception ex)
             {
-                return (false, ex.Message);
+                return (false, "An unexpected error occurred. Please try again.");
             }
         }
 

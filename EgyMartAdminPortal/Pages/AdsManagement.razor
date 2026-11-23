@@ -255,7 +255,7 @@
         }
         catch (Exception ex)
         {
-            await ToastService.ShowErrorAsync(ex.Message);
+            await ToastService.ShowErrorAsync("An unexpected error occurred. Please try again.");
         }
     }
 
@@ -280,7 +280,7 @@
         }
         catch (Exception ex)
         {
-            await ToastService.ShowErrorAsync(ex.Message);
+            await ToastService.ShowErrorAsync("An unexpected error occurred. Please try again.");
         }
     }
 

@@ -18,7 +18,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -31,7 +31,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<CouponItem> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<CouponItem> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -62,7 +62,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -94,7 +94,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -114,7 +114,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<CouponItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
     }

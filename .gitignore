@@ -1,15 +1,9 @@
 ﻿################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
-bin/*
-/EgyMartAdminPortal/bin
-/.vs/EgypMartAdminPortal/CopilotIndices/17.12.38.29086
+/.vs/EgyMartAdminPortal/CopilotIndices/17.12.38.29086
 /EgyMartAdminPortal/node_modules/.bin
 /EgyMartAdminPortal/node_modules/autoprefixer/bin
-/EgyMartAdminPortal/obj
-/.vs
-bin/
-obj/
 
 # Build output
 **/bin/
@@ -22,7 +16,7 @@ publish/
 # Remote tracks only .sln + EgyMartAdminPortal/ folder
 /publish/
 /wwwroot/
-/web.config
+**/web.config
 /emcc-props.json
 /EgyMartAdminPortal.staticwebassets.endpoints.json
 
@@ -39,3 +33,37 @@ publish/
 
 # Dependencies
 **/node_modules/
+
+# Secrets & credentials
+.env
+.env.*
+!.env.example
+*.publishsettings
+*.azurePubxml
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk
+secrets.json
+
+# Database files & backups
+*.bak
+*.mdf
+*.ldf
+*.db
+*.sqlite
+*.sql
+*.dump
+
+# Archives & logs
+*.zip
+*.7z
+*.log
+logs/
+
+# Other editors / OS
+.idea/
+.DS_Store
+Thumbs.db
+TestResults/

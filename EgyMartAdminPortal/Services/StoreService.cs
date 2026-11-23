@@ -19,7 +19,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -46,7 +46,7 @@ namespace EgyMartAdminPortal.Services
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -73,11 +73,11 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = $"Server error ({response.StatusCode}): {error}" };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error ({response.StatusCode}): {error}") };
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -106,11 +106,11 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = $"Server error ({response.StatusCode}): {error}" };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error ({response.StatusCode}): {error}") };
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -126,11 +126,11 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = $"Server error ({response.StatusCode}): {error}" };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error ({response.StatusCode}): {error}") };
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -153,11 +153,11 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = $"Server error ({response.StatusCode}): {error}" };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error ({response.StatusCode}): {error}") };
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -180,11 +180,11 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = $"Server error ({response.StatusCode}): {error}" };
+                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error ({response.StatusCode}): {error}") };
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
 
@@ -207,11 +207,11 @@ namespace EgyMartAdminPortal.Services
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = $"Server error ({response.StatusCode}): {error}" };
+                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error ({response.StatusCode}): {error}") };
             }
             catch (Exception ex)
             {
-                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = ex.Message };
+                return new ApiResponse<List<StoreProductItem>> { Success = false, ResponseEngMsg = "An unexpected error occurred. Please try again." };
             }
         }
     }

@@ -384,7 +384,7 @@
         }
         catch (Exception ex)
         {
-            await ToastService.ShowErrorAsync($"Unexpected error: {ex.Message}", "Error");
+            await ToastService.ShowErrorAsync("An unexpected error occurred. Please try again.", "Error");
         }
         finally
         {

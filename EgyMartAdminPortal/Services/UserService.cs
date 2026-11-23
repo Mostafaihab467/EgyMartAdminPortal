@@ -68,7 +68,7 @@ namespace EgyMartAdminPortal.Services
                     return new ApiResponse<CreateUserResult>
                     {
                         Success = false,
-                        ResponseEngMsg = $"Server error: {error}"
+                        ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error: {error}")
                     };
                 }
             }
@@ -77,7 +77,7 @@ namespace EgyMartAdminPortal.Services
                 return new ApiResponse<CreateUserResult>
                 {
                     Success = false,
-                    ResponseEngMsg = $"Exception: {ex.Message}"
+                    ResponseEngMsg = "An unexpected error occurred. Please try again."
                 };
             }
         }
@@ -94,7 +94,7 @@ namespace EgyMartAdminPortal.Services
                 return new ApiResponse<List<UserTypeWithCount>>
                 {
                     Success = false,
-                    ResponseEngMsg = $"Exception: {ex.Message}"
+                    ResponseEngMsg = "An unexpected error occurred. Please try again."
                 };
             }
         }
@@ -157,7 +157,7 @@ namespace EgyMartAdminPortal.Services
                     return new ApiResponse<List<Person>>
                     {
                         Success = false,
-                        ResponseEngMsg = $"Server error: {error}"
+                        ResponseEngMsg = ((int)response.StatusCode >= 500 ? "A server error occurred. Please try again later." : $"Server error: {error}")
                     };
                 }
             }
@@ -166,7 +166,7 @@ namespace EgyMartAdminPortal.Services
                 return new ApiResponse<List<Person>>
                 {
                     Success = false,
-                    ResponseEngMsg = $"Exception: {ex.Message}"
+                    ResponseEngMsg = "An unexpected error occurred. Please try again."
                 };
             }
         }

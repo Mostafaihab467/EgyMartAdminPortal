@@ -30,7 +30,7 @@
         {
             await SessionTimeoutService.InitializeAsync();
         }
-        if (!_isAuthenticated && !Navigation.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
+        if (!_isAuthenticated && !Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("login", StringComparison.OrdinalIgnoreCase))
         {
             Navigation.NavigateTo("/login", forceLoad: true);
         }

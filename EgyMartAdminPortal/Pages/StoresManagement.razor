@@ -505,7 +505,7 @@
         }
         catch (Exception ex)
         {
-            await ToastService.ShowErrorAsync($"{Loc["Error"]}: {ex.Message}");
+            await ToastService.ShowErrorAsync($"{Loc["Error"]}: An unexpected error occurred. Please try again.");
         }
         finally
         {
@@ -698,7 +698,7 @@
         }
         catch (Exception ex)
         {
-            await ToastService.ShowErrorAsync($"{Loc["Error"]}: {ex.Message}");
+            await ToastService.ShowErrorAsync($"{Loc["Error"]}: An unexpected error occurred. Please try again.");
         }
         finally
         {

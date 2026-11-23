@@ -11,6 +11,8 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var apiUrl = builder.Configuration.GetValue<string>("ApiUrl");
+if (string.IsNullOrWhiteSpace(apiUrl))
+    throw new InvalidOperationException("ApiUrl is not configured.");
 
 // Register signature handler
 builder.Services.AddScoped<SignatureHandler>();
@@ -59,7 +61,6 @@ builder.Services.AddScoped<FAQService>();
 builder.Services.AddScoped<FixedPageService>();
 builder.Services.AddScoped<SubscriptionService>();
 builder.Services.AddScoped<SocialMediaService>();
-builder.Services.AddScoped<SubscribtionService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<StoreService>();
 builder.Services.AddScoped<CouponService>();

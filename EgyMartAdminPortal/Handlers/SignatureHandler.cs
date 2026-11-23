@@ -23,15 +23,22 @@ namespace EgyMartAdminPortal.Handlers
 
             if (string.IsNullOrEmpty(userJson) && request.Content != null)
             {
-                var bodyContent = await request.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(bodyContent);
-                if (doc.RootElement.TryGetProperty("userName", out var emailElement))
+                try
                 {
-                    email = emailElement.GetString() ?? "";
+                    var bodyContent = await request.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(bodyContent);
+                    if (doc.RootElement.TryGetProperty("userName", out var emailElement))
+                    {
+                        email = emailElement.GetString() ?? "";
+                    }
+                    if (doc.RootElement.TryGetProperty("userID", out var userIDElement))
+                    {
+                        userID = userIDElement.GetString() ?? "";
+                    }
                 }
-                if (doc.RootElement.TryGetProperty("userID", out var userIDElement))
+                catch (JsonException)
                 {
-                    userID = userIDElement.GetString() ?? "";
+                    // Non-JSON body (e.g. multipart upload): nothing to read the identity from
                 }
             }
             else if (!string.IsNullOrEmpty(userJson))
@@ -58,7 +65,6 @@ namespace EgyMartAdminPortal.Handlers
                 _ivBase64
             );
 
-            //Console.WriteLine($"endpoint:{endpoint}, email:{email}, body:{body}, sign: {signature}");
             request.Headers.Add("sign", signature);
 
             return await base.SendAsync(request, cancellationToken);

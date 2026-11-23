@@ -86,8 +86,17 @@
         {
             // do something
             // submit the form
-            Console.WriteLine("Login successful");
         }
+    }
+
+    // Only follow a saved URL that stays on this site (prevents open redirects)
+    private bool IsSafeLocalUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute))
+            return absolute.GetLeftPart(UriPartial.Authority).Equals(
+                new Uri(NavigationManager.BaseUri).GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase);
+        return url.StartsWith("/") && !url.StartsWith("//") && !url.StartsWith("/\\");
     }
 
     private async Task AdminLogin()
@@ -102,9 +111,9 @@
                 var lastVisitedUrl = await LocalStorage.GetItemAsync<string>("lastVisitedUrl");
                 await LocalStorage.RemoveItemAsync("lastVisitedUrl");
 
-                if (!string.IsNullOrEmpty(lastVisitedUrl))
+                if (IsSafeLocalUrl(lastVisitedUrl))
                 {
-                    NavigationManager.NavigateTo(lastVisitedUrl);
+                    NavigationManager.NavigateTo(lastVisitedUrl!);
                 }
                 else
                 {

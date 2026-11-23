@@ -82,7 +82,8 @@ namespace EgyMartAdminPortal.Services
         {
             try
             {
-                var client = _httpClientFactory.CreateClient("PlainClient");
+                // Authenticated client: sends the bearer token (and refreshes it on expiry)
+                var client = _httpClientFactory.CreateClient("SignedClient");
                 var url = $"{ApiUrl}/AdminPassword/ChangePassword?UserID={userId}";
                 var request = new { newPassword, confirmPassword };
 
@@ -115,7 +116,6 @@ namespace EgyMartAdminPortal.Services
                 if (result == null || result.Data == null)
                     return false;
 
-                Console.WriteLine($"New JWT: {result.Data.NewJWT}");
                 var updatedTokens = new Tokens
                 {
                     Jwt = result.Data.NewJWT,
