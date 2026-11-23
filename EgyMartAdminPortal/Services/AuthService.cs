@@ -102,12 +102,16 @@ namespace EgyMartAdminPortal.Services
             if (tokens == null || string.IsNullOrEmpty(tokens.Jwt) || string.IsNullOrEmpty(tokens.RefreshToken))
                 return false;
 
-            var refreshUri = $"{ApiUrl}/RefreshToken?ExpiredToken={tokens.Jwt}&RefreshToken={tokens.RefreshToken}";
+            var refreshUri = $"{ApiUrl}/RefreshToken";
 
             try
             {
                 var client = _httpClientFactory.CreateClient("PlainClient");
-                var response = await client.PostAsync(refreshUri, null);
+                var response = await client.PostAsJsonAsync(refreshUri, new
+                {
+                    ExpiredToken = tokens.Jwt,
+                    RefreshToken = tokens.RefreshToken
+                });
                 if (!response.IsSuccessStatusCode)
                     return false;
                 var content = await response.Content.ReadAsStringAsync();
@@ -116,10 +120,16 @@ namespace EgyMartAdminPortal.Services
                 if (result == null || result.Data == null)
                     return false;
 
+                var nextJwt = string.IsNullOrEmpty(result.Data.Jwt) ? result.Data.NewJWT : result.Data.Jwt;
+                if (string.IsNullOrEmpty(nextJwt))
+                    return false;
+
                 var updatedTokens = new Tokens
                 {
-                    Jwt = result.Data.NewJWT,
-                    RefreshToken = tokens.RefreshToken
+                    Jwt = nextJwt,
+                    RefreshToken = string.IsNullOrEmpty(result.Data.RefreshToken)
+                        ? tokens.RefreshToken
+                        : result.Data.RefreshToken
                 };
 
                 await _localStorage.SetItemAsync(TokenKey, updatedTokens);
