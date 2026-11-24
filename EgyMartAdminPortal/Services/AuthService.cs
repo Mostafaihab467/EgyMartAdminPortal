@@ -1,8 +1,10 @@
-﻿using EgyMartAdminPortal.Models;
-using Microsoft.AspNetCore.Components;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using EgyMartAdminPortal.Models;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EgyMartAdminPortal.Services
 {
@@ -11,49 +13,54 @@ namespace EgyMartAdminPortal.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly LocalStorageService _localStorage;
         private readonly NavigationManager _navigation;
+        private readonly AuthSession _session;
+        private readonly JwtAuthStateProvider _authState;
 
         private const string ApiUrl = "auth/api/v2/Auth";
         private const string TokenKey = "authToken";
         private const string UserKey = "userData";
 
-        public Person User { get; private set; } = new Person();
+        public Person User => _session.User;
 
-        public AuthService(IHttpClientFactory httpClientFactory, LocalStorageService localStorageService, NavigationManager navigation)
+        public AuthService(
+            IHttpClientFactory httpClientFactory,
+            LocalStorageService localStorageService,
+            NavigationManager navigation,
+            AuthSession session,
+            AuthenticationStateProvider authState)
         {
             _httpClientFactory = httpClientFactory;
             _localStorage = localStorageService;
             _navigation = navigation;
+            _session = session;
+            _authState = (JwtAuthStateProvider)authState;
         }
 
-        public void SetUser(Person user) => User = user;
+        public void SetUser(Person user) => _session.Set(_session.Jwt, _session.RefreshToken, user);
 
         public async Task<Person> GetUserAsync()
         {
-            var user = await _localStorage.GetItemAsync<Person>(UserKey);
-            User = user ?? new Person();
-
-            if (string.IsNullOrEmpty(User.DisplayName))
+            await _localStorage.RemoveItemAsync(TokenKey);
+            if (string.IsNullOrEmpty(_session.User.DisplayName))
             {
-                var token = await GetAuthTokenAsync();
-                if (string.IsNullOrEmpty(token))
-                {
-                    _navigation.NavigateTo("/login");
-                }
+                var stored = await _localStorage.GetItemAsync<Person>(UserKey);
+                if (stored != null && !string.IsNullOrEmpty(_session.Jwt))
+                    _session.Set(_session.Jwt, _session.RefreshToken, stored);
             }
 
-            return User;
+            return _session.User;
         }
 
-        public async Task<string?> GetAuthTokenAsync()
-        {
-            var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
-            return tokens?.Jwt;
-        }
+        public Task<string?> GetAuthTokenAsync() => Task.FromResult(_session.Jwt);
 
         public async Task<bool> HasValidSessionAsync()
         {
-            var user = await _localStorage.GetItemAsync<Person>(UserKey);
-            User = user ?? new Person();
+            if (string.IsNullOrEmpty(_session.User.DisplayName))
+            {
+                var stored = await _localStorage.GetItemAsync<Person>(UserKey);
+                if (stored != null)
+                    _session.Set(_session.Jwt, _session.RefreshToken, stored);
+            }
             var token = await GetAuthTokenAsync();
 
             if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(User.DisplayName))
@@ -102,12 +109,8 @@ namespace EgyMartAdminPortal.Services
             try
             {
                 var client = _httpClientFactory.CreateClient("PlainClient");
-
                 var requestBody = new { UserName = userName, Password = password, PortalType = 3 };
                 var response = await client.PostAsJsonAsync($"{ApiUrl}/SupplierLogin", requestBody);
-
-                if (response == null)
-                    return FailureResponse<LoginData>("No response from server", "لم يتم استلام رد من الخادم");
 
                 var content = await response.Content.ReadAsStringAsync();
                 var apiResponse = JsonSerializer.Deserialize<ApiResponse<LoginData>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -115,6 +118,7 @@ namespace EgyMartAdminPortal.Services
                 if (apiResponse?.Success == true && apiResponse.Data != null)
                 {
                     await SaveLoginDataAsync(apiResponse.Data);
+                    _authState.Notify();
                 }
 
                 return apiResponse ?? FailureResponse<LoginData>("Invalid response from server", "استجابة غير صالحة من الخادم");
@@ -145,41 +149,34 @@ namespace EgyMartAdminPortal.Services
 
         public async Task<bool> TryRefreshTokenAsync()
         {
-            var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
-            if (tokens == null || string.IsNullOrEmpty(tokens.Jwt) || string.IsNullOrEmpty(tokens.RefreshToken))
+            if (string.IsNullOrEmpty(_session.Jwt) || string.IsNullOrEmpty(_session.RefreshToken))
                 return false;
-
-            var refreshUri = $"{ApiUrl}/RefreshToken";
 
             try
             {
                 var client = _httpClientFactory.CreateClient("PlainClient");
-                var response = await client.PostAsJsonAsync(refreshUri, new
+                var response = await client.PostAsJsonAsync($"{ApiUrl}/RefreshToken", new
                 {
-                    ExpiredToken = tokens.Jwt,
-                    RefreshToken = tokens.RefreshToken
+                    ExpiredToken = _session.Jwt,
+                    RefreshToken = _session.RefreshToken
                 });
                 if (!response.IsSuccessStatusCode)
                     return false;
+
                 var content = await response.Content.ReadAsStringAsync();
                 var result = JsonSerializer.Deserialize<ApiResponse<NewToken>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (result == null || result.Data == null)
+                if (result?.Data == null || string.IsNullOrEmpty(result.Data.NewJWT))
                     return false;
 
                 var nextJwt = string.IsNullOrEmpty(result.Data.Jwt) ? result.Data.NewJWT : result.Data.Jwt;
                 if (string.IsNullOrEmpty(nextJwt))
                     return false;
 
-                var updatedTokens = new Tokens
-                {
-                    Jwt = nextJwt,
-                    RefreshToken = string.IsNullOrEmpty(result.Data.RefreshToken)
-                        ? tokens.RefreshToken
-                        : result.Data.RefreshToken
-                };
-
-                await _localStorage.SetItemAsync(TokenKey, updatedTokens);
+                var rotated = string.IsNullOrEmpty(result.Data.RefreshToken)
+                    ? _session.RefreshToken
+                    : result.Data.RefreshToken;
+                _session.Set(nextJwt, rotated, _session.User);
+                _authState.Notify();
                 return true;
             }
             catch
@@ -190,37 +187,40 @@ namespace EgyMartAdminPortal.Services
 
         public async Task LogoutAsync()
         {
-            try
+            var jwt = _session.Jwt;
+            var relative = "/" + _navigation.ToBaseRelativePath(_navigation.Uri).TrimStart('/');
+            _session.Clear();
+            _authState.Notify();
+
+            if (!string.IsNullOrEmpty(jwt))
             {
-                var token = await GetAuthTokenAsync();
-                if (!string.IsNullOrWhiteSpace(token))
+                try
                 {
-                    var client = _httpClientFactory.CreateClient("SignedClient");
+                    var client = _httpClientFactory.CreateClient("PlainClient");
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
                     await client.PostAsync($"{ApiUrl}/Logout", null);
                 }
-            }
-            catch
-            {
-                // Best-effort server revocation; always clear local session
+                catch
+                {
+                    // The browser session is already cleared. A failed revoke must not keep the user on the page.
+                }
             }
 
-            var relative = "/" + _navigation.ToBaseRelativePath(_navigation.Uri).TrimStart('/');
             if (!relative.StartsWith("/login", StringComparison.OrdinalIgnoreCase))
-            {
                 await _localStorage.SetItemAsync("lastVisitedUrl", relative);
-            }
+
             await _localStorage.RemoveItemAsync(TokenKey);
             await _localStorage.RemoveItemAsync(UserKey);
             await _localStorage.RemoveItemAsync("cachedLanguages");
-            User = new Person();
             _navigation.NavigateTo("/login", forceLoad: true);
         }
 
         private async Task SaveLoginDataAsync(LoginData data)
         {
-            var user = data.User;
-            User = user;
+            _session.Set(data.Tokens.Jwt, data.Tokens.RefreshToken, data.User);
+            await _localStorage.RemoveItemAsync(TokenKey);
 
+            var user = data.User;
             var minimalUser = new
             {
                 user.UserID,
@@ -230,16 +230,7 @@ namespace EgyMartAdminPortal.Services
                 user.IsActive,
                 user.FirstLogin
             };
-
             await _localStorage.SetItemAsync(UserKey, minimalUser);
-
-            var tokens = new Tokens
-            {
-                Jwt = data.Tokens.Jwt,
-                RefreshToken = data.Tokens.RefreshToken
-            };
-
-            await _localStorage.SetItemAsync(TokenKey, tokens);
         }
 
         private static ApiResponse<T> FailureResponse<T>(string engMessage, string arMessage) where T : class

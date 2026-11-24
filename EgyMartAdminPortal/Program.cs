@@ -1,4 +1,5 @@
 using EgyMartAdminPortal;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using EgyMartAdminPortal.Services;
@@ -16,6 +17,10 @@ if (string.IsNullOrWhiteSpace(apiUrl) || !Uri.TryCreate(apiUrl, UriKind.Absolute
 if (!builder.HostEnvironment.IsDevelopment() && !string.Equals(apiUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
     throw new InvalidOperationException("ApiUrl must use HTTPS outside Development.");
 
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthSession>();
+builder.Services.AddScoped<JwtAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
 builder.Services.AddScoped<JwtAuthorizationMessageHandler>();
 
 builder.Services.AddHttpClient("PlainClient", client =>

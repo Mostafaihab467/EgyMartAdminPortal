@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using System.Globalization;
+using Microsoft.JSInterop;
 using Timer = System.Timers.Timer;
 
 namespace EgyMartAdminPortal.Services
@@ -27,14 +28,11 @@ namespace EgyMartAdminPortal.Services
             await _jsRuntime.InvokeVoidAsync("sessionTimeout.registerActivity", _dotNetRef);
 
             var lastHeartbeatStr = await _localStorageService.GetItemAsync<string>(HeartbeatKey);
-            if (DateTime.TryParse(lastHeartbeatStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var lastHeartbeat))
+            if (DateTime.TryParse(lastHeartbeatStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var lastHeartbeat)
+                && (DateTime.UtcNow - lastHeartbeat.ToUniversalTime()).TotalMinutes > InactivityLimitMinutes)
             {
-                var diff = (DateTime.UtcNow - lastHeartbeat.ToUniversalTime()).TotalMinutes;
-                if (diff > InactivityLimitMinutes)
-                {
-                    await _authService.LogoutAsync();
-                    return;
-                }
+                await _authService.LogoutAsync();
+                return;
             }
 
             StartHeartbeatTimer();

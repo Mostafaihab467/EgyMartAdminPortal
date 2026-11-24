@@ -1,5 +1,4 @@
 ﻿@inject AuthService AuthService
-@inject NavigationManager Navigation
 @inject SessionTimeoutService SessionTimeoutService
 
 @if (!_authChecked)
@@ -8,43 +7,39 @@
         <div class="spinner-border text-primary" role="status"></div>
     </div>
 }
-else if (_isAuthenticated || IsLoginRoute())
+else
 {
-    <CascadingValue Value="AuthService.User">
-        <Router AppAssembly="@typeof(App).Assembly">
-            <Found Context="routeData">
-                <RouteView RouteData="@routeData" DefaultLayout="@(routeData.PageType == typeof(Login) ? null : typeof(MainLayout))" />
-                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-            </Found>
-            <NotFound>
-                <PageTitle>Not found</PageTitle>
-                <LayoutView Layout="@typeof(MainLayout)">
-                    <p role="alert">Sorry, there's nothing at this address.</p>
-                </LayoutView>
-            </NotFound>
-        </Router>
-    </CascadingValue>
+    <CascadingAuthenticationState>
+        <CascadingValue Value="AuthService.User">
+            <Router AppAssembly="@typeof(App).Assembly">
+                <Found Context="routeData">
+                    <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@(routeData.PageType == typeof(Login) ? null : typeof(MainLayout))">
+                        <NotAuthorized>
+                            <RedirectToLogin />
+                        </NotAuthorized>
+                    </AuthorizeRouteView>
+                    <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+                </Found>
+                <NotFound>
+                    <PageTitle>Not found</PageTitle>
+                    <LayoutView Layout="@typeof(MainLayout)">
+                        <p role="alert">Sorry, there's nothing at this address.</p>
+                    </LayoutView>
+                </NotFound>
+            </Router>
+        </CascadingValue>
+    </CascadingAuthenticationState>
 }
 
 @code {
-    private bool _authChecked = false;
-    private bool _isAuthenticated = false;
-
-    private bool IsLoginRoute() =>
-        Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("login", StringComparison.OrdinalIgnoreCase);
+    private bool _authChecked;
 
     protected override async Task OnInitializedAsync()
     {
-        _isAuthenticated = await AuthService.HasValidSessionAsync();
+        await AuthService.GetUserAsync();
+        var token = await AuthService.GetAuthTokenAsync();
         _authChecked = true;
-
-        if (_isAuthenticated)
-        {
+        if (!string.IsNullOrWhiteSpace(token))
             await SessionTimeoutService.InitializeAsync();
-        }
-        else if (!IsLoginRoute())
-        {
-            Navigation.NavigateTo("/login", forceLoad: true);
-        }
     }
 }

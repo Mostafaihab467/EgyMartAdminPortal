@@ -1,24 +1,20 @@
-﻿using EgyMartAdminPortal.Models;
-using EgyMartAdminPortal.Services;
+﻿using EgyMartAdminPortal.Services;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace EgyMartAdminPortal.Handlers
 {
     public class JwtAuthorizationMessageHandler : DelegatingHandler
     {
-        // Only one token refresh at a time across parallel requests
-        private static readonly SemaphoreSlim _refreshLock = new(1, 1);
+        private static readonly SemaphoreSlim RefreshLock = new(1, 1);
 
-        private readonly LocalStorageService _localStorage;
+        private readonly AuthSession _session;
         private readonly AuthService _authService;
         private readonly Uri? _apiBase;
-        private const string TokenKey = "authToken";
 
-        public JwtAuthorizationMessageHandler(LocalStorageService localStorageService, AuthService authService, IConfiguration configuration)
+        public JwtAuthorizationMessageHandler(AuthSession session, AuthService authService, IConfiguration configuration)
         {
-            _localStorage = localStorageService;
+            _session = session;
             _authService = authService;
             var apiUrl = configuration["ApiUrl"];
             _apiBase = string.IsNullOrWhiteSpace(apiUrl) ? null : new Uri(apiUrl);
@@ -26,35 +22,29 @@ namespace EgyMartAdminPortal.Handlers
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            // Never send the bearer token to hosts other than the API
             if (!IsApiRequest(request))
                 return await base.SendAsync(request, cancellationToken);
 
-            // Buffer the body so the request can be re-sent after a token refresh
             if (request.Content != null)
                 await request.Content.LoadIntoBufferAsync();
 
             var sentJwt = await AttachAccessTokenAsync(request);
-
             var response = await base.SendAsync(request, cancellationToken);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized &&
-    response.Headers.TryGetValues("Token-Expired", out var tokenExpiredValues) &&
-    tokenExpiredValues.Contains("true", StringComparer.OrdinalIgnoreCase))
+                response.Headers.TryGetValues("Token-Expired", out var tokenExpiredValues) &&
+                tokenExpiredValues.Contains("true", StringComparer.OrdinalIgnoreCase))
             {
-                // 401 + Token-Expired = true → try to refresh token (one refresh at a time)
                 bool refreshed;
-                await _refreshLock.WaitAsync(cancellationToken);
+                await RefreshLock.WaitAsync(cancellationToken);
                 try
                 {
-                    // If another request already refreshed the token, just reuse it
-                    var current = await _localStorage.GetItemAsync<Tokens>(TokenKey);
-                    refreshed = (!string.IsNullOrEmpty(current?.Jwt) && current.Jwt != sentJwt)
+                    refreshed = (!string.IsNullOrEmpty(_session.Jwt) && _session.Jwt != sentJwt)
                                 || await _authService.TryRefreshTokenAsync();
                 }
                 finally
                 {
-                    _refreshLock.Release();
+                    RefreshLock.Release();
                 }
 
                 if (refreshed)
@@ -64,13 +54,10 @@ namespace EgyMartAdminPortal.Handlers
                     await AttachAccessTokenAsync(clonedRequest);
                     return await base.SendAsync(clonedRequest, cancellationToken);
                 }
-                else
-                {
-                    await _authService.LogoutAsync();
-                    return response;
-                }
-            }
 
+                await _authService.LogoutAsync();
+                return response;
+            }
 
             return response;
         }
@@ -81,14 +68,12 @@ namespace EgyMartAdminPortal.Handlers
              Uri.Compare(uri, _apiBase, UriComponents.SchemeAndServer, UriFormat.Unescaped,
                          StringComparison.OrdinalIgnoreCase) == 0);
 
-        private async Task<string?> AttachAccessTokenAsync(HttpRequestMessage request)
+        private Task<string?> AttachAccessTokenAsync(HttpRequestMessage request)
         {
-            var tokens = await _localStorage.GetItemAsync<Tokens>(TokenKey);
-            if (!string.IsNullOrEmpty(tokens?.Jwt))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokens.Jwt);
-            }
-            return tokens?.Jwt;
+            request.Headers.Authorization = null;
+            if (!string.IsNullOrEmpty(_session.Jwt))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.Jwt);
+            return Task.FromResult(_session.Jwt);
         }
 
         private static async Task<HttpRequestMessage> CloneHttpRequestMessageAsync(HttpRequestMessage request)
